@@ -87,3 +87,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+*.xml
+.idea/TC2.iml
+*.iml
