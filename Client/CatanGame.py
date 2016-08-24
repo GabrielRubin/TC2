@@ -1,5 +1,5 @@
 import random
-from CatanBoard import *
+from Client.CatanBoard import *
 
 class Game:
 

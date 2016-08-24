@@ -1,6 +1,6 @@
 import socket
-import game
-import agent
+#import game
+#import agent
 import random
 
 try:

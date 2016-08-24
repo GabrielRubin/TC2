@@ -104,7 +104,9 @@ class BoardHex:
                         -0x22,       0x22,
 
                           -0x02,  0x20]
-        return [ self.index + h for h in adjacentHexes]
+
+        return [ self.index + h if self.index + h in g_boardHexes else None
+                 for h in adjacentHexes ]
 
     def GetAdjacentNodes(self):
 
@@ -144,7 +146,8 @@ class BoardNode:
             adjacentHexes = [ -0x21,  0x01,
 
                                  -0x01]
-        return [ self.index + h for h in adjacentHexes ]
+        return [ self.index + h if self.index + h in g_boardHexes else None
+                 for h in adjacentHexes ]
 
     def GetAdjacentNodes(self):
 
@@ -161,7 +164,8 @@ class BoardNode:
             adjacentNodes =    [ -0x0f,
 
                              -0x11,  0x11]
-        return [ self.index + node for node in adjacentNodes ]
+        return [ self.index + node if self.index + node in g_boardNodes else None
+                 for node in adjacentNodes ]
 
     def GetAdjacentEdges(self):
 
@@ -179,7 +183,8 @@ class BoardNode:
 
                              -0x11,  0x00]
 
-        return [ self.index + edge for edge in adjacentEdges ]
+        return [ self.index + edge if self.index + edge in g_boardEdges else None
+                 for edge in adjacentEdges ]
 
 class BoardEdge:
 
@@ -190,8 +195,12 @@ class BoardEdge:
 
     def GetAdjacentHexes(self):
 
-        i0 = int(hex(self.index)[2]) & 1
-        i1 = int(hex(self.index)[3]) & 1
+        if self.index >= 16:
+            i0 = int(hex(self.index)[2], 16) & 1
+            i1 = int(hex(self.index)[3], 16) & 1
+        else:
+            i0 = False
+            i1 = int(hex(self.index)[2], 16)
 
         if not i0 and not i1: # |
             adjacentHexes = [-0x11, 0x11]
@@ -204,12 +213,17 @@ class BoardEdge:
             adjacentHexes = [       0x01,
                              -0x01       ]
 
-        return [ self.index + h for h in adjacentHexes]
+        return [ self.index + h if self.index + h in g_boardHexes else None
+                 for h in adjacentHexes]
 
     def GetAdjacentNodes(self):
 
-        i0 = int(hex(self.index)[2]) & 1
-        i1 = int(hex(self.index)[3]) & 1
+        if self.index >= 16:
+            i0 = int(hex(self.index)[2], 16) & 1
+            i1 = int(hex(self.index)[3], 16) & 1
+        else:
+            i0 = False
+            i1 = int(hex(self.index)[2], 16)
 
         if not i0 and not i1: # |
             adjacentNodes = [ 0x01,
@@ -223,12 +237,17 @@ class BoardEdge:
             adjacentNodes = [0x00,
                                     0x11]
 
-        return [ self.index + node for node in adjacentNodes]
+        return [ self.index + node if self.index + node in g_boardNodes else None
+                 for node in adjacentNodes]
 
     def GetAdjacentEdges(self):
 
-        i0 = int(hex(self.index)[2]) & 1
-        i1 = int(hex(self.index)[3]) & 1
+        if self.index >= 16:
+            i0 = int(hex(self.index)[2], 16) & 1
+            i1 = int(hex(self.index)[3], 16) & 1
+        else:
+            i0 = False
+            i1 = int(hex(self.index)[2], 16)
 
         if not i0 and not i1: # |
             adjacentEdges = [-0x10, 0x01,
@@ -242,12 +261,13 @@ class BoardEdge:
                             -0x01       ]
 
         elif i0 and not i1:   # \
-            adjacentEdges = [-0x10,
+            adjacentEdges = [      -0x10,
+                            -0x11,
                                     0x11,
-                             -0x11,
-                                    0x10]
+                             0x10]
 
-        return [ self.index + edge for edge in adjacentEdges]
+        return [ self.index + edge if self.index + edge in g_boardEdges else None
+                 for edge in adjacentEdges]
 
 class Construction:
 
