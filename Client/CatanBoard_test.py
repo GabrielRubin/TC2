@@ -1,6 +1,6 @@
 import unittest
 
-from Client.CatanBoard import *
+from CatanBoard import *
 
 class CatanBoardTest(unittest.TestCase):
 
