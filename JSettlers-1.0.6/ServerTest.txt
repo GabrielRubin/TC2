@@ -1,0 +1,20 @@
+
+ ----- JSETTLERS SERVER TEST -----
+ 
+ Na pasta que tem os JARS:
+ 
+ 1) - BEGIN SERVER:
+ 
+	java -jar JSettlersServer.jar 8880 10 dbUser dbPass
+   
+ 2) - (OPTIONAL) BEGIN JSETTLERS CLIENT:
+ 
+	java -jar JSettlers.jar localhost 8880
+	
+ 3) - SERVER BOTS:
+ 
+    java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd
+
+    java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd
+
+    java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd
