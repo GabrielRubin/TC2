@@ -133,3 +133,111 @@ class JoinGameMessage(Message):
         data = text.split(",")
         data[1] = "" if data[1] == "\t" else ""
         return JoinGameMessage(*data)
+
+class NewGameMessage(Message):
+    id = 1016
+
+    def __init__(self, gameName):
+        self.gameName = gameName
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.gameName)
+
+    @staticmethod
+    def parse(text):
+        return NewGameMessage(text)
+
+class JoinGameAuthMessage(Message):
+    id = 1021
+
+    def __init__(self, gameName):
+        self.gameName = gameName
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.gameName)
+
+    @staticmethod
+    def parse(text):
+        return JoinGameAuthMessage(text)
+
+class StatusMessageMessage(Message):
+    id = 1069
+
+    def __init__(self, status):
+        self.status = status
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.status)
+
+    @staticmethod
+    def parse(text):
+        return StatusMessageMessage(text)
+
+class SetSeatLockMessage(Message):
+    id = 1068
+
+    def __init__(self, gameName, seatNumber, isLocked):
+        self.gameName   = gameName
+        self.seatNumber = seatNumber
+        self.isLocked   = isLocked
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id,
+                    self.game, self.seatNumber, self.isLocked)
+
+    @staticmethod
+    def parse(text):
+        gameName, seatNumber, isLocked = text.split(",")
+        return SetSeatLockMessage(gameName, int(seatNumber), bool(isLocked))
+
+
+class SitDownMessage(Message):
+    id = 1012
+
+    def __init__(self, game, nickname, playernum, isrobot):
+        self.game = game
+        self.nickname = nickname
+        self.playernum = playernum
+        self.isrobot = isrobot
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4}".format(self.id, self.game, self.nickname
+                                            , self.playernum, str(self.isrobot).lower())
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        gn = data[0]  # game name
+        nn = data[1]  # nick name
+        pn = data[2]  # seat number
+        rf = False if data[3] == "false" else True  # is robot
+        return SitDownMessage(gn, nn, pn, rf)
+
+class ChangeFaceMessage(Message):
+    id = 1058
+
+    def __init__(self, gameName, playerNum, faceId):
+        self.gameName = gameName
+        self.playerNum = playerNum
+        self.faceId = faceId
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id, self.gameName, self.playerNum, self.faceId)
+
+    @staticmethod
+    def parse(text):
+        g, pn, fi = text.split(",")
+        return ChangeFaceMessage(g, pn, fi)
+
+class StartGameMessage(Message):
+    id = 1018
+
+    def __init__(self, game):
+        self.game = game
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.game)
+
+    @staticmethod
+    def parse(text):
+        return StartGameMessage(text)

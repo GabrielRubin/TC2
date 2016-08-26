@@ -1,21 +1,22 @@
 import socket
 import logging
 from JSettlersMessages import *
+from CatanPlayer import *
 
 class Client:
 
-    def __init__(self):
+    def __init__(self, gameName, seatNumber, player):
 
         self.socket = None
         self.game   = None
 
-        self.isConnected = False
+        self.joinedAGame = False
         self.isSeated    = False
         self.gameStarted = False
 
-        self.gameName    = ""
-        self.seatNumber  = 0
-        self.player      = None
+        self.gameName    = gameName
+        self.seatNumber  = seatNumber
+        self.player      = player
 
         self.messagetbl = {}
         for g in globals():
@@ -59,11 +60,24 @@ class Client:
 
         return highByte + lowByte + raw_msg
 
-    def SendMsg(self, msg):
+    def ParseMessage(self, message):
+        """ Create a message from recieved data """
+        id, txt = message[:4], message[5:]
 
-        logging.debug("Sending: {0}".format(msg.to_cmd()))
+        if not id in self.messagetbl:
+            logging.critical("Can not parse '{0}'".format(message))
+            return
 
-        self.socket.send(self.CreateMessage(msg.to_cmd()))
+        messageClass, messageName = self.messagetbl[id]
+        inst = messageClass.parse(txt)
+
+        return (messageName, inst)
+
+    def SendMessage(self, message):
+
+        logging.debug("Sending: {0}".format(message.to_cmd()))
+
+        self.socket.send(self.CreateMessage(message.to_cmd()))
 
     def Update(self):
 
@@ -102,32 +116,55 @@ class Client:
             (messageName, message) = parsed
             self.TreatMessage(messageName, message)
 
-    def ParseMessage(self, message):
-        """ Create a message from recieved data """
-        id, txt = message[:4], message[5:]
-
-        if not id in self.messagetbl:
-            logging.critical("Can not parse '{0}'".format(message))
-            return
-
-        messageClass, messageName = self.messagetbl[id]
-        inst = messageClass.parse(txt)
-
-        return (messageName, inst)
-
     def TreatMessage(self, name, instance):
 
-        if name   == "ChannelsMessage":
+        if   name == "ChannelsMessage":
+
             logging.info("There are {0} channels available: {1}".format(len(instance.channels), instance.channels))
 
         elif name == "GamesMessage":
+
             logging.info("There are {0} games available: {1}".format(len(instance.games), instance.games))
 
-    def SendMessage(self):
-        pass
+            if not self.joinedAGame:
+                logging.info("Starting a new game...")
+                message = JoinGameMessage(self.player.name, "", socket.gethostname(), self.gameName)
+                self.SendMessage(message)
+
+        elif name == "NewGameMessage":
+
+            logging.info("Crated game: '{0}'".format(instance.gameName))
+
+        elif name == "JoinGameAuthMessage":
+
+            logging.info("Entered game: '{0}'".format(instance.gameName))
+
+            self.joinedAGame = True
+
+            if not self.isSeated:
+                logging.info("Sitting on seat number {0}".format(self.seatNumber))
+                message = SitDownMessage(self.gameName, self.player.name, self.seatNumber, True)
+                self.SendMessage(message)
+
+        elif name == "ChangeFaceMessage":
+
+            self.isSeated = True
+
+            if not self.gameStarted:
+                logging.info("Seated. Starting game...")
+
+                self.gameStarted = True
+
+                message1 = ChangeFaceMessage(self.gameName, self.seatNumber, 44)
+                self.SendMessage(message1)
+
+                message2 = StartGameMessage(self.gameName)
+                self.SendMessage(message2)
+
+
 
 logging.getLogger().setLevel(logging.INFO)
 #logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
 
-client = Client()
+client = Client("TestGame", 0, Player("Danda"))
 client.StartClient(("localhost", 8880))
