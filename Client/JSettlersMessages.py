@@ -71,6 +71,21 @@
     SERVERPING           = 9999
 '''
 
+messageNumberToGameNumber = {
+
+   -1 :  0,
+    0 :  2,
+    1 :  3,
+    2 :  4,
+    3 :  5,
+    4 :  6,
+    5 :  8,
+    6 :  9,
+    7 : 10,
+    8 : 11,
+    9 : 12
+}
+
 class Message:
     def __init__(self):
         pass
@@ -241,3 +256,25 @@ class StartGameMessage(Message):
     @staticmethod
     def parse(text):
         return StartGameMessage(text)
+
+class BoardLayoutMessage(Message):
+    id = 1014
+    def __init__(self, gameName, hexes, numbers, robberpos):
+        self.gameName  = gameName
+        self.hexes     = hexes
+        self.numbers   = numbers
+        self.robberpos = robberpos
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4}".format(self.id, self.game
+                                            ,",".join(map(str, self.hexes))
+                                            ,",".join(map(str, self.numbers))
+                                            ,self.robberpos)
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        gameName = data[0]
+        hexes = map(int, data[1:38])
+        numbers = map(int, data[38:38+37])
+        robberpos = int(data[-1])
+        return BoardLayoutMessage(gameName, hexes, numbers, robberpos)

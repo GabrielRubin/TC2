@@ -2,6 +2,7 @@ import socket
 import logging
 from JSettlersMessages import *
 from CatanPlayer import *
+from CatanGame import *
 
 class Client:
 
@@ -141,6 +142,8 @@ class Client:
 
             self.joinedAGame = True
 
+            self.game = Game(GameState())
+
             if not self.isSeated:
                 logging.info("Sitting on seat number {0}".format(self.seatNumber))
                 message = SitDownMessage(self.gameName, self.player.name, self.seatNumber, True)
@@ -160,6 +163,11 @@ class Client:
 
                 message2 = StartGameMessage(self.gameName)
                 self.SendMessage(message2)
+
+        elif name == "BoardLayoutMessage":
+
+
+            pass
 
 
 
