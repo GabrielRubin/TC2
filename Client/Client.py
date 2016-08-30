@@ -25,6 +25,7 @@ class Client:
             if g.endswith("Message") and hasattr(cg, "id"):
                 self.messagetbl[str(cg.id)] = (cg, g)
 
+    # Connection to jsettlers game server
     def ConnectToServer(self, serverAddress):
 
         try:
@@ -172,6 +173,18 @@ class Client:
             logging.debug("Board Numbers = {0}".format(map(g_MessageNumberToGameNumber, instance.numbers)))
 
             self.game.CreateBoard(instance)
+
+        elif name == "LongestRoadMessage":
+
+            logging.info("Received longest road player: {0}".format(instance.playernum))
+
+            self.game.gameState.longestRoadPlayer = int(instance.playernum)
+
+        elif name == "LargestArmyMessage":
+
+            logging.info("Received largest army player: {0}".format(instance.playernum))
+
+            self.game.gameState.largestArmyPlayer = int(instance.playernum)
 
 logging.getLogger().setLevel(logging.INFO)
 #logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG

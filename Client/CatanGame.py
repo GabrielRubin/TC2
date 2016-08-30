@@ -93,8 +93,8 @@ class GameState:
         self.players     = []
         self.robberPos   = 0
 
-        self.longestRoad = 0
-        self.largestArmy = 0
+        self.longestRoadPlayer = 0
+        self.largestArmPlayer  = 0
 
     def GetNextState(self, action):
         pass

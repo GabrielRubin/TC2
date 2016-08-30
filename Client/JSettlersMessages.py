@@ -72,76 +72,81 @@
 '''
 
 g_harbour_to_resource = {
-"3For1": 6,
-"ClayHarbor": 1,
-"OreHarbor": 2,
-"SheepHarbor": 3,
-"GrainHarbor": 4,
-"LumberHarbor": 5
+
+    "3For1"       : 6,
+    "ClayHarbor"  : 1,
+    "OreHarbor"   : 2,
+    "SheepHarbor" : 3,
+    "GrainHarbor" : 4,
+    "LumberHarbor": 5
 }
 
 g_board_indicators = {
-0: 'Desert',
-1: 'Clay',
-2: 'Ore',
-3: 'Sheep',
-4: 'Grain',
-5: 'Lumber',
-6: 'EmptySea',
 
-7: '3For1',
-8: '3For1',
-9: '3For1',
-10: '3For1',
-11: '3For1',
-12: '3For1',
+    0: 'Desert',
+    1: 'Clay',
+    2: 'Ore',
+    3: 'Sheep',
+    4: 'Grain',
+    5: 'Lumber',
+    6: 'EmptySea',
 
-17: 'ClayHarbor',
-18: 'OreHarbor',
-19: 'SheepHarbor',
-20: 'GrainHarbor',
-21: 'LumberHarbor',
+    7: '3For1',
+    8: '3For1',
+    9: '3For1',
+    10: '3For1',
+    11: '3For1',
+    12: '3For1',
 
-33: 'ClayHarbor',
-34: 'OreHarbor',
-35: 'SheepHarbor',
-36: 'GrainHarbor',
-37: 'LumberHarbor',
+    17: 'ClayHarbor',
+    18: 'OreHarbor',
+    19: 'SheepHarbor',
+    20: 'GrainHarbor',
+    21: 'LumberHarbor',
 
-49: 'ClayHarbor',
-50: 'OreHarbor',
-51: 'SheepHarbor',
-52: 'GrainHarbor',
-53: 'LumberHarbor',
+    33: 'ClayHarbor',
+    34: 'OreHarbor',
+    35: 'SheepHarbor',
+    36: 'GrainHarbor',
+    37: 'LumberHarbor',
 
-65: 'ClayHarbor',
-66: 'OreHarbor',
-67: 'SheepHarbor',
-68: 'GrainHarbor',
-69: 'LumberHarbor',
+    49: 'ClayHarbor',
+    50: 'OreHarbor',
+    51: 'SheepHarbor',
+    52: 'GrainHarbor',
+    53: 'LumberHarbor',
 
-81: 'ClayHarbor',
-82: 'OreHarbor',
-83: 'SheepHarbor',
-84: 'GrainHarbor',
-85: 'LumberHarbor',
+    65: 'ClayHarbor',
+    66: 'OreHarbor',
+    67: 'SheepHarbor',
+    68: 'GrainHarbor',
+    69: 'LumberHarbor',
 
-97: 'ClayHarbor',
-98: 'OreHarbor',
-99: 'SheepHarbor',
-100: 'GrainHarbor',
-101: 'LumberHarbor'}
+    81: 'ClayHarbor',
+    82: 'OreHarbor',
+    83: 'SheepHarbor',
+    84: 'GrainHarbor',
+    85: 'LumberHarbor',
+
+    97: 'ClayHarbor',
+    98: 'OreHarbor',
+    99: 'SheepHarbor',
+    100: 'GrainHarbor',
+    101: 'LumberHarbor'
+}
 
 g_harbors = {
-'3for1'       : [ 7,  8,  9, 10, 11, 12 ],
-'ClayHarbor'  : [17, 33, 49, 65, 81, 97 ],
-'OreHarbor'   : [18, 34, 50, 66, 82, 98 ],
-'SheepHarbor' : [19, 35, 51, 67, 83, 99 ],
-'GrainHarbor' : [20, 36, 52, 68, 84, 100],
-'LumberHarbor': [21, 37, 53, 69, 85 ,101]
+
+    '3for1'       : [ 7,  8,  9, 10, 11, 12 ],
+    'ClayHarbor'  : [17, 33, 49, 65, 81, 97 ],
+    'OreHarbor'   : [18, 34, 50, 66, 82, 98 ],
+    'SheepHarbor' : [19, 35, 51, 67, 83, 99 ],
+    'GrainHarbor' : [20, 36, 52, 68, 84, 100],
+    'LumberHarbor': [21, 37, 53, 69, 85 ,101]
 }
 
 g_messageNumberToGameNumber = {
+
    -1 :  0,
     0 :  2,
     1 :  3,
@@ -190,95 +195,6 @@ class ChannelsMessage(Message):
         channels = filter(None, text.split(","))
         return ChannelsMessage(channels)
 
-class GamesMessage(Message):
-    id = 1019
-    def __init__(self, games):
-        self.games = games
-
-    def to_cmd(self):
-        return "{0}|{1}".format(self.id, ",".join(self.games))
-
-    @staticmethod
-    def parse(text):
-        games = filter(None, text.split(","))
-        return GamesMessage(games)
-
-class JoinGameMessage(Message):
-    id = 1013
-    def __init__(self, nickname, password, host, game):
-        self.nickname = nickname
-        self.password = password
-        self.host = host
-        self.game = game
-
-    def to_cmd(self):
-        password = "\t" if self.password == "" else self.password
-        return "{0}|{1},{2},{3},{4}".format(self.id, self.nickname, password
-                                        ,self.host, self.game)
-
-    @staticmethod
-    def parse(text):
-        data = text.split(",")
-        data[1] = "" if data[1] == "\t" else ""
-        return JoinGameMessage(*data)
-
-class NewGameMessage(Message):
-    id = 1016
-
-    def __init__(self, gameName):
-        self.gameName = gameName
-
-    def to_cmd(self):
-        return "{0}|{1}".format(self.id, self.gameName)
-
-    @staticmethod
-    def parse(text):
-        return NewGameMessage(text)
-
-class JoinGameAuthMessage(Message):
-    id = 1021
-
-    def __init__(self, gameName):
-        self.gameName = gameName
-
-    def to_cmd(self):
-        return "{0}|{1}".format(self.id, self.gameName)
-
-    @staticmethod
-    def parse(text):
-        return JoinGameAuthMessage(text)
-
-class StatusMessageMessage(Message):
-    id = 1069
-
-    def __init__(self, status):
-        self.status = status
-
-    def to_cmd(self):
-        return "{0}|{1}".format(self.id, self.status)
-
-    @staticmethod
-    def parse(text):
-        return StatusMessageMessage(text)
-
-class SetSeatLockMessage(Message):
-    id = 1068
-
-    def __init__(self, gameName, seatNumber, isLocked):
-        self.gameName   = gameName
-        self.seatNumber = seatNumber
-        self.isLocked   = isLocked
-
-    def to_cmd(self):
-        return "{0}|{1},{2},{3}".format(self.id,
-                    self.game, self.seatNumber, self.isLocked)
-
-    @staticmethod
-    def parse(text):
-        gameName, seatNumber, isLocked = text.split(",")
-        return SetSeatLockMessage(gameName, int(seatNumber), bool(isLocked))
-
-
 class SitDownMessage(Message):
     id = 1012
 
@@ -301,6 +217,117 @@ class SitDownMessage(Message):
         rf = False if data[3] == "false" else True  # is robot
         return SitDownMessage(gn, nn, pn, rf)
 
+class JoinGameMessage(Message):
+    id = 1013
+    def __init__(self, nickname, password, host, game):
+        self.nickname = nickname
+        self.password = password
+        self.host = host
+        self.game = game
+
+    def to_cmd(self):
+        password = "\t" if self.password == "" else self.password
+        return "{0}|{1},{2},{3},{4}".format(self.id, self.nickname, password
+                                        ,self.host, self.game)
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        data[1] = "" if data[1] == "\t" else ""
+        return JoinGameMessage(*data)
+
+class BoardLayoutMessage(Message):
+    id = 1014
+
+    def __init__(self, gameName, hexes, numbers, robberPos):
+        self.gameName = gameName
+        self.hexes = hexes
+        self.numbers = numbers
+        self.robberpos = robberPos
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4}".format(self.id, self.game
+                                            , ",".join(map(str, self.hexes))
+                                            , ",".join(map(str, self.numbers))
+                                            , self.robberpos)
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        gameName = data[0]
+        hexes = map(int, data[1:38])
+        numbers = map(int, data[38:38 + 37])
+        robberpos = int(data[-1])
+        return BoardLayoutMessage(gameName, hexes, numbers, robberpos)
+
+class NewGameMessage(Message):
+    id = 1016
+
+    def __init__(self, gameName):
+        self.gameName = gameName
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.gameName)
+
+    @staticmethod
+    def parse(text):
+        return NewGameMessage(text)
+
+class StartGameMessage(Message):
+    id = 1018
+
+    def __init__(self, game):
+        self.game = game
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.game)
+
+    @staticmethod
+    def parse(text):
+        return StartGameMessage(text)
+
+class GamesMessage(Message):
+    id = 1019
+
+    def __init__(self, games):
+        self.games = games
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, ",".join(self.games))
+
+    @staticmethod
+    def parse(text):
+        games = filter(None, text.split(","))
+        return GamesMessage(games)
+
+class JoinGameAuthMessage(Message):
+    id = 1021
+
+    def __init__(self, gameName):
+        self.gameName = gameName
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.gameName)
+
+    @staticmethod
+    def parse(text):
+        return JoinGameAuthMessage(text)
+
+class SetTurnMessage(Message):
+    id = 1055
+
+    def __init__(self, gameName, seatnum):
+        self.gameName = gameName
+        self.seatnum = seatnum
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.seatnum)
+
+    @staticmethod
+    def parse(text):
+        gameName, seat = text.split(",")
+        return SetTurnMessage(gameName, int(seat))
+
 class ChangeFaceMessage(Message):
     id = 1058
 
@@ -317,37 +344,62 @@ class ChangeFaceMessage(Message):
         g, pn, fi = text.split(",")
         return ChangeFaceMessage(g, pn, fi)
 
-class StartGameMessage(Message):
-    id = 1018
+class LongestRoadMessage(Message):
+    id = 1066
 
-    def __init__(self, game):
-        self.game = game
+    def __init__(self, gameName, playernum):
+        self.gameName = gameName
+        self.playernum = playernum
 
     def to_cmd(self):
-        return "{0}|{1}".format(self.id, self.game)
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.playernum)
 
     @staticmethod
     def parse(text):
-        return StartGameMessage(text)
+        gameName, pn = text.split(",")
+        return LongestRoadMessage(gameName, int(pn))
 
-class BoardLayoutMessage(Message):
-    id = 1014
-    def __init__(self, gameName, hexes, numbers, robberPos):
-        self.gameName  = gameName
-        self.hexes     = hexes
-        self.numbers   = numbers
-        self.robberpos = robberPos
+class LargestArmyMessage(Message):
+    id = 1067
+
+    def __init__(self, gameName, playernum):
+        self.gameName = gameName
+        self.playernum = playernum
 
     def to_cmd(self):
-        return "{0}|{1},{2},{3},{4}".format(self.id, self.game
-                                            ,",".join(map(str, self.hexes))
-                                            ,",".join(map(str, self.numbers))
-                                            ,self.robberpos)
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.playernum)
+
     @staticmethod
     def parse(text):
-        data = text.split(",")
-        gameName = data[0]
-        hexes = map(int, data[1:38])
-        numbers = map(int, data[38:38+37])
-        robberpos = int(data[-1])
-        return BoardLayoutMessage(gameName, hexes, numbers, robberpos)
+        gameName, pn = text.split(",")
+        return LargestArmyMessage(gameName, int(pn))
+
+class SetSeatLockMessage(Message):
+    id = 1068
+
+    def __init__(self, gameName, seatNumber, isLocked):
+        self.gameName   = gameName
+        self.seatNumber = seatNumber
+        self.isLocked   = isLocked
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id,
+                    self.game, self.seatNumber, self.isLocked)
+
+    @staticmethod
+    def parse(text):
+        gameName, seatNumber, isLocked = text.split(",")
+        return SetSeatLockMessage(gameName, int(seatNumber), bool(isLocked))
+
+class StatusMessageMessage(Message):
+    id = 1069
+
+    def __init__(self, status):
+        self.status = status
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.status)
+
+    @staticmethod
+    def parse(text):
+        return StatusMessageMessage(text)
