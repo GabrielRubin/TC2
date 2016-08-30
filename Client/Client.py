@@ -8,8 +8,8 @@ class Client:
 
     def __init__(self, gameName, seatNumber, player):
 
-        self.socket = None
-        self.game   = None
+        self.socket      = None
+        self.game        = None
 
         self.joinedAGame = False
         self.isSeated    = False
@@ -166,10 +166,12 @@ class Client:
 
         elif name == "BoardLayoutMessage":
 
+            logging.info("Received board layout")
 
-            pass
+            logging.debug("Board Hexes   = {0}".format(instance.hexes))
+            logging.debug("Board Numbers = {0}".format(map(g_MessageNumberToGameNumber, instance.numbers)))
 
-
+            self.game.CreateBoard(instance)
 
 logging.getLogger().setLevel(logging.INFO)
 #logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG

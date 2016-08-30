@@ -71,6 +71,15 @@ g_boardEdges = \
 
 g_constructionTypes = [ ('Settlement', 1), ('City', 2) ]
 
+g_portType = [
+'3for1'
+'ClayHarbor'
+'OreHarbor'
+'SheepHarbor'
+'GrainHarbor'
+'LumberHarbor'
+]
+
 g_resources = [
     ('DESERT'   , None    ),
     ('HILLS'    , 'BRICK' ),
@@ -132,6 +141,7 @@ class BoardNode:
 
         self.index        = index
         self.construction = None
+        self.portType     = None
 
     def GetAdjacentHexes(self):
 

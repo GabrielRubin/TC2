@@ -71,8 +71,77 @@
     SERVERPING           = 9999
 '''
 
-messageNumberToGameNumber = {
+g_harbour_to_resource = {
+"3For1": 6,
+"ClayHarbor": 1,
+"OreHarbor": 2,
+"SheepHarbor": 3,
+"GrainHarbor": 4,
+"LumberHarbor": 5
+}
 
+g_board_indicators = {
+0: 'Desert',
+1: 'Clay',
+2: 'Ore',
+3: 'Sheep',
+4: 'Grain',
+5: 'Lumber',
+6: 'EmptySea',
+
+7: '3For1',
+8: '3For1',
+9: '3For1',
+10: '3For1',
+11: '3For1',
+12: '3For1',
+
+17: 'ClayHarbor',
+18: 'OreHarbor',
+19: 'SheepHarbor',
+20: 'GrainHarbor',
+21: 'LumberHarbor',
+
+33: 'ClayHarbor',
+34: 'OreHarbor',
+35: 'SheepHarbor',
+36: 'GrainHarbor',
+37: 'LumberHarbor',
+
+49: 'ClayHarbor',
+50: 'OreHarbor',
+51: 'SheepHarbor',
+52: 'GrainHarbor',
+53: 'LumberHarbor',
+
+65: 'ClayHarbor',
+66: 'OreHarbor',
+67: 'SheepHarbor',
+68: 'GrainHarbor',
+69: 'LumberHarbor',
+
+81: 'ClayHarbor',
+82: 'OreHarbor',
+83: 'SheepHarbor',
+84: 'GrainHarbor',
+85: 'LumberHarbor',
+
+97: 'ClayHarbor',
+98: 'OreHarbor',
+99: 'SheepHarbor',
+100: 'GrainHarbor',
+101: 'LumberHarbor'}
+
+g_harbors = {
+'3for1'       : [ 7,  8,  9, 10, 11, 12 ],
+'ClayHarbor'  : [17, 33, 49, 65, 81, 97 ],
+'OreHarbor'   : [18, 34, 50, 66, 82, 98 ],
+'SheepHarbor' : [19, 35, 51, 67, 83, 99 ],
+'GrainHarbor' : [20, 36, 52, 68, 84, 100],
+'LumberHarbor': [21, 37, 53, 69, 85 ,101]
+}
+
+g_messageNumberToGameNumber = {
    -1 :  0,
     0 :  2,
     1 :  3,
@@ -85,6 +154,10 @@ messageNumberToGameNumber = {
     8 : 11,
     9 : 12
 }
+
+def g_MessageNumberToGameNumber(messageNumber):
+
+    return g_messageNumberToGameNumber[messageNumber]
 
 class Message:
     def __init__(self):
@@ -259,11 +332,11 @@ class StartGameMessage(Message):
 
 class BoardLayoutMessage(Message):
     id = 1014
-    def __init__(self, gameName, hexes, numbers, robberpos):
+    def __init__(self, gameName, hexes, numbers, robberPos):
         self.gameName  = gameName
         self.hexes     = hexes
         self.numbers   = numbers
-        self.robberpos = robberpos
+        self.robberpos = robberPos
 
     def to_cmd(self):
         return "{0}|{1},{2},{3},{4}".format(self.id, self.game
