@@ -88,6 +88,7 @@ class GameState:
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
+        self.currState   = -1
         self.currPlayer  = 0
         self.currTurn    = 0
         self.players     = []

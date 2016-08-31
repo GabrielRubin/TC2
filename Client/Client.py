@@ -186,6 +186,17 @@ class Client:
 
             self.game.gameState.largestArmyPlayer = int(instance.playernum)
 
+        elif name == "GameStateMessage":
+
+            logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.state_name))
+
+            self.game.gameState.currState = int(instance.state_name)
+
+            if instance.state_name == "OVER":
+                # DO SOMETHING ???
+                pass
+
+
 logging.getLogger().setLevel(logging.INFO)
 #logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
 
