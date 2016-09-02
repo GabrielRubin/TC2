@@ -170,7 +170,7 @@ class Client:
             logging.info("Received board layout")
 
             logging.debug("Board Hexes   = {0}".format(instance.hexes))
-            logging.debug("Board Numbers = {0}".format(map(g_MessageNumberToGameNumber, instance.numbers)))
+            logging.debug("Board Numbers = {0}".format(instance.numbers))
 
             self.game.CreateBoard(instance)
 
@@ -188,17 +188,19 @@ class Client:
 
         elif name == "GameStateMessage":
 
-            logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.state_name))
+            logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
 
-            self.game.gameState.currState = int(instance.state_name)
+            self.game.gameState.currState = instance.stateName
 
-            if instance.state_name == "OVER":
-                # DO SOMETHING ???
+            if instance.stateName == "OVER":
+
+
+
                 pass
 
 
 logging.getLogger().setLevel(logging.INFO)
-#logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
+logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
 
 client = Client("TestGame", 0, Player("Danda"))
 client.StartClient(("localhost", 8880))

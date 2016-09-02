@@ -10,46 +10,17 @@ class Game:
         self.gameState = gameState
 
     def CreateBoard(self, message):
+        # Hexes
+        for i in range(0, len(message.hexes)):
 
-        # HEXES:
-        self.gameState.boardHexes[0x37].resource = message.hexes[5 ]
-        self.gameState.boardHexes[0x37].number   = g_messageNumberToGameNumber[message.numbers[5 ]]
-        self.gameState.boardHexes[0x59].resource = message.hexes[6 ]
-        self.gameState.boardHexes[0x59].number   = g_messageNumberToGameNumber[message.numbers[6 ]]
-        self.gameState.boardHexes[0x7b].resource = message.hexes[7 ]
-        self.gameState.boardHexes[0x7b].number   = g_messageNumberToGameNumber[message.numbers[7 ]]
-        self.gameState.boardHexes[0x35].resource = message.hexes[10]
-        self.gameState.boardHexes[0x35].number   = g_messageNumberToGameNumber[message.numbers[10]]
-        self.gameState.boardHexes[0x57].resource = message.hexes[11]
-        self.gameState.boardHexes[0x57].number   = g_messageNumberToGameNumber[message.numbers[11]]
-        self.gameState.boardHexes[0x79].resource = message.hexes[12]
-        self.gameState.boardHexes[0x79].number   = g_messageNumberToGameNumber[message.numbers[12]]
-        self.gameState.boardHexes[0x9b].resource = message.hexes[13]
-        self.gameState.boardHexes[0x9b].number   = g_messageNumberToGameNumber[message.numbers[13]]
-        self.gameState.boardHexes[0x33].resource = message.hexes[16]
-        self.gameState.boardHexes[0x33].number   = g_messageNumberToGameNumber[message.numbers[16]]
-        self.gameState.boardHexes[0x55].resource = message.hexes[17]
-        self.gameState.boardHexes[0x55].number   = g_messageNumberToGameNumber[message.numbers[17]]
-        self.gameState.boardHexes[0x77].resource = message.hexes[18]
-        self.gameState.boardHexes[0x77].number   = g_messageNumberToGameNumber[message.numbers[18]]
-        self.gameState.boardHexes[0x99].resource = message.hexes[19]
-        self.gameState.boardHexes[0x99].number   = g_messageNumberToGameNumber[message.numbers[19]]
-        self.gameState.boardHexes[0xbb].resource = message.hexes[20]
-        self.gameState.boardHexes[0xbb].number   = g_messageNumberToGameNumber[message.numbers[20]]
-        self.gameState.boardHexes[0x53].resource = message.hexes[23]
-        self.gameState.boardHexes[0x53].number   = g_messageNumberToGameNumber[message.numbers[23]]
-        self.gameState.boardHexes[0x75].resource = message.hexes[24]
-        self.gameState.boardHexes[0x75].number   = g_messageNumberToGameNumber[message.numbers[24]]
-        self.gameState.boardHexes[0x97].resource = message.hexes[25]
-        self.gameState.boardHexes[0x97].number   = g_messageNumberToGameNumber[message.numbers[25]]
-        self.gameState.boardHexes[0xb9].resource = message.hexes[26]
-        self.gameState.boardHexes[0xb9].number   = g_messageNumberToGameNumber[message.numbers[26]]
-        self.gameState.boardHexes[0x73].resource = message.hexes[29]
-        self.gameState.boardHexes[0x73].number   = g_messageNumberToGameNumber[message.numbers[29]]
-        self.gameState.boardHexes[0x95].resource = message.hexes[30]
-        self.gameState.boardHexes[0x95].number   = g_messageNumberToGameNumber[message.numbers[30]]
-        self.gameState.boardHexes[0xb7].resource = message.hexes[31]
-        self.gameState.boardHexes[0xb7].number   = g_messageNumberToGameNumber[message.numbers[31]]
+            self.gameState.boardHexes[g_boardHexes[i]].SetTerrain(message.hexes[i])
+
+            self.gameState.boardHexes[g_boardHexes[i]].number = g_messageNumberToGameNumber[message.numbers[i]]
+
+        # DEBUG FOR HEXES:
+        #indexedHex = [self.gameState.boardHexes[g_boardHexes[i]] for i in range(len(g_boardHexes))]
+        #logging.debug("Board Hexes   = {0}".format([h.terrain for h in indexedHex]))
+        #logging.debug("Board Numbers = {0}".format([h.number  for h in indexedHex]))
 
         # HARBORS (nodes):
         harbour_coords = [(0x27, 0x38), (0x5a, 0x6b), (0x9c, 0xad),
@@ -72,13 +43,131 @@ class Game:
         #for nodeIndex, node in self.gameState.boardNodes.items():
         #    logging.debug("Node id = {0}, Port Type = {1}".format(hex(nodeIndex), node.portType))
 
+    def GetPossibleActions(self, player, gameState = None, ignoreTurn = False):
+
+        if gameState is None:
+            gameState = self.gameState
+
+        if not ignoreTurn and self.gameState.currPlayer.name != player.name:
+            return None
+
+        if   gameState.currState == 'START1A':
+
+            pass
+
+        elif gameState.currState == 'START1B':
+
+            pass
+
+        elif gameState.currState == 'START2A':
+
+            pass
+
+        elif gameState.currState == 'START2B':
+
+            pass
+
+        elif gameState.currState == 'PLAY':
+
+            pass
+
+        elif gameState.currState == 'PLAY1':
+
+            pass
+
+        elif gameState.currState == 'PLACING_ROBBER':
+
+            pass
+
+        elif gameState.currState == 'WAITING_FOR_DISCARDS':
+
+            pass
+
+        elif gameState.currState == 'WAITING_FOR_CHOICE':
+
+            pass
+
+        elif gameState.currState == 'WAITING_FOR_DISCOVERY':
+
+            pass
+
+        elif gameState.currState == 'WAITING_FOR_MONOPOLY':
+
+            pass
+
+        return None
+
+    def CanBuildRoad(self, gameState, player, edge):
+
+        # check for near settlements
+
+        for nodeIndex in edge.GetAdjacentNodes():
+
+            if gameState.boardNodes[nodeIndex].construction.owner == player.name:
+                return True
+
+        # if there are none, check for near roads
+
+        for edgeIndex in edge.GetAdjacentEdges():
+
+            if gameState.boardEdges[edgeIndex].owner == player.name:
+                return True
+
+        return False
+
+    def CanBuildSettlement(self, gameState, player, node):
+
+        #step 1: check if node respects piece connectivity
+
+        foundConnection = False
+
+        for edgeIndex in node.GetAdjacentEdges():
+
+            if gameState.boardEdges[edgeIndex].owner == player.name:
+                foundConnection = True
+                break
+
+        if not foundConnection:
+            return False
+
+        #step 2: check if node respects the distance rule
+
+        for nodeIndex in node.GetAdjacentNodes():
+
+            if gameState.boardNodes[nodeIndex].construction is not None:
+                return False
+
+        return True
+
+    def GetPossibleRoads(self, gameState, player):
+
+        possibleRoads = [edge for edge in
+                         gameState.GetConstructableEdges() if
+                         self.CanBuildRoad(gameState, player, edge)]
+
+        return [BuildRoadAction(player, edge) for edge in possibleRoads]
+
+    def GetPossibleSettlements(self, gameState, player):
+
+        possibleSettlements = [node for node in
+                               gameState.GetConstructableNodes() if
+                               self.CanBuildSettlement(node)]
+
+        return [BuildSettlementAction(player, node) for node in possibleSettlements]
+
+    def GetPossibleCities(self, gameState, player):
+
+        possibleCities = []
+
+        for construction in player.constructions:
+            if construction.type == 'Settlement':
+                possibleCities.append(BuildCityAction(construction))
+
+        return possibleCities
 
     def GetDiceRoll(self):
 
         return random.randint(1, 6) + random.randint(1, 6)
-
-    def GetPossibleActions(self, player):
-        pass
 
 class GameState:
 
@@ -88,7 +177,7 @@ class GameState:
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
-        self.currState   = -1
+        self.currState   = None
         self.currPlayer  = 0
         self.currTurn    = 0
         self.players     = []
@@ -97,10 +186,155 @@ class GameState:
         self.longestRoadPlayer = 0
         self.largestArmPlayer  = 0
 
+    def GetConstructableNodes(self):
+
+        oceanNodes = \
+            [0x18, 0x3a, 0x5c, 0x7e, 0x8f,
+             0x07, 0x29, 0x4b, 0x6d, 0x16,
+             0x9e, 0x05, 0xaf, 0x14, 0xbe,
+             0x03, 0xcf, 0x12, 0xde, 0x01,
+             0xef, 0x10, 0xfe, 0x21, 0xed,
+             0x30, 0xfc, 0x41, 0xeb, 0x50,
+             0xfa, 0x61, 0xe9, 0x70, 0x92,
+             0xb4, 0xd6, 0xf8, 0x81, 0xa3,
+             0xc5, 0xe7]
+
+        return [self.boardNodes[i] for i in list(set(g_boardNodes) - set(oceanNodes))]
+
+    def GetConstructableEdges(self):
+
+        oceanEdges = \
+            [0x07, 0x18, 0x29, 0x3a, 0x4b, 0x5c, 0x6d, 0x7e,
+             0x06, 0x28, 0x4a, 0x6c, 0x8e, 0x05, 0x16, 0x8d,
+             0x9e, 0x04, 0xae, 0x03, 0x14, 0xad, 0xbe, 0x02,
+             0xce, 0x01, 0x12, 0xcd, 0xde, 0x00, 0xee, 0x10,
+             0x21, 0xdc, 0xed, 0x20, 0xec, 0x30, 0x41, 0xda,
+             0xeb, 0x40, 0xea, 0x50, 0x61, 0xd8, 0xe9, 0x60,
+             0x82, 0xa4, 0xc6, 0xe8, 0x70, 0x81, 0x92, 0xa3,
+             0xb4, 0xc5, 0xd6, 0xe7]
+
+        return [self.boardEdges[i] for i in list(set(g_boardEdges) - set(oceanEdges))]
+
     def GetNextState(self, action):
         pass
+
+g_ActionType = \
+[
+    'BuildRoad',
+    'BuildSettlement',
+    'BuildCity',
+    'BuyDevelopmentCard',
+    'UseKnightsCard',
+    'UseMonopolyCard',
+    'UseYearOfPlentyCard',
+    'UseFreeRoadsCard',
+    'PlaceRobber'
+]
 
 class Action:
 
     def __init__(self):
         pass
+
+class BuildRoadAction(Action):
+
+    type = 'BuildRoad'
+    cost = [ 1,  # brick
+             0,  # ore
+             0,  # wool
+             0,  # grain
+             1 ] # lumber
+
+    def __init__(self, playerName, targetEdge):
+
+        self.playerName = playerName
+        self.edge       = targetEdge
+
+class BuildSettlementAction(Action):
+
+    type = 'BuildSettlement'
+    cost = [ 1,  # brick
+             0,  # ore
+             1,  # wool
+             1,  # grain
+             1 ] # lumber
+
+    def __init__(self, playerName, targetNode):
+
+        self.playerName = playerName
+        self.node       = targetNode
+
+class BuildCityAction(Action):
+
+    type = 'BuildCity'
+    cost = [ 0,  # brick
+             3,  # ore
+             0,  # wool
+             2,  # grain
+             0 ] # lumber
+
+    def __init__(self, playerName, targetSettlement):
+
+        self.playerName  = playerName
+        self.settlement  = targetSettlement
+
+class BuyDevelopmentCardAction(Action):
+
+    type = 'BuyDevelopmentCard'
+    cost = [ 0,  # brick
+             1,  # ore
+             1,  # wool
+             1,  # grain
+             0 ] # lumber
+
+    def __init__(self, playerName):
+
+        self.playerName = playerName
+
+class UseKnightsCardAction(Action):
+
+    type = 'UseKnightsCard'
+
+    def __init__(self, playerName, newRobberPos, targetPlayerIndex):
+
+        self.playerName        = playerName
+        self.robberPos         = newRobberPos
+        self.targetPlayerIndex = targetPlayerIndex
+
+class UseMonopolyCardAction(Action):
+
+    type = 'UseMonopolyCard'
+
+    def __init__(self, playerName, resource):
+
+        self.playerName  = playerName
+        self.resource    = resource
+
+class UseYearOfPlentyCardAction(Action):
+
+    type = 'UseYearOfPlentyCard'
+
+    def __init__(self, playerName, resource1, resource2):
+
+        self.playerName  = playerName
+        self.resource1   = resource1
+        self.resource2   = resource2
+
+class UseFreeRoadsCardAction(Action):
+
+    type = 'UseFreeRoadsCard'
+
+    def __init__(self, playerName, road1Edge, road2Edge):
+
+        self.playerName  = playerName
+        self.road1Edge   = road1Edge
+        self.road2Edge   = road2Edge
+
+class PlaceRobberAction(Action):
+
+    type = 'PlaceRobber'
+
+    def __init__(self, playerName, newRobberPos):
+
+        self.playerName  = playerName
+        self.robberPos   = newRobberPos

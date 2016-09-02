@@ -69,18 +69,21 @@ g_boardEdges = \
 
                            0x70,  0x81,  0x92,  0xa3,  0xb4,  0xc5,  0xd6,  0xe7]
 
-g_constructionTypes = [ ('Settlement', 1), ('City', 2) ]
-
-g_portType = [
-'3for1'
-'ClayHarbor'
-'OreHarbor'
-'SheepHarbor'
-'GrainHarbor'
-'LumberHarbor'
+g_constructionTypes = [
+    ('Settlement', 1),
+    ('City'      , 2)
 ]
 
-g_resources = [
+g_portType = [
+    '3for1'
+    'ClayHarbor'
+    'OreHarbor'
+    'SheepHarbor'
+    'GrainHarbor'
+    'LumberHarbor'
+]
+
+g_terrains = [
     ('DESERT'   , None    ),
     ('HILLS'    , 'BRICK' ),
     ('MOUNTAINS', 'ORE'   ),
@@ -88,6 +91,14 @@ g_resources = [
     ('FIELDS'   , 'GRAIN' ),
     ('FOREST'   , 'LUMBER'),
     ('SEA'      , None    )
+]
+
+g_resources = [
+    'BRICK',
+    'ORE',
+    'WOOL',
+    'GRAIN',
+    'LUMBER',
 ]
 
 g_developmentCards = [ 'VICTORY_POINT', 'KNIGHT', 'YEAR_OF_PLENTY', 'ROAD_BUILDING', 'MONOPOLY' ]
@@ -103,8 +114,15 @@ class BoardHex:
 
     def SetTerrain(self, terrainId):
 
-        self.terrain    = g_resources[terrainId][0]
-        self.production = g_resources[terrainId][1]
+        # If the id is too big, is probably a port:
+        #  so the hex is SEA (the last one [-1])
+        if terrainId >= len(g_terrains):
+            self.terrain    = g_terrains[-1][0]
+            self.production = g_terrains[-1][1]
+
+        else:
+            self.terrain    = g_terrains[terrainId][0]
+            self.production = g_terrains[terrainId][1]
 
     def GetAdjacentHexes(self):
 
@@ -281,8 +299,9 @@ class BoardEdge:
 
 class Construction:
 
-    def __init__(self, constructionType, owner):
+    def __init__(self, constructionType, owner, position):
 
         self.type             = constructionType[0]
         self.victoryPoints    = constructionType[1]
         self.owner            = owner
+        self.position         = position

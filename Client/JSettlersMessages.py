@@ -164,11 +164,11 @@ g_stateIdToName = {
 
       '0'   : 'NEW'                   # Brand new game
     , '1'   : 'READY'                 # Ready to start playing
-    , '5'   : 'START1A'               # Players place 1st stlmt
+    , '5'   : 'START1A'               # Players place 1st settlement
     , '6'   : 'START1B'               # Players place 1st road
-    , '10'  : 'START2A'               # Players place 2nd stlmt
+    , '10'  : 'START2A'               # Players place 2nd settlement
     , '11'  : 'START2B'               # Players place 2nd road
-    , '15'  : 'PLAY'                  # Play cotinues normally
+    , '15'  : 'PLAY'                  # Play continues normally
     , '20'  : 'PLAY1'                 # Done rolling
     , '30'  : 'PLACING_ROAD'
     , '31'  : 'PLACING_SETTLEMENT'
@@ -342,7 +342,7 @@ class GameStateMessage(Message):
     def __init__(self, gameName, state):
         self.gameName   = gameName
         self.state      = state
-        self.state_name = g_stateIdToName[state]
+        self.stateName  = g_stateIdToName[state]
 
     def to_cmd(self):
         return "{0}|{1},{2}".format(self.id, self.gameName, self.state)
