@@ -1,4 +1,6 @@
 from CatanBoard import *
+import random
+import logging
 
 class Player:
 
@@ -6,22 +8,27 @@ class Player:
 
         self.name                 = name
         self.seatNumber           = seatNumber
-        self.resources            = [ 0 for i in range(0, len(g_resources) - 2)    ]
+        self.resources            = [ 0 for i in range(0, len(g_resources))        ]
         self.developmentCards     = [ 0 for i in range(0, len(g_developmentCards)) ]
-        self.constructions        = [ ]
+        self.roads                = [ ]
+        self.settlements          = [ ]
+        self.cities               = [ ]
         self.biggestRoad          = False
         self.biggestArmy          = False
-        self.availableRoads       = 15
-        self.availableSettlements = 5
-        self.availableCities      = 4
+        self.numberOfPieces       = [ 0 for i in range(0, len(g_pieces))]
+        self.knights              = 0
+        self.canPlayDevCard       = False
 
     def GetVictoryPoints(self):
 
         devCardPoints      = self.developmentCards[0]
 
         constructionPoints = 0
-        for construction in self.constructions:
-            constructionPoints += construction.victoryPoints
+        for settlement in self.settlements:
+            constructionPoints += settlement.victoryPoints
+
+        for city in self.cities:
+            constructionPoints += city.victoryPoints
 
         achievementPoints = 0
         if self.biggestRoad:
@@ -30,3 +37,20 @@ class Player:
             achievementPoints += 2
 
         return devCardPoints + constructionPoints + achievementPoints
+
+    def DoMove(self, game):
+        pass
+
+
+class AgentRandom(Player):
+
+    def DoMove(self, game):
+
+        possibleActions = game.GetPossibleActions(self)
+
+        logging.debug("possible actions = {0}".format(possibleActions))
+
+        if possibleActions is not None and len(possibleActions) > 0:
+            return random.choice(possibleActions)
+
+        return None

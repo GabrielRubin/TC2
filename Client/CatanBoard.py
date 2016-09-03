@@ -70,8 +70,9 @@ g_boardEdges = \
                            0x70,  0x81,  0x92,  0xa3,  0xb4,  0xc5,  0xd6,  0xe7]
 
 g_constructionTypes = [
-    ('Settlement', 1),
-    ('City'      , 2)
+    ('ROAD'      , 0),
+    ('SETTLEMENT', 1),
+    ('CITY'      , 2)
 ]
 
 g_portType = [
@@ -99,9 +100,22 @@ g_resources = [
     'WOOL',
     'GRAIN',
     'LUMBER',
+    'UNKNOWN'
 ]
 
-g_developmentCards = [ 'VICTORY_POINT', 'KNIGHT', 'YEAR_OF_PLENTY', 'ROAD_BUILDING', 'MONOPOLY' ]
+g_developmentCards = [
+    'VICTORY_POINT',
+    'KNIGHT',
+    'YEAR_OF_PLENTY',
+    'ROAD_BUILDING',
+    'MONOPOLY'
+]
+
+g_pieces = [
+    'ROADS',
+    'SETTLEMENTS',
+    'CITIES'
+]
 
 class BoardHex:
 
@@ -299,9 +313,10 @@ class BoardEdge:
 
 class Construction:
 
-    def __init__(self, constructionType, owner, position):
+    def __init__(self, constructionType, owner, index, position):
 
-        self.type             = constructionType[0]
-        self.victoryPoints    = constructionType[1]
-        self.owner            = owner
-        self.position         = position
+        self.type          = constructionType[0]
+        self.victoryPoints = constructionType[1]
+        self.owner         = owner
+        self.index         = index
+        self.position      = position

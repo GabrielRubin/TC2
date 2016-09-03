@@ -9,9 +9,9 @@ class Game:
 
         self.gameState = gameState
 
-    def AddPlayer(self, player):
+    def AddPlayer(self, player, index):
 
-        self.gameState.players.append(player)
+        self.gameState.players[index] = player
 
     def CreateBoard(self, message):
         # Hexes
@@ -52,16 +52,21 @@ class Game:
         if gameState is None:
             gameState = self.gameState
 
-        if not ignoreTurn and self.gameState.currPlayer.name != player.name:
+        if player not in gameState.players:
+            logging.critical("PLAYER NOT IN GAME!!!!!\n CurrentPlayers : {0}\n I am: {1}".format(gameState.players, player))
+            return None
+
+        if not ignoreTurn and self.gameState.currPlayer != player.seatNumber:
+            logging.critical("ITS NOT THIS PLAYER'S TURN!!!!")
             return None
 
         if   gameState.currState == 'START1A':
 
-            pass
+            return self.GetPossibleSettlements(gameState, player, True)
 
         elif gameState.currState == 'START1B':
 
-            pass
+            return self.GetPossibleRoads(gameState, player)
 
         elif gameState.currState == 'START2A':
 
@@ -119,20 +124,22 @@ class Game:
 
         return False
 
-    def CanBuildSettlement(self, gameState, player, node):
+    def CanBuildSettlement(self, gameState, player, node, setUpPhase = False):
 
-        #step 1: check if node respects piece connectivity
+        #step 1: check if node respects piece connectivity, if not in setUpPhase
 
-        foundConnection = False
+        if not setUpPhase:
 
-        for edgeIndex in node.GetAdjacentEdges():
+            foundConnection = False
 
-            if gameState.boardEdges[edgeIndex].owner == player.name:
-                foundConnection = True
-                break
+            for edgeIndex in node.GetAdjacentEdges():
 
-        if not foundConnection:
-            return False
+                if gameState.boardEdges[edgeIndex].owner == player.name:
+                    foundConnection = True
+                    break
+
+            if not foundConnection:
+                return False
 
         #step 2: check if node respects the distance rule
 
@@ -145,27 +152,26 @@ class Game:
 
     def GetPossibleRoads(self, gameState, player):
 
-        possibleRoads = [edge for edge in
+        possibleRoads = [edge.index for edge in
                          gameState.GetConstructableEdges() if
                          self.CanBuildRoad(gameState, player, edge)]
 
-        return [BuildRoadAction(player, edge) for edge in possibleRoads]
+        return [BuildRoadAction(player, edgeIndex) for edgeIndex in possibleRoads]
 
-    def GetPossibleSettlements(self, gameState, player):
+    def GetPossibleSettlements(self, gameState, player, setUpPhase = False):
 
-        possibleSettlements = [node for node in
+        possibleSettlements = [node.index for node in
                                gameState.GetConstructableNodes() if
-                               self.CanBuildSettlement(node)]
+                               self.CanBuildSettlement(gameState, player, node, setUpPhase)]
 
-        return [BuildSettlementAction(player, node) for node in possibleSettlements]
+        return [BuildSettlementAction(player, nodeIndex) for nodeIndex in possibleSettlements]
 
     def GetPossibleCities(self, gameState, player):
 
         possibleCities = []
 
-        for construction in player.constructions:
-            if construction.type == 'Settlement':
-                possibleCities.append(BuildCityAction(construction))
+        for settlement in player.settlements:
+            possibleCities.append(BuildCityAction(settlement.position))
 
         return possibleCities
 
@@ -184,8 +190,9 @@ class GameState:
         self.currState   = None
         self.currPlayer  = 0
         self.currTurn    = 0
-        self.players     = []
+        self.players     = [ None, None, None, None ]
         self.robberPos   = 0
+        self.devCards    = 25
 
         self.longestRoadPlayer = 0
         self.largestArmPlayer  = 0
@@ -219,8 +226,48 @@ class GameState:
 
         return [self.boardEdges[i] for i in list(set(g_boardEdges) - set(oceanEdges))]
 
-    def GetNextState(self, action):
-        pass
+    def ApplyAction(self, action, fromServer = False):
+
+        # TODO: Make this better, all this constructions are similar...
+        if action.type == 'BuildRoad':
+
+            index = len(self.players[action.playerNumber].roads)
+
+            newRoad = Construction(g_constructionTypes[0], action.playerNumber, index, action.position)
+
+            self.players[action.playerNumber].roads.append(newRoad)
+
+            self.boardEdges[action.position].owner = action.playerNumber
+
+            if not fromServer:
+                self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
+
+        elif action.type == 'BuildSettlement':
+
+            index = len(self.players[action.playerNumber].settlements)
+
+            newSettlement = Construction(g_constructionTypes[1], action.playerNumber, index, action.position)
+
+            self.players[action.playerNumber].settlements.append(newSettlement)
+
+            self.boardNodes[action.position].construction = newSettlement
+
+            if not fromServer:
+                self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
+
+        elif action.type == 'BuildCity':
+
+            index = len(self.players[action.playerNumber].cities)
+
+            newCity = Construction(g_constructionTypes[2], action.playerNumber, index, action.position)
+
+            self.players[action.playerNumber].cities.append(newCity)
+
+            self.boardNodes[action.position].construction = newCity
+
+            if not fromServer:
+                self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
+
 
 g_ActionType = \
 [
@@ -249,10 +296,12 @@ class BuildRoadAction(Action):
              0,  # grain
              1 ] # lumber
 
-    def __init__(self, playerName, targetEdge):
+    pieceId = 0
 
-        self.playerName = playerName
-        self.edge       = targetEdge
+    def __init__(self, playerNumber, position):
+
+        self.playerNumber = playerNumber
+        self.position     = position
 
 class BuildSettlementAction(Action):
 
@@ -263,10 +312,12 @@ class BuildSettlementAction(Action):
              1,  # grain
              1 ] # lumber
 
-    def __init__(self, playerName, targetNode):
+    pieceId = 1
 
-        self.playerName = playerName
-        self.node       = targetNode
+    def __init__(self, playerNumber, position):
+
+        self.playerNumber = playerNumber
+        self.position     = position
 
 class BuildCityAction(Action):
 
@@ -277,10 +328,12 @@ class BuildCityAction(Action):
              2,  # grain
              0 ] # lumber
 
-    def __init__(self, playerName, targetSettlement):
+    pieceId = 2
 
-        self.playerName  = playerName
-        self.settlement  = targetSettlement
+    def __init__(self, playerNumber, position):
+
+        self.playerNumber = playerNumber
+        self.position     = position
 
 class BuyDevelopmentCardAction(Action):
 
@@ -291,17 +344,17 @@ class BuyDevelopmentCardAction(Action):
              1,  # grain
              0 ] # lumber
 
-    def __init__(self, playerName):
+    def __init__(self, playerNumber):
 
-        self.playerName = playerName
+        self.playerName = playerNumber
 
 class UseKnightsCardAction(Action):
 
     type = 'UseKnightsCard'
 
-    def __init__(self, playerName, newRobberPos, targetPlayerIndex):
+    def __init__(self, playerNumber, newRobberPos, targetPlayerIndex):
 
-        self.playerName        = playerName
+        self.playerNumber      = playerNumber
         self.robberPos         = newRobberPos
         self.targetPlayerIndex = targetPlayerIndex
 
@@ -309,36 +362,36 @@ class UseMonopolyCardAction(Action):
 
     type = 'UseMonopolyCard'
 
-    def __init__(self, playerName, resource):
+    def __init__(self, playerNumber, resource):
 
-        self.playerName  = playerName
-        self.resource    = resource
+        self.playerNumber = playerNumber
+        self.resource     = resource
 
 class UseYearOfPlentyCardAction(Action):
 
     type = 'UseYearOfPlentyCard'
 
-    def __init__(self, playerName, resource1, resource2):
+    def __init__(self, playerNumber, resource1, resource2):
 
-        self.playerName  = playerName
-        self.resource1   = resource1
-        self.resource2   = resource2
+        self.playerNumber = playerNumber
+        self.resource1    = resource1
+        self.resource2    = resource2
 
 class UseFreeRoadsCardAction(Action):
 
     type = 'UseFreeRoadsCard'
 
-    def __init__(self, playerName, road1Edge, road2Edge):
+    def __init__(self, playerNumber, road1Edge, road2Edge):
 
-        self.playerName  = playerName
-        self.road1Edge   = road1Edge
-        self.road2Edge   = road2Edge
+        self.playerNumber = playerNumber
+        self.road1Edge    = road1Edge
+        self.road2Edge    = road2Edge
 
 class PlaceRobberAction(Action):
 
     type = 'PlaceRobber'
 
-    def __init__(self, playerName, newRobberPos):
+    def __init__(self, playerNumber, newRobberPos):
 
-        self.playerName  = playerName
-        self.robberPos   = newRobberPos
+        self.playerNumber = playerNumber
+        self.robberPos    = newRobberPos

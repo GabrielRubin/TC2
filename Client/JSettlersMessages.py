@@ -162,16 +162,16 @@ g_messageNumberToGameNumber = {
 
 elementIdToType = {
 
-    '1': 'CLAY',
-    '2': 'ORE',
-    '3': 'SHEEP',
-    '4': 'WHEAT',
-    '5': 'WOOD',
-    '6': 'UNKNOWN',
-    '10': 'ROADS',
-    '11': 'SETTLEMENTS',
-    '12': 'CITIES',
-    '15': 'NUMKNIGHTS',
+    '1'  : 'BRICK',
+    '2'  : 'ORE',
+    '3'  : 'WOOL',
+    '4'  : 'GRAIN',
+    '5'  : 'LUMBER',
+    '6'  : 'UNKNOWN',
+    '10' : 'ROADS',
+    '11' : 'SETTLEMENTS',
+    '12' : 'CITIES',
+    '15' : 'KNIGHTS',
     '100': 'SET',
     '101': 'GAIN',
     '102': 'LOSE'
@@ -253,7 +253,7 @@ class SitDownMessage(Message):
         data = text.split(",")
         gn = data[0]  # game name
         nn = data[1]  # nick name
-        pn = data[2]  # seat number
+        pn = int(data[2])  # seat number
         rf = False if data[3] == "false" else True  # is robot
         return SitDownMessage(gn, nn, pn, rf)
 
@@ -502,6 +502,93 @@ class PlayerElementMessage(Message):
         game, playerNumber, action, element, value = text.split(',')
         ac = elementIdToType[action]
         el = elementIdToType[element]
-        return PlayerElementMessage(game, playerNumber
+        return PlayerElementMessage(game, int(playerNumber)
                                     , ac, el
                                     , int(value))
+
+class SetPlayedDevCardMessage(Message):
+    id = 1048
+
+    def __init__(self, game, playerNumber, cardflag):
+        self.game      = game
+        self.playerNumber = playerNumber
+        self.cardFlag  = cardflag
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id, self.game, self.playerNumber, str(self.cardflag).lower())
+
+    @staticmethod
+    def parse(text):
+        g, p, c = text.split(",")
+        cf = True if c.lower() == "true" else False
+        return SetPlayedDevCardMessage(g, int(p), cf)
+
+class DevCardCountMessage(Message):
+    id = 1047
+
+    def __init__(self, game, count):
+        self.game = game
+        self.count = count
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.count)
+
+    @staticmethod
+    def parse(text):
+        game, count = text.split(",")
+        return DevCardCountMessage(game, int(count))
+
+class TurnMessage(Message):
+    id = 1026
+
+    def __init__(self, game, playerNumber):
+        self.game         = game
+        self.playerNumber = playerNumber
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.playerNumber)
+
+    @staticmethod
+    def parse(text):
+        gn, pn = text.split(",")
+        return TurnMessage(gn, int(pn))
+
+class GameTextMsgMessage(Message):
+    id = 1010
+
+    def __init__(self, game, nickname, textmessage):
+        self.game = game
+        self.nickname = nickname
+        self.message = textmessage
+
+    def to_cmd(self):
+        return "{0}|{1}\xc0\x80{2}\xc0\x80{3}".format(self.id, self.game
+                                                      , self.nickname, self.message)
+
+    @staticmethod
+    def parse(text):
+        # private static String sep2 = "" + (char) 0; // why?
+        data = text.split("\xc0\x80")
+        return GameTextMsgMessage(data[0], data[1], data[2])
+
+class PutPieceMessage(Message):
+    id = 1009
+
+    def __init__(self, game, playerNumber, pieceType, position):
+        self.game         = game
+        self.pieceType    = pieceType
+        self.playerNumber = playerNumber
+        self.position     = position
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4}".format(self.id, self.game
+                                            , self.playerNumber, self.pieceType
+                                            , self.position)
+
+    @staticmethod
+    def parse(text):
+        from CatanBoard import g_constructionTypes
+        data = text.split(",")
+        construction = g_constructionTypes[int(data[2])]
+        return PutPieceMessage(data[0], int(data[1])
+                               ,construction, int(data[3]))

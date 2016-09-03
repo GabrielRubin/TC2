@@ -6,20 +6,22 @@ from CatanGame import *
 
 class Client:
 
-    def __init__(self, gameName, player, autoStart):
+    def __init__(self, gameName, player, autoStart, showServerMessages):
 
-        self.socket       = None
-        self.game         = None
+        self.socket         = None
+        self.game           = None
 
-        self.joinedAGame  = False
-        self.isSeated     = False
-        self.gameStarted  = False
+        self.joinedAGame    = False
+        self.isSeated       = False
+        self.gameStarted    = False
 
-        self.gameName     = gameName
-        self.player       = player
+        self.gameName       = gameName
+        self.player         = player
 
-        self.autoStart    = autoStart
-        self.botsInit     = False
+        self.autoStart      = autoStart
+        self.botsInit       = False
+
+        self.serverMessages = showServerMessages
 
         self.messagetbl = {}
         for g in globals():
@@ -122,6 +124,10 @@ class Client:
 
     def TreatMessage(self, name, instance):
 
+        if   name == "GameTextMsgMessage" and self.serverMessages:
+
+            logging.info("Server> " + instance.message)
+
         if   name == "ChannelsMessage":
 
             logging.info("There are {0} channels available: {1}".format(len(instance.channels), instance.channels))
@@ -154,7 +160,10 @@ class Client:
 
         elif name == "SitDownMessage":
 
-            self.game.AddPlayer(Player(instance.nickname, instance.playerNumber))
+            if instance.nickname == self.player.name:
+                self.game.AddPlayer(self.player, instance.playerNumber)
+            else:
+                self.game.AddPlayer(Player(instance.nickname, instance.playerNumber), instance.playerNumber)
 
         elif name == "ChangeFaceMessage":
 
@@ -187,19 +196,52 @@ class Client:
 
         elif name == "LongestRoadMessage":
 
-            logging.info("Received longest road player: {0}".format(instance.playerNumber))
-
             self.game.gameState.longestRoadPlayer = int(instance.playerNumber)
+
+            logging.info("Received longest road player: {0}".format(self.game.gameState.longestRoadPlayer))
 
         elif name == "LargestArmyMessage":
 
-            logging.info("Received largest army player: {0}".format(instance.playerNumber))
-
             self.game.gameState.largestArmyPlayer = int(instance.playerNumber)
+
+            logging.info("Received largest army player: {0}".format(self.game.gameState.largestArmyPlayer))
 
         elif name == "PlayerElementMessage":
 
-            logging.info("Player seated on {0} : {1} {2}, amount: {3}".format(instance.playerNumber, instance.action, instance.element, instance.value))
+            if instance.element in g_resources: #RESOURCE
+
+                if instance.action == 'SET':
+                    self.game.gameState.players[instance.playerNumber].resources[g_resources.index(instance.element)] = instance.value
+                elif instance.action == 'GAIN':
+                    self.game.gameState.players[instance.playerNumber].resources[g_resources.index(instance.element)] += instance.value
+                elif instance.action == 'LOSE':
+                    self.game.gameState.players[instance.playerNumber].resources[g_resources.index(instance.element)] -= instance.value
+
+            elif instance.element in g_pieces: #PIECES
+
+                if instance.action == 'SET':
+                    self.game.gameState.players[instance.playerNumber].numberOfPieces[g_pieces.index(instance.element)] = instance.value
+                elif instance.action == 'GAIN':
+                    self.game.gameState.players[instance.playerNumber].numberOfPieces[g_pieces.index(instance.element)] += instance.value
+                elif instance.action == 'LOSE':
+                    self.game.gameState.players[instance.playerNumber].numberOfPieces[g_pieces.index(instance.element)] -= instance.value
+
+            elif instance.element == 'KNIGHTS': #KNIGHTS
+
+                if instance.action == 'SET':
+                    self.game.gameState.players[instance.playerNumber].knights = instance.value
+                elif instance.action == 'GAIN':
+                    self.game.gameState.players[instance.playerNumber].knights += instance.value
+                elif instance.action == 'LOSE':
+                    self.game.gameState.players[instance.playerNumber].knights -= instance.value
+
+            # DEBUG - SANITY CHECK
+            logging.debug("Player seated on {0} is {1}, his resources are: \n RESOURCES = {2} \n PIECES = {3} \n KNIGHTS = {4}".format(
+                instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
+                self.game.gameState.players[instance.playerNumber].resources,
+                self.game.gameState.players[instance.playerNumber].numberOfPieces,
+                self.game.gameState.players[instance.playerNumber].knights
+            ))
 
         elif name == "GameStateMessage":
 
@@ -209,14 +251,65 @@ class Client:
 
             if instance.stateName == "START1A":
 
-                logging.info("Current Players Are: {0}".format([player.name for player in self.game.gameState.players]))
+                logging.info("Game Begin!\n Players in this game are: {0}".format([player.name for player in self.game.gameState.players]))
 
             if instance.stateName == "OVER":
                 pass
 
+        elif name == "SetPlayedDevCardMessage":
+
+            self.game.gameState.players[instance.playerNumber].canPlayDevCard = instance.cardFlag
+
+            logging.info("Player seated on {0}:\n Can Play Dev Card = {1}".format(instance.playerNumber,
+                    self.game.gameState.players[instance.playerNumber].canPlayDevCard))
+
+        elif name == "DevCardCountMessage":
+
+            self.game.gameState.devCards = instance.count
+
+            logging.info("Total dev cards available: {0}".format(self.game.gameState.devCards))
+
+        elif name == "TurnMessage":
+
+            if self.player.seatNumber == instance.playerNumber: # ITS OUR TURN
+
+                agentAction = self.player.DoMove(self.game)
+
+                response = None
+
+                if agentAction is not None:
+
+                    if agentAction.type == 'BuildRoad' or \
+                       agentAction.type == 'BuildSettlement' or \
+                       agentAction.type == 'BuildCity':
+
+                        response = PutPieceMessage(self.gameName, self.player.seatNumber, agentAction.pieceId, agentAction.position)
+
+                if response is not None:
+
+                    self.SendMessage(response)
+
+        elif name == "PutPieceMessage":
+
+            if instance.pieceType[0] == 'ROAD':
+                putPieceAction = BuildRoadAction(instance.playerNumber, instance.position)
+            elif instance.pieceType[0] == 'SETTLEMENT':
+                putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position)
+            elif instance.pieceType[0] == 'CITY':
+                putPieceAction = BuildCityAction(instance.playerNumber, instance.position)
+
+            self.game.gameState.ApplyAction(putPieceAction, True)
+
+            logging.info("Player seated on {0} constructed a {1}, have this constructions now:\n"
+                         " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
+                instance.playerNumber, instance.pieceType[0],
+                self.game.gameState.players[instance.playerNumber].roads,
+                self.game.gameState.players[instance.playerNumber].settlements,
+                self.game.gameState.players[instance.playerNumber].cities
+            ))
 
 logging.getLogger().setLevel(logging.INFO)
-#logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
+logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
 
-client = Client("TestGame", Player("Danda", 0), True)
+client = Client("TestGame", AgentRandom("Danda", 0), True, True)
 client.StartClient(("localhost", 8880))
