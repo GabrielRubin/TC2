@@ -6,18 +6,20 @@ from CatanGame import *
 
 class Client:
 
-    def __init__(self, gameName, seatNumber, player):
+    def __init__(self, gameName, player, autoStart):
 
-        self.socket      = None
-        self.game        = None
+        self.socket       = None
+        self.game         = None
 
-        self.joinedAGame = False
-        self.isSeated    = False
-        self.gameStarted = False
+        self.joinedAGame  = False
+        self.isSeated     = False
+        self.gameStarted  = False
 
-        self.gameName    = gameName
-        self.seatNumber  = seatNumber
-        self.player      = player
+        self.gameName     = gameName
+        self.player       = player
+
+        self.autoStart    = autoStart
+        self.botsInit     = False
 
         self.messagetbl = {}
         for g in globals():
@@ -146,9 +148,13 @@ class Client:
             self.game = Game(GameState())
 
             if not self.isSeated:
-                logging.info("Sitting on seat number {0}".format(self.seatNumber))
-                message = SitDownMessage(self.gameName, self.player.name, self.seatNumber, True)
+                logging.info("Sitting on seat number {0}".format(self.player.seatNumber))
+                message = SitDownMessage(self.gameName, self.player.name, self.player.seatNumber, True)
                 self.SendMessage(message)
+
+        elif name == "SitDownMessage":
+
+            self.game.AddPlayer(Player(instance.nickname, instance.playerNumber))
 
         elif name == "ChangeFaceMessage":
 
@@ -159,11 +165,16 @@ class Client:
 
                 self.gameStarted = True
 
-                message1 = ChangeFaceMessage(self.gameName, self.seatNumber, 44)
+                message1 = ChangeFaceMessage(self.gameName, self.player.seatNumber, 44)
                 self.SendMessage(message1)
 
-                message2 = StartGameMessage(self.gameName)
-                self.SendMessage(message2)
+                if self.autoStart:
+                    message2 = StartGameMessage(self.gameName)
+                    self.SendMessage(message2)
+
+        elif name == "GameMembersMessage":
+
+            logging.info("Players in this game: {0}".format(instance.members))
 
         elif name == "BoardLayoutMessage":
 
@@ -176,15 +187,19 @@ class Client:
 
         elif name == "LongestRoadMessage":
 
-            logging.info("Received longest road player: {0}".format(instance.playernum))
+            logging.info("Received longest road player: {0}".format(instance.playerNumber))
 
-            self.game.gameState.longestRoadPlayer = int(instance.playernum)
+            self.game.gameState.longestRoadPlayer = int(instance.playerNumber)
 
         elif name == "LargestArmyMessage":
 
-            logging.info("Received largest army player: {0}".format(instance.playernum))
+            logging.info("Received largest army player: {0}".format(instance.playerNumber))
 
-            self.game.gameState.largestArmyPlayer = int(instance.playernum)
+            self.game.gameState.largestArmyPlayer = int(instance.playerNumber)
+
+        elif name == "PlayerElementMessage":
+
+            logging.info("Player seated on {0} : {1} {2}, amount: {3}".format(instance.playerNumber, instance.action, instance.element, instance.value))
 
         elif name == "GameStateMessage":
 
@@ -192,15 +207,16 @@ class Client:
 
             self.game.gameState.currState = instance.stateName
 
+            if instance.stateName == "START1A":
+
+                logging.info("Current Players Are: {0}".format([player.name for player in self.game.gameState.players]))
+
             if instance.stateName == "OVER":
-
-
-
                 pass
 
 
 logging.getLogger().setLevel(logging.INFO)
-logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
+#logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
 
-client = Client("TestGame", 0, Player("Danda"))
+client = Client("TestGame", Player("Danda", 0), True)
 client.StartClient(("localhost", 8880))

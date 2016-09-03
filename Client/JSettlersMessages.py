@@ -160,6 +160,23 @@ g_messageNumberToGameNumber = {
     9 : 12
 }
 
+elementIdToType = {
+
+    '1': 'CLAY',
+    '2': 'ORE',
+    '3': 'SHEEP',
+    '4': 'WHEAT',
+    '5': 'WOOD',
+    '6': 'UNKNOWN',
+    '10': 'ROADS',
+    '11': 'SETTLEMENTS',
+    '12': 'CITIES',
+    '15': 'NUMKNIGHTS',
+    '100': 'SET',
+    '101': 'GAIN',
+    '102': 'LOSE'
+}
+
 g_stateIdToName = {
 
       '0'   : 'NEW'                   # Brand new game
@@ -221,15 +238,15 @@ class ChannelsMessage(Message):
 class SitDownMessage(Message):
     id = 1012
 
-    def __init__(self, game, nickname, playernum, isrobot):
+    def __init__(self, game, nickname, playerNumber, isRobot):
         self.game = game
         self.nickname = nickname
-        self.playernum = playernum
-        self.isrobot = isrobot
+        self.playerNumber = playerNumber
+        self.isRobot = isRobot
 
     def to_cmd(self):
         return "{0}|{1},{2},{3},{4}".format(self.id, self.game, self.nickname
-                                            , self.playernum, str(self.isrobot).lower())
+                                            , self.playerNumber, str(self.isRobot).lower())
 
     @staticmethod
     def parse(text):
@@ -386,12 +403,12 @@ class ChangeFaceMessage(Message):
 class LongestRoadMessage(Message):
     id = 1066
 
-    def __init__(self, gameName, playernum):
+    def __init__(self, gameName, playerNumber):
         self.gameName = gameName
-        self.playernum = playernum
+        self.playerNumber = playerNumber
 
     def to_cmd(self):
-        return "{0}|{1},{2}".format(self.id, self.gameName, self.playernum)
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.playerNumber)
 
     @staticmethod
     def parse(text):
@@ -401,12 +418,12 @@ class LongestRoadMessage(Message):
 class LargestArmyMessage(Message):
     id = 1067
 
-    def __init__(self, gameName, playernum):
+    def __init__(self, gameName, playerNumber):
         self.gameName = gameName
-        self.playernum = playernum
+        self.playerNumber = playerNumber
 
     def to_cmd(self):
-        return "{0}|{1},{2}".format(self.id, self.gameName, self.playernum)
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.playerNumber)
 
     @staticmethod
     def parse(text):
@@ -442,3 +459,49 @@ class StatusMessageMessage(Message):
     @staticmethod
     def parse(text):
         return StatusMessageMessage(text)
+
+class GameMembersMessage(Message):
+    id = 1017
+
+    def __init__(self, game, members):
+        self.game = game
+        self.members = members
+
+    def to_cmd(self):
+        members = ",".join(self.members)
+        return "{0}|{1},{2}".format(self.id, self.game, members)
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        game = data[0]
+        members = data[1:]
+        return GameMembersMessage(game, members)
+
+class PlayerElementMessage(Message):
+    id = 1024
+
+    def __init__(self, game, playerNumber, action, element, value):
+        self.game = game
+        self.playerNumber = playerNumber
+        self.action = action
+        self.element = element
+        self.value = value
+
+    def to_cmd(self):
+        for i, v in elementIdToType.items():
+            if self.action == v:
+                ac = i
+            elif self.element == v:
+                el = i
+
+        return "{0}|{1},{2},{3},{4},{5}".format(self.id, self.game, self.playerNumber, ac, el, self.value)
+
+    @staticmethod
+    def parse(text):
+        game, playerNumber, action, element, value = text.split(',')
+        ac = elementIdToType[action]
+        el = elementIdToType[element]
+        return PlayerElementMessage(game, playerNumber
+                                    , ac, el
+                                    , int(value))

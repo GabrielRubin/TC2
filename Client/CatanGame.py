@@ -9,6 +9,10 @@ class Game:
 
         self.gameState = gameState
 
+    def AddPlayer(self, player):
+
+        self.gameState.players.append(player)
+
     def CreateBoard(self, message):
         # Hexes
         for i in range(0, len(message.hexes)):
