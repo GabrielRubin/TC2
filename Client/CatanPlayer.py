@@ -19,10 +19,6 @@ class Player:
         self.knights              = 0
         self.canPlayDevCard       = False
 
-        #@REVIEW@
-        self.canBuildFirstRoad  = False;
-        self.canBuildSecondRoad = False;
-
     def GetVictoryPoints(self):
 
         devCardPoints      = self.developmentCards[0]

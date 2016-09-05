@@ -63,25 +63,17 @@ class Game:
 
         if   gameState.currState == 'START1A':
 
-            player.canBuildFirstRoad = True
-
             return self.GetPossibleSettlements(gameState, player, True)
 
         elif gameState.currState == 'START1B':
 
             return self.GetPossibleRoads(gameState, player, True)
 
-        elif gameState.currState == 'START2A':  #@REVIEW@
-
-            player.canBuildSecondRoad = True
+        elif gameState.currState == 'START2A':
 
             return self.GetPossibleSettlements(gameState, player, True)
 
-            return self.GetPossibleSettlements(gameState, player, True)
-
-        elif gameState.currState == 'START2B':  #@REVIEW@
-
-            return self.GetPossibleRoads(gameState, player)
+        elif gameState.currState == 'START2B':
 
             return self.GetPossibleRoads(gameState, player, True)
 
