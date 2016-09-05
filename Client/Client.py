@@ -254,6 +254,39 @@ class Client:
 
                 logging.info("Game Begin!\n Players in this game are: {0}".format([player.name for player in self.game.gameState.players]))
 
+            # @REVIEW@ -- ISSO EH MTO IDIOTA, MAS NAO TEM OUTRA SOLUCAO
+            if instance.stateName == "START1B":
+
+                logging.info("FIRST ROAD BUILDING -> Player {0}".format(self.game.gameState.currPlayer))
+
+                if self.player.canBuildFirstRoad:
+
+                    # DANDO ERRO: if gameState.boardNodes[nodeIndex].construction.owner == player.name:
+                    #                AttributeError: 'NoneType' object has no attribute 'owner'
+                    # PROVAVEL QUE TENHA QUE INICIALIZAR ALGO QUE EU NAO TO SABENDO, ACHO QUE ALGO PARECIDO COM A
+                    # MSG 'PutPieceMessage', PRA DEPOIS CHAMAR O RESTO AQUI EM BAIXO
+
+                    #self.player.canBuildFirstRoad = False
+
+                    #agentAction = self.player.DoMove(self.game)
+
+                    #response = None
+
+                    #if agentAction is not None:
+
+                    #    if agentAction.type == 'BuildRoad' or \
+                    #       agentAction.type == 'BuildSettlement' or \
+                    #       agentAction.type == 'BuildCity':
+                    #        response = PutPieceMessage(self.gameName, self.player.seatNumber, agentAction.pieceId,
+                    #                                   agentAction.position)
+
+                    #if response is not None:
+                    #    self.SendMessage(response)
+                    pass
+                elif self.player.canBuildSecondRoad:
+                    # mesma coisa do primeiro
+                    pass
+
             if instance.stateName == "OVER":
                 pass
 
