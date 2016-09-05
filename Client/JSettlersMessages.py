@@ -592,3 +592,57 @@ class PutPieceMessage(Message):
         construction = g_constructionTypes[int(data[2])]
         return PutPieceMessage(data[0], int(data[1])
                                ,construction, int(data[3]))
+
+#class RollDiceRequestMessage(Message):
+#    id = 1030
+#
+#    def __init__(self, game):
+#        self.game = game
+#
+#    def to_cmd(self):
+#        return "{0}|{1}".format(self.id, self.game)
+#
+#    @staticmethod
+#    def parse(text):
+#        return RollDiceRequestMessage(text)
+
+class RollDiceMessage(Message):
+    id = 1031
+
+    def __init__(self, game):
+        self.game = game
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.game)
+
+    @staticmethod
+    def parse(text):
+        return RollDiceMessage(text)
+
+class DiceResultMessage(Message):
+    id = 1028
+
+    def __init__(self, game, result):
+        self.game = game
+        self.result = result
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.result)
+
+    @staticmethod
+    def parse(text):
+        game, result = text.split(",")
+        return DiceResultMessage(game, int(result))
+
+class EndTurnMessage(Message):
+    id = 1032
+
+    def __init__(self, game):
+        self.game = game
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.game)
+
+    @staticmethod
+    def parse(text):
+        return EndTurnMessage(text)

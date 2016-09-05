@@ -3,6 +3,7 @@ import logging
 from JSettlersMessages import *
 from CatanPlayer import *
 from CatanGame import *
+from CatanAction import *
 
 class Client:
 
@@ -256,6 +257,10 @@ class Client:
             if instance.stateName == "OVER":
                 pass
 
+            if self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN
+                self.RespondToServer()
+
+
         elif name == "SetPlayedDevCardMessage":
 
             self.game.gameState.players[instance.playerNumber].canPlayDevCard = instance.cardFlag
@@ -271,32 +276,19 @@ class Client:
 
         elif name == "TurnMessage":
 
-            if self.player.seatNumber == instance.playerNumber: # ITS OUR TURN
+            self.game.gameState.currPlayer = instance.playerNumber
 
-                agentAction = self.player.DoMove(self.game)
-
-                response = None
-
-                if agentAction is not None:
-
-                    if agentAction.type == 'BuildRoad' or \
-                       agentAction.type == 'BuildSettlement' or \
-                       agentAction.type == 'BuildCity':
-
-                        response = PutPieceMessage(self.gameName, self.player.seatNumber, agentAction.pieceId, agentAction.position)
-
-                if response is not None:
-
-                    self.SendMessage(response)
+            if self.player.seatNumber == self.game.gameState.currPlayer:
+                self.RespondToServer()
 
         elif name == "PutPieceMessage":
 
             if instance.pieceType[0] == 'ROAD':
-                putPieceAction = BuildRoadAction(instance.playerNumber, instance.position)
+                putPieceAction = BuildRoadAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].roads) )
             elif instance.pieceType[0] == 'SETTLEMENT':
-                putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position)
+                putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].settlements))
             elif instance.pieceType[0] == 'CITY':
-                putPieceAction = BuildCityAction(instance.playerNumber, instance.position)
+                putPieceAction = BuildCityAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].cities))
 
             self.game.gameState.ApplyAction(putPieceAction, True)
 
@@ -307,6 +299,39 @@ class Client:
                 self.game.gameState.players[instance.playerNumber].settlements,
                 self.game.gameState.players[instance.playerNumber].cities
             ))
+
+        elif name == "DiceResultMessage":
+
+            logging.info("---- Dices are rolled baby! ----\n Dice Result = {0}".format(instance.result))
+
+        #elif name == "":
+
+
+
+    def RespondToServer(self):
+
+        agentAction = self.player.DoMove(self.game)
+
+        if agentAction is not None:
+
+            response = None
+
+            if agentAction.type == 'BuildRoad' or \
+                            agentAction.type == 'BuildSettlement' or \
+                            agentAction.type == 'BuildCity':
+                response = PutPieceMessage(self.gameName, self.player.seatNumber, agentAction.pieceId,
+                                           agentAction.position)
+
+            if agentAction.type == 'RollDices':
+
+                response = RollDiceMessage(self.gameName)
+
+            if agentAction.type == 'EndTurn':
+
+                response = EndTurnMessage(self.gameName)
+
+            if response is not None:
+                self.SendMessage(response)
 
 logging.getLogger().setLevel(logging.INFO)
 logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
