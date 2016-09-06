@@ -302,15 +302,30 @@ class Client:
 
         elif name == "DiceResultMessage":
 
-            logging.info("---- Dices are rolled baby! ----\n Dice Result = {0}".format(instance.result))
+            logging.info("---- Dices are rolled! ----\n Dice Result = {0}".format(instance.result))
 
-        #elif name == "":
+        elif name == "MoveRobberMessage":
 
+            self.game.gameState.robberPos = instance.position
+
+            logging.info("Player {0} placed the robber on hex {1}".format(instance.playerNumber, hex(self.game.gameState.robberPos)))
+
+        elif name == "MakeOfferMessage":
+
+            # TODO > Review this!!!
+            self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
 
     def RespondToServer(self):
 
-        agentAction = self.player.DoMove(self.game)
+        # TODO > Not working yet :(
+        if self.game.gameState.currState == "WAITING_FOR_DISCARDS":
+
+            agentAction = self.player.ChooseCardsToDisard(self.game)
+
+        else:
+
+            agentAction = self.player.DoMove(self.game)
 
         if agentAction is not None:
 
@@ -325,6 +340,17 @@ class Client:
             if agentAction.type == 'RollDices':
 
                 response = RollDiceMessage(self.gameName)
+
+            # TODO > Not tested yet :(
+            if agentAction.type == 'PlaceRobber':
+
+                response = MoveRobberMessage(self.gameName, self.player.seatNumber, agentAction.position)
+
+            if agentAction.type == 'DiscardResources':
+
+                response = DiscardMessage(self.gameName, agentAction.resources[0], agentAction.resources[1],
+                                                         agentAction.resources[2], agentAction.resources[3],
+                                                         agentAction.resources[4], agentAction.resources[5])
 
             if agentAction.type == 'EndTurn':
 

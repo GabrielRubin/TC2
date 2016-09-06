@@ -80,28 +80,22 @@ class Game:
         elif gameState.currState == 'PLAY':
 
             # roll the dices!
-
-            if gameState.currPlayer == player.seatNumber:
-                return [ RollDicesAction(player.seatNumber) ]
-            else:
-                return None
+            return [ RollDicesAction(player.seatNumber) ]
 
         elif gameState.currState == 'PLAY1':
 
             # review - here is agent gameplay
 
-            if gameState.currPlayer == player.seatNumber:
-                return [EndTurnAction(player.seatNumber)]
-            else:
-                return None
+            return [EndTurnAction(player.seatNumber)]
 
         elif gameState.currState == 'PLACING_ROBBER':
 
-            pass
+            # Rolled out 7  * or *  Used a knight card
+            return self.GetPossibleRobberPositions(gameState, player)
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            pass
+            return [player.ChooseCardsToDisard(self)]
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
@@ -210,6 +204,19 @@ class Game:
     def GetDiceRoll(self):
 
         return random.randint(1, 6) + random.randint(1, 6)
+
+    def GetPossibleRobberPositions(self, gameState, player):
+
+        oceanHexes = \
+            [0x17, 0x39, 0x5b, 0x7d,
+             0x15, 0x9d, 0x13, 0xbd,
+             0x11, 0xdd, 0x31, 0xdb,
+             0x51, 0xd9, 0x71, 0x93,
+             0xb5, 0xd7, gameState.robberPos]
+
+        possibleRobberPositions = list(set(g_boardHexes) - set(oceanHexes))
+
+        return [PlaceRobberAction(player.seatNumber, position) for position in possibleRobberPositions]
 
 class GameState:
 

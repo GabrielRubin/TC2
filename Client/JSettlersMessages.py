@@ -646,3 +646,97 @@ class EndTurnMessage(Message):
     @staticmethod
     def parse(text):
         return EndTurnMessage(text)
+
+class MoveRobberMessage(Message):
+    id = 1034
+
+    def __init__(self, game, playerNumber, position):
+        self.game = game
+        self.playerNumber = playerNumber
+        self.position = position
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id, self.game, self.playerNumber, self.position)
+
+    @staticmethod
+    def parse(text):
+        g, pn, coords = text.split(",")
+        return MoveRobberMessage(g, int(pn), int(coords))
+
+class DiscardRequestMessage(Message):
+    id = 1029
+
+    def __init__(self, game, numCards):
+        self.game = game
+        self.numCards = numCards
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.numCards)
+
+    @staticmethod
+    def parse(text):
+        game, numCards = text.split(",")
+        return DiscardRequestMessage(game, int(numCards))
+
+class DiscardMessage(Message):
+    id = 1033
+
+    def __init__(self, game, clay, ore, sheep, wheat, wood, unknown):
+        self.game = game
+        self.clay = clay
+        self.ore = ore
+        self.sheep = sheep
+        self.wheat = wheat
+        self.wood = wood
+        self.unknown = unknown
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4},{5},{6},{7}".format(self.id, self.game, self.clay, self.ore, self.sheep, self.wheat,
+                                                        self.wood, self.unknown)
+
+    @staticmethod
+    def parse(text):
+        g, c, o, s, wh, wo, u = map(int, text.split(","))
+        return DiscardMessage(g, c, o, s, wh, wo, u)
+
+# TODO: FIX!
+class MakeOfferMessage(Message):
+    id = 1041
+
+    def __init__(self, game, fr, to, give, get):
+        self.game = game
+        self.fr = fr
+        self.to = to
+        self.give = give
+        self.get = get
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4},{5}".format(self.id, self.game, self.fr
+                                                , ','.join(map(str, self.to))
+                                                , ','.join(map(str, self.give))
+                                                , ','.join(map(str, self.get)))
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        game = data[0]
+        fr = data[1]
+        to = " "
+        give = " "
+        get = " "
+        return MakeOfferMessage(game, fr, to, give, get)
+
+class RejectOfferMessage(Message):
+    id = 1037
+
+    def __init__(self, game, playerNumber):
+        self.game = game
+        self.playerNumber = playerNumber
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.playerNumber)
+
+    @staticmethod
+    def parse(text):
+        g, pn = text.split(",")
+        return RejectOfferMessage(g, int(pn))

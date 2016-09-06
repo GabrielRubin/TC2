@@ -9,7 +9,18 @@ g_ActionType = \
     'UseMonopolyCard',
     'UseYearOfPlentyCard',
     'UseFreeRoadsCard',
-    'PlaceRobber'
+    'PlaceRobber',
+    'EndTurn',
+    'DiscardResources',
+    'ChoosePlayerToStealFrom',
+    'TradeOffer'
+]
+
+g_OfferType = [
+
+    'Request',
+    'Accept',
+    'Decline'
 ]
 
 class Action:
@@ -144,3 +155,33 @@ class EndTurnAction(Action):
     def __init__(self, playerNumber):
 
         self.playerNumber = playerNumber
+
+class DiscardResourcesAction(Action):
+
+    type = 'DiscardResources'
+
+    def __init__(self, playerNumber, resources):
+
+        self.playerNumber = playerNumber
+        self.resources    = resources
+
+class ChoosePlayerToStealFromAction(Action):
+
+    type = 'ChoosePlayerToStealFrom'
+
+    def __init__(self, playerNumer, targetPlayerNumber):
+
+        self.playerNumber       = playerNumer
+        self.targetPlayerNumber = targetPlayerNumber
+
+class TradeOfferAction(Action):
+
+    type = 'TradeOffer'
+
+    def __init__(self, offerType, playerNumber, targetPlayerNumber, offerResources, wantedResources):
+
+        self.offerType          = offerType
+        self.playerNumber       = playerNumber
+        self.targetPlayerNumber = targetPlayerNumber
+        self.offerResources     = offerResources
+        self.wantedResources    = wantedResources
