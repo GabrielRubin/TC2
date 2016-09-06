@@ -315,7 +315,6 @@ class Client:
             # TODO > Review this!!!
             self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
-
     def RespondToServer(self):
 
         # TODO > Not working yet :(
@@ -344,7 +343,7 @@ class Client:
             # TODO > Not tested yet :(
             if agentAction.type == 'PlaceRobber':
 
-                response = MoveRobberMessage(self.gameName, self.player.seatNumber, agentAction.position)
+                response = MoveRobberMessage(self.gameName, self.player.seatNumber, agentAction.robberPos)
 
             if agentAction.type == 'DiscardResources':
 
