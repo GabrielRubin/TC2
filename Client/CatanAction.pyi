@@ -65,9 +65,10 @@ class DiscardResourcesAction(Action):
 
 class ChoosePlayerToStealFromAction(Action):
 
-    def __init__(self, playerNumer : int, targetPlayerNumber : int) -> None:
+    def __init__(self, playerNumber : int, targetPlayerNumber : int) -> None:
         pass
 
 class TradeOfferAction(Action):
 
     def __init__(self, offerType, playerNumber : int, targetPlayerNumber: int, offerResources, wantedResources) -> None:
+        pass

@@ -23,3 +23,6 @@ class AgentRandom(Player):
 
     def ChooseCardsToDiscard(self, game : Game):
         pass
+
+    def ChoosePlayerToStealFrom(self, game : Game) -> int:
+        pass
