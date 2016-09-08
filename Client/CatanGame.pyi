@@ -47,5 +47,5 @@ class GameState:
     def GetConstructableEdges(self) -> list[int]:
         pass
 
-    def ApplyAction(self, action : Action, fromServer : bool) -> None:
+    def ApplyAction(self, action : Action, fromServer : bool = False) -> None:
         pass
