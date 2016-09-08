@@ -35,7 +35,8 @@ class BuildRoadAction(Action):
              0,  # ore
              0,  # wool
              0,  # grain
-             1 ] # lumber
+             1,  # lumber
+             0 ] # unknown
 
     pieceId = 0
 
@@ -52,7 +53,8 @@ class BuildSettlementAction(Action):
              0,  # ore
              1,  # wool
              1,  # grain
-             1 ] # lumber
+             1,  # lumber
+             0 ] # unknown
 
     pieceId = 1
 
@@ -69,7 +71,8 @@ class BuildCityAction(Action):
              3,  # ore
              0,  # wool
              2,  # grain
-             0 ] # lumber
+             0,  # lumber
+             0 ] # unknown
 
     pieceId = 2
 
@@ -94,7 +97,8 @@ class BuyDevelopmentCardAction(Action):
              1,  # ore
              1,  # wool
              1,  # grain
-             0 ] # lumber
+             0,  # lumber
+             0 ] # unknown
 
     def __init__(self, playerNumber):
 

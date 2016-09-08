@@ -257,8 +257,7 @@ class Client:
             if instance.stateName == "OVER":
                 pass
 
-            if self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN
-                self.RespondToServer()
+            self.RespondToServer()
 
 
         elif name == "SetPlayedDevCardMessage":
@@ -278,8 +277,7 @@ class Client:
 
             self.game.gameState.currPlayer = instance.playerNumber
 
-            if self.player.seatNumber == self.game.gameState.currPlayer:
-                self.RespondToServer()
+            self.RespondToServer()
 
         elif name == "PutPieceMessage":
 
@@ -315,14 +313,19 @@ class Client:
             # TODO > Review this!!!
             self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
+        elif name == "ChoosePlayerRequestMessage":
+
+            self.SendMessage(self.player.ChoosePlayerToStealFrom(self.game))
+
     def RespondToServer(self):
 
-        # TODO > Not working yet :(
+        agentAction = None
+
         if self.game.gameState.currState == "WAITING_FOR_DISCARDS":
 
-            agentAction = self.player.ChooseCardsToDisard(self.game)
+            agentAction = self.player.ChooseCardsToDiscard(self.game)
 
-        else:
+        elif self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN:
 
             agentAction = self.player.DoMove(self.game)
 
@@ -340,7 +343,6 @@ class Client:
 
                 response = RollDiceMessage(self.gameName)
 
-            # TODO > Not tested yet :(
             if agentAction.type == 'PlaceRobber':
 
                 response = MoveRobberMessage(self.gameName, self.player.seatNumber, agentAction.robberPos)

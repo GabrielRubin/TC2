@@ -86,7 +86,21 @@ class Game:
 
             # review - here is agent gameplay
 
-            return [EndTurnAction(player.seatNumber)]
+            possibleActions     = []
+
+            # TODO > all actions have a request message, implement that...
+            #possibleRoads       = self.GetPossibleRoads(gameState, player)
+            #possibleSettlements = self.GetPossibleSettlements(gameState, player)
+            #possibleCities      = self.GetPossibleCities(gameState, player)
+
+            #if possibleRoads is not None:
+            #    possibleActions += possibleRoads
+            #if possibleSettlements is not None:
+            #    possibleActions += possibleSettlements
+            #if possibleCities is not None:
+            #    possibleActions += possibleCities
+
+            return possibleActions
 
         elif gameState.currState == 'PLACING_ROBBER':
 
@@ -178,6 +192,11 @@ class Game:
 
     def GetPossibleRoads(self, gameState, player, setUpPhase = False):
 
+        if not setUpPhase and\
+                not player.CanAfford(BuildRoadAction.cost) \
+                and player.HavePiece(g_pieces.index('ROADS')):
+            return None
+
         possibleRoads = [edge.index for edge in
                          gameState.GetConstructableEdges() if
                          self.CanBuildRoad(gameState, player, edge, len(player.roads), setUpPhase)]
@@ -186,6 +205,11 @@ class Game:
 
     def GetPossibleSettlements(self, gameState, player, setUpPhase = False):
 
+        if not setUpPhase and \
+                not player.CanAfford(BuildSettlementAction.cost) \
+                and player.HavePiece(g_pieces.index('SETTLEMENTS')):
+            return None
+
         possibleSettlements = [node.index for node in
                                gameState.GetConstructableNodes() if
                                self.CanBuildSettlement(gameState, player, node, setUpPhase)]
@@ -193,6 +217,10 @@ class Game:
         return [BuildSettlementAction(player.seatNumber, nodeIndex, len(player.settlements)) for nodeIndex in possibleSettlements]
 
     def GetPossibleCities(self, gameState, player):
+
+        if not player.CanAfford(BuildCityAction.cost) \
+                and player.HavePiece(g_pieces.index('CITIES')):
+            return None
 
         possibleCities = []
 

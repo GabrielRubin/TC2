@@ -228,6 +228,10 @@ class BoardNode:
         return [ self.index + edge if self.index + edge in g_boardEdges else None
                  for edge in adjacentEdges ]
 
+    def GetPossibleResources(self):
+
+        return [hex.production for hex in self.GetAdjacentHexes()]
+
 class BoardEdge:
 
     def __init__(self, index):

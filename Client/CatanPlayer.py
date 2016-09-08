@@ -41,10 +41,28 @@ class Player:
 
         return devCardPoints + constructionPoints + achievementPoints
 
+    def CanAfford(self, price):
+
+        for i in range(0, len(g_resources)):
+            if price[i] > self.resources[i]:
+                return False
+
+        return True
+
+    def HavePiece(self, pieceIndex):
+
+        if self.numberOfPieces[pieceIndex] > 0:
+            return True
+
+        return False
+
     def DoMove(self, game):
         pass
 
-    def ChooseCardsToDisard(self, game):
+    def ChooseCardsToDiscard(self, game):
+        pass
+
+    def ChoosePlayerToStealFrom(self, game):
         pass
 
 class AgentRandom(Player):
@@ -61,22 +79,42 @@ class AgentRandom(Player):
         if possibleActions is not None and len(possibleActions) > 0:
             return random.choice(possibleActions)
 
+        if game.gameState.currState == "PLAY1":
+            return EndTurnAction(self.seatNumber)
+
         return None
 
     def ChooseCardsToDiscard(self, game):
 
-        discardCardCount = math.floor(len(self.resources) / 2)
+        resourcesPopulation = [0 for i in range(0, self.resources[0])] + [1 for j in range(0, self.resources[1])] + \
+                              [2 for k in range(0, self.resources[2])] + [3 for l in range(0, self.resources[3])] + \
+                              [4 for m in range(0, self.resources[4])] + [5 for n in range(0, self.resources[5])]
+
+        discardCardCount = int(math.floor(len(resourcesPopulation) / 2))
 
         if discardCardCount > 0:
             assert (self.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
             self.discardCardCount = 0
-
-        resourcesPopulation = [0 for i in range(0, self.resources[0])] + [1 for j in range(0, self.resources[1])] + \
-                              [2 for k in range(0, self.resources[2])] + [3 for l in range(0, self.resources[3])] + \
-                              [4 for m in range(0, self.resources[4])] + [5 for n in range(0, self.resources[5])]
 
         selectedResources = random.sample(resourcesPopulation, discardCardCount)
 
         return DiscardResourcesAction(self.seatNumber, [selectedResources.count(0), selectedResources.count(1),
                                                         selectedResources.count(2), selectedResources.count(3),
                                                         selectedResources.count(4), selectedResources.count(5)])
+
+    def ChoosePlayerToStealFrom(self, game):
+
+        robberHex       = game.gameState.boardHexes[game.gameState.robberPos]
+
+        possibleNodes   = robberHex.GetAdjacentNodes()
+
+        possiblePlayers = []
+
+        for node in possibleNodes:
+            if node.construction is not None and node.construction.owner not in possiblePlayers:
+                possiblePlayers.append(node.construction.owner)
+
+        if len(possiblePlayers) > 0:
+            return random.choice(possiblePlayers)
+
+        return None

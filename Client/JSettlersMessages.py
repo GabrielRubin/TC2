@@ -740,3 +740,35 @@ class RejectOfferMessage(Message):
     def parse(text):
         g, pn = text.split(",")
         return RejectOfferMessage(g, int(pn))
+
+class ChoosePlayerRequestMessage(Message):
+    id = 1036
+
+    def __init__(self, game, choices):
+        self.game = game
+        self.choices = choices
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game
+                                    , ",".join(self.choices))
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        game, choices = data[0], data[1:]
+        return ChoosePlayerRequestMessage(game, choices)
+
+class ChoosePlayerMessage(Message):
+    id = 1035
+
+    def __init__(self, game, choice):
+        self.game = game
+        self.choice = choice
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.choice)
+
+    @staticmethod
+    def parse(text):
+        game, choice = text.split(",")
+        return ChoosePlayerMessage(game, int(choice))

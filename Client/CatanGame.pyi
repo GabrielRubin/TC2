@@ -21,19 +21,19 @@ class Game:
     def CanBuildSettlement(self, gameState : GameState, player : Player, node, setUpPhase : bool) -> bool:
         pass
 
-    def GetPossibleRoads(self, gameState : GameState, player : Player, setUpPhase : bool) -> list[object]:
+    def GetPossibleRoads(self, gameState : GameState, player : Player, setUpPhase : bool) -> list[BuildRoadAction]:
         pass
 
-    def GetPossibleSettlements(self, gameState : GameState, player : Player, setUpPhase : bool) -> list[object]:
+    def GetPossibleSettlements(self, gameState : GameState, player : Player, setUpPhase : bool) -> list[BuildSettlementAction]:
         pass
 
-    def GetPossibleCities(self, gameState : GameState, player : Player) -> list[object]:
+    def GetPossibleCities(self, gameState : GameState, player : Player) -> list[BuildCityAction]:
         pass
 
     def GetDiceRoll(self) -> int:
         pass
 
-    def GetPossibleRobberPositions(self, gameState : GameState, player : Player) -> list[object]:
+    def GetPossibleRobberPositions(self, gameState : GameState, player : Player) -> list[int]:
         pass
 
 class GameState:
