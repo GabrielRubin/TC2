@@ -57,17 +57,39 @@ class Player:
 
         return False
 
-    def GetPossibleActions(self, game, playerNumber, gameState, ignoreTurn = False):
+    def GetPorts(self, game):
+
+        availablePorts = [ False for i in g_portType ]
+
+        for settlementIndex in self.settlements:
+
+            portType = game.gameState.boardNodes[settlementIndex].portType
+            if portType is not None:
+                availablePorts[g_portType.index(portType)] = True
+
+        for cityIndex in self.cities:
+
+            portType = game.gameState.boardNodes[cityIndex].portType
+            if portType is not None:
+                availablePorts[g_portType(portType)] = True
+
+        return availablePorts
+
+    def GetPossibleActions(self, game, player = None, gameState = None, ignoreTurn = False):
         pass
 
     def DoMove(self, game):
         pass
 
-    def ChooseCardsToDiscard(self, game):
+    def ChooseCardsToDiscard(self, game, player = None):
         pass
 
-    def ChoosePlayerToStealFrom(self, game):
+    def ChoosePlayerToStealFrom(self, game, player = None):
         pass
+
+    def GetPossibleBankTrades(self, game, player = None):
+        pass
+
 
 class AgentRandom(Player):
 
@@ -183,20 +205,29 @@ class AgentRandom(Player):
 
             possibleActions = []
 
-            # TODO > all actions have a request message, implement that...
             possibleRoads       = game.GetPossibleRoads(gameState, player)
+
             possibleSettlements = game.GetPossibleSettlements(gameState, player)
+
             possibleCities      = game.GetPossibleCities(gameState, player)
 
+            possibleBankTrades  = self.GetPossibleBankTrades(game, player)
+
+            # COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
                 possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
                                     for roadEdge in possibleRoads]
+#
             if possibleSettlements is not None and len(possibleSettlements) > 0:
                 possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
                                     for setNode in possibleSettlements]
+#
             if possibleCities is not None and len(possibleCities) > 0:
                 possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
                                      for setNode in possibleCities]
+
+            if len(possibleActions) == 0:
+                possibleActions = possibleBankTrades
 
             return possibleActions
 
@@ -285,5 +316,65 @@ class AgentRandom(Player):
 
         if len(possiblePlayers) > 0:
             return ChoosePlayerToStealFromAction(player.seatNumber, random.choice(possiblePlayers))
+
+        return None
+
+    def GetPossibleBankTrades(self, game, player = None):
+
+        # TODO > possible bug in tradeRates...?
+        if player is None:
+            player = self
+
+        availablePorts = self.GetPorts(game)
+
+        if availablePorts[-1]:
+            minTradeRate = 3
+        else:
+            minTradeRate = 4
+
+        tradeRates = [minTradeRate, minTradeRate, minTradeRate, minTradeRate, minTradeRate]
+
+        for i in range(0, len(tradeRates)):
+            if availablePorts[i]:
+                tradeRates[i] = 2
+
+        possibleTradeAmount = [0, 0, 0, 0, 0]
+        candidateForTrade   = []
+
+        for i in range(len(possibleTradeAmount)):
+            possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
+            if player.resources[i] == 0:
+                candidateForTrade.append(i)
+
+        possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
+                                  [1 for j in range(0, possibleTradeAmount[1])] + \
+                                  [2 for k in range(0, possibleTradeAmount[2])] + \
+                                  [3 for l in range(0, possibleTradeAmount[3])] + \
+                                  [4 for m in range(0, possibleTradeAmount[4])]
+
+        logging.debug("Player {0} is checking if he can trade...\n"
+                      " He have this resources: {1}\n"
+                      " And he thinks he can trade these: {2}".format(player.name, player.resources, possibleTradeAmount))
+
+        if sum(possibleTradeAmount) > 0:
+
+            maxTrades = min(sum(possibleTradeAmount), len(candidateForTrade))
+
+            chosenResources   = random.sample(possibleTradePopulation, maxTrades)
+            expectedResources = random.sample(candidateForTrade, maxTrades)
+
+            give = [chosenResources.count(0) * tradeRates[0], chosenResources.count(1) * tradeRates[1],
+                    chosenResources.count(2) * tradeRates[2], chosenResources.count(3) * tradeRates[3],
+                    chosenResources.count(4) * tradeRates[4]]
+
+            get  = [expectedResources.count(0), expectedResources.count(1),
+                    expectedResources.count(2), expectedResources.count(3),
+                    expectedResources.count(4)]
+
+            logging.debug("Player {0} will trade with the bank!\n"
+                          " GIVE = {1}\n"
+                          " GET  = {2}".format(player.name, give, get))
+
+            return [ BankTradeOfferAction(player.seatNumber, give, get) ]
 
         return None

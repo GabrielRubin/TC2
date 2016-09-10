@@ -76,12 +76,12 @@ g_constructionTypes = [
 ]
 
 g_portType = [
+    'BrickHarbor',
+    'OreHarbor',
+    'WoolHarbor',
+    'GrainHarbor',
+    'LumberHarbor',
     '3for1'
-    'ClayHarbor'
-    'OreHarbor'
-    'SheepHarbor'
-    'GrainHarbor'
-    'LumberHarbor'
 ]
 
 g_terrains = [

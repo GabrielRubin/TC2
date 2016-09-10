@@ -25,6 +25,9 @@ class Client:
 
         self.serverMessages = showServerMessages
 
+        self.waitBankTradeAck = False
+        self.gotBankTradeAck  = False
+
         self.messagetbl = {}
         for g in globals():
             cg = globals()[g]
@@ -130,6 +133,15 @@ class Client:
 
             logging.info("Server> " + instance.message)
 
+            if self.waitBankTradeAck:
+
+                if self.gotBankTradeAck:
+                    self.waitBankTradeAck = False
+                    self.gotBankTradeAck  = False
+                    self.RespondToServer()
+                else:
+                    self.waitBankTradeAck = False
+
         if   name == "ChannelsMessage":
 
             logging.info("There are {0} channels available: {1}".format(len(instance.channels), instance.channels))
@@ -209,6 +221,10 @@ class Client:
             logging.info("Received largest army player: {0}".format(self.game.gameState.largestArmyPlayer))
 
         elif name == "PlayerElementMessage":
+
+            if self.waitBankTradeAck:
+
+                self.gotBankTradeAck = True
 
             if instance.element in g_resources: #RESOURCE
 
@@ -377,9 +393,11 @@ class Client:
                                                          agentAction.resources[2], agentAction.resources[3],
                                                          agentAction.resources[4], agentAction.resources[5])
 
-            #if agentAction.type == 'ChoosePlayerToStealFrom':
-            #
-            #    response = ChoosePlayerMessage(self.gameName, agentAction.targetPlayerNumber)
+            if agentAction.type == 'BankTradeOffer':
+
+                response = BankTradeMessage(self.gameName, agentAction.giveResources, agentAction.getResources)
+
+                self.waitBankTradeAck = True
 
             if agentAction.type == 'EndTurn':
 

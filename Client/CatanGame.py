@@ -83,8 +83,12 @@ class Game:
 
             edge = gameState.boardEdges[edgeIndex]
 
-            if edge.construction is not None and edge.construction.owner == player.seatNumber:
-                return True
+            if edge.construction is not None:
+
+                if edge.construction.owner == player.seatNumber:
+                    return True
+                else:
+                    return False
 
         return False
 

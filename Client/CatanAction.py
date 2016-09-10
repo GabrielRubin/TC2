@@ -13,7 +13,8 @@ g_ActionType = \
     'EndTurn',
     'DiscardResources',
     'ChoosePlayerToStealFrom',
-    'TradeOffer'
+    'TradeOffer',
+    'BankTradeOffer'
 ]
 
 g_OfferType = [
@@ -189,3 +190,13 @@ class TradeOfferAction(Action):
         self.targetPlayerNumber = targetPlayerNumber
         self.offerResources     = offerResources
         self.wantedResources    = wantedResources
+
+class BankTradeOfferAction(Action):
+
+    type = 'BankTradeOffer'
+
+    def __init__(self, playerNumber, giveResources, getResources):
+
+        self.playerNumber  = playerNumber
+        self.giveResources = giveResources
+        self.getResources  = getResources
