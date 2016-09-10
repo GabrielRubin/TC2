@@ -772,3 +772,18 @@ class ChoosePlayerMessage(Message):
     def parse(text):
         game, choice = text.split(",")
         return ChoosePlayerMessage(game, int(choice))
+
+class BuildRequestMessage(Message):
+    id = 1043
+
+    def __init__(self, game, pieceType):
+        self.game = game
+        self.pieceType = pieceType
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.pieceType)
+
+    @staticmethod
+    def parse(text):
+        game, pt = text.split(",")
+        return BuildRequestMessage(game, int(pt))

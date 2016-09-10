@@ -48,83 +48,6 @@ class Game:
         #for nodeIndex, node in self.gameState.boardNodes.items():
         #    logging.debug("Node id = {0}, Port Type = {1}".format(hex(nodeIndex), node.portType))
 
-    def GetPossibleActions(self, player, gameState = None, ignoreTurn = False):
-
-        if gameState is None:
-            gameState = self.gameState
-
-        if player not in gameState.players:
-            logging.critical("PLAYER NOT IN GAME!!!!!\n CurrentPlayers : {0}\n I am: {1}".format(gameState.players, player))
-            return None
-
-        if not ignoreTurn and self.gameState.currPlayer != player.seatNumber:
-            logging.critical("ITS NOT THIS PLAYER'S TURN!!!!")
-            return None
-
-        if   gameState.currState == 'START1A':
-
-            return self.GetPossibleSettlements(gameState, player, True)
-
-        elif gameState.currState == 'START1B':
-
-            return self.GetPossibleRoads(gameState, player, True)
-
-        elif gameState.currState == 'START2A':
-
-            return self.GetPossibleSettlements(gameState, player, True)
-
-        elif gameState.currState == 'START2B':
-
-            return self.GetPossibleRoads(gameState, player, True)
-
-        elif gameState.currState == 'PLAY':
-
-            # roll the dices!
-            return [ RollDicesAction(player.seatNumber) ]
-
-        elif gameState.currState == 'PLAY1':
-
-            # review - here is agent gameplay
-
-            possibleActions     = []
-
-            # TODO > all actions have a request message, implement that...
-            #possibleRoads       = self.GetPossibleRoads(gameState, player)
-            #possibleSettlements = self.GetPossibleSettlements(gameState, player)
-            #possibleCities      = self.GetPossibleCities(gameState, player)
-
-            #if possibleRoads is not None:
-            #    possibleActions += possibleRoads
-            #if possibleSettlements is not None:
-            #    possibleActions += possibleSettlements
-            #if possibleCities is not None:
-            #    possibleActions += possibleCities
-
-            return possibleActions
-
-        elif gameState.currState == 'PLACING_ROBBER':
-
-            # Rolled out 7  * or *  Used a knight card
-            return self.GetPossibleRobberPositions(gameState, player)
-
-        elif gameState.currState == 'WAITING_FOR_DISCARDS':
-
-            return [player.ChooseCardsToDisard(self)]
-
-        elif gameState.currState == 'WAITING_FOR_CHOICE':
-
-            pass
-
-        elif gameState.currState == 'WAITING_FOR_DISCOVERY':
-
-            pass
-
-        elif gameState.currState == 'WAITING_FOR_MONOPOLY':
-
-            pass
-
-        return None
-
     def CanBuildRoad(self, gameState, player, edge, roadIndex, setUpPhase = False):
 
         # check if there is a road in this edge
@@ -139,15 +62,20 @@ class Game:
 
             if setUpPhase:
 
-                if gameState.boardNodes[nodeIndex].construction is not None and \
-                   gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber and \
-                   gameState.boardNodes[nodeIndex].construction.index == roadIndex:
-                    return True
+                if gameState.boardNodes[nodeIndex].construction is not None:
+
+                    if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber and \
+                       gameState.boardNodes[nodeIndex].construction.index == roadIndex:
+                        return True
+                    else:
+                        return False
 
             else:
-                if gameState.boardNodes[nodeIndex].construction is not None and \
-                   gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber:
-                    return True
+                if gameState.boardNodes[nodeIndex].construction is not None:
+                    if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber:
+                        return True
+                    else:
+                        return False
 
         # if there are none, check for near roads
 
@@ -194,40 +122,31 @@ class Game:
 
         if not setUpPhase and\
                 not player.CanAfford(BuildRoadAction.cost) \
-                and player.HavePiece(g_pieces.index('ROADS')):
+                or not player.HavePiece(g_pieces.index('ROADS')):
             return None
 
-        possibleRoads = [edge.index for edge in
-                         gameState.GetConstructableEdges() if
-                         self.CanBuildRoad(gameState, player, edge, len(player.roads), setUpPhase)]
-
-        return [BuildRoadAction(player, edgeIndex, len(player.roads)) for edgeIndex in possibleRoads]
+        return [edge for edge in
+                gameState.GetConstructableEdges() if
+                self.CanBuildRoad(gameState, player, edge, len(player.roads), setUpPhase)]
 
     def GetPossibleSettlements(self, gameState, player, setUpPhase = False):
 
         if not setUpPhase and \
                 not player.CanAfford(BuildSettlementAction.cost) \
-                and player.HavePiece(g_pieces.index('SETTLEMENTS')):
+                or not player.HavePiece(g_pieces.index('SETTLEMENTS')):
             return None
 
-        possibleSettlements = [node.index for node in
-                               gameState.GetConstructableNodes() if
-                               self.CanBuildSettlement(gameState, player, node, setUpPhase)]
-
-        return [BuildSettlementAction(player.seatNumber, nodeIndex, len(player.settlements)) for nodeIndex in possibleSettlements]
+        return [node for node in
+                gameState.GetConstructableNodes() if
+                self.CanBuildSettlement(gameState, player, node, setUpPhase)]
 
     def GetPossibleCities(self, gameState, player):
 
         if not player.CanAfford(BuildCityAction.cost) \
-                and player.HavePiece(g_pieces.index('CITIES')):
+                or not player.HavePiece(g_pieces.index('CITIES')):
             return None
 
-        possibleCities = []
-
-        for settlement in player.settlements:
-            possibleCities.append(BuildCityAction(player.seatNumber, settlement.position, len(player.cities)))
-
-        return possibleCities
+        return [settlement.index for settlement in player.settlements]
 
     def GetDiceRoll(self):
 

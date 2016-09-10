@@ -18,6 +18,7 @@ class Client:
 
         self.gameName       = gameName
         self.player         = player
+        self.playerBuildReq = None
 
         self.autoStart      = autoStart
         self.botsInit       = False
@@ -254,7 +255,19 @@ class Client:
 
                 logging.info("Game Begin!\n Players in this game are: {0}".format([player.name for player in self.game.gameState.players]))
 
-            if instance.stateName == "OVER":
+            elif self.game.gameState.currPlayer == self.player.seatNumber and \
+                 instance.stateName == "PLACING_ROAD" or \
+                 instance.stateName == "PLACING_SETTLEMENT" or \
+                 instance.stateName == "PLACING_CITY":
+
+                response = PutPieceMessage(self.gameName, self.player.seatNumber,
+                                           self.playerBuildReq.pieceId, self.playerBuildReq.position)
+
+                self.SendMessage(response)
+
+                return
+
+            elif instance.stateName == "OVER":
                 pass
 
             self.RespondToServer()
@@ -315,7 +328,7 @@ class Client:
 
         elif name == "ChoosePlayerRequestMessage":
 
-            self.SendMessage(self.player.ChoosePlayerToStealFrom(self.game))
+            self.SendMessage(ChoosePlayerMessage(self.gameName, self.player.ChoosePlayerToStealFrom(self.game)))
 
     def RespondToServer(self):
 
@@ -334,10 +347,18 @@ class Client:
             response = None
 
             if agentAction.type == 'BuildRoad' or \
-                            agentAction.type == 'BuildSettlement' or \
-                            agentAction.type == 'BuildCity':
-                response = PutPieceMessage(self.gameName, self.player.seatNumber, agentAction.pieceId,
-                                           agentAction.position)
+               agentAction.type == 'BuildSettlement' or \
+               agentAction.type == 'BuildCity':
+
+                if self.game.gameState.currState == "START1A" or self.game.gameState.currState == "START1B" or \
+                   self.game.gameState.currState == "START2A" or self.game.gameState.currState == "START2B":
+
+                    response = PutPieceMessage(self.gameName, self.player.seatNumber,
+                                               agentAction.pieceId, agentAction.position)
+                else:
+                    response = BuildRequestMessage(self.gameName, agentAction.pieceId)
+
+                    self.playerBuildReq = agentAction
 
             if agentAction.type == 'RollDices':
 
@@ -352,6 +373,10 @@ class Client:
                 response = DiscardMessage(self.gameName, agentAction.resources[0], agentAction.resources[1],
                                                          agentAction.resources[2], agentAction.resources[3],
                                                          agentAction.resources[4], agentAction.resources[5])
+
+            #if agentAction.type == 'ChoosePlayerToStealFrom':
+            #
+            #    response = ChoosePlayerMessage(self.gameName, agentAction.targetPlayerNumber)
 
             if agentAction.type == 'EndTurn':
 
