@@ -255,15 +255,16 @@ class Client:
 
                 logging.info("Game Begin!\n Players in this game are: {0}".format([player.name for player in self.game.gameState.players]))
 
-            elif self.game.gameState.currPlayer == self.player.seatNumber and \
-                 instance.stateName == "PLACING_ROAD" or \
+            elif instance.stateName == "PLACING_ROAD" or \
                  instance.stateName == "PLACING_SETTLEMENT" or \
                  instance.stateName == "PLACING_CITY":
 
-                response = PutPieceMessage(self.gameName, self.player.seatNumber,
-                                           self.playerBuildReq.pieceId, self.playerBuildReq.position)
+                if self.game.gameState.currPlayer == self.player.seatNumber:
 
-                self.SendMessage(response)
+                    response = PutPieceMessage(self.gameName, self.player.seatNumber,
+                                               self.playerBuildReq.pieceId, self.playerBuildReq.position)
+
+                    self.SendMessage(response)
 
                 return
 
@@ -306,9 +307,9 @@ class Client:
             logging.info("Player seated on {0} constructed a {1}, have this constructions now:\n"
                          " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
                 instance.playerNumber, instance.pieceType[0],
-                self.game.gameState.players[instance.playerNumber].roads,
-                self.game.gameState.players[instance.playerNumber].settlements,
-                self.game.gameState.players[instance.playerNumber].cities
+                [hex(road) for road in self.game.gameState.players[instance.playerNumber].roads],
+                [hex(settlement) for settlement in self.game.gameState.players[instance.playerNumber].settlements],
+                [hex(city) for city in self.game.gameState.players[instance.playerNumber].cities]
             ))
 
         elif name == "DiceResultMessage":
@@ -328,7 +329,9 @@ class Client:
 
         elif name == "ChoosePlayerRequestMessage":
 
-            self.SendMessage(ChoosePlayerMessage(self.gameName, self.player.ChoosePlayerToStealFrom(self.game)))
+            choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game)
+
+            self.SendMessage(ChoosePlayerMessage(self.gameName, choosePlayerAction.targetPlayerNumber))
 
     def RespondToServer(self):
 

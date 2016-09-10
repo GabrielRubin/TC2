@@ -236,8 +236,8 @@ class BoardEdge:
 
     def __init__(self, index):
 
-        self.index = index;
-        self.owner = None;
+        self.index        = index;
+        self.construction = None;
 
     def GetAdjacentHexes(self):
 

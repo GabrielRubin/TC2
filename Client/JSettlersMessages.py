@@ -787,3 +787,24 @@ class BuildRequestMessage(Message):
     def parse(text):
         game, pt = text.split(",")
         return BuildRequestMessage(game, int(pt))
+
+class BankTradeMessage(Message):
+    id = 1040
+
+    def __init__(self, game, give, get):
+        self.game = game
+        self.give = give
+        self.get = get
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id, self.game
+                                        , ','.join(map(str, self.give))
+                                        , ','.join(map(str, self.get)))
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        game = data[0]
+        give = map(int, data[1:6])
+        got = map(int, data[6:11])
+        return BankTradeMessage(game, give, got)

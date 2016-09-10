@@ -52,7 +52,7 @@ class Game:
 
         # check if there is a road in this edge
 
-        if edge.owner is not None:
+        if edge.construction is not None:
 
             return False
 
@@ -61,7 +61,7 @@ class Game:
         for nodeIndex in edge.GetAdjacentNodes():
 
             if setUpPhase:
-
+                # when the game is on setUpPhase, we can only build roads near our recently built settlement:
                 if gameState.boardNodes[nodeIndex].construction is not None:
 
                     if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber and \
@@ -70,18 +70,20 @@ class Game:
                     else:
                         return False
 
+                return False
+
             else:
+                # normal rules apply otherwise: our roads can be constructed near our settlements
                 if gameState.boardNodes[nodeIndex].construction is not None:
                     if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber:
                         return True
-                    else:
-                        return False
 
-        # if there are none, check for near roads
-
+        # if there are no settlements or cities that we own near here, check for other roads...
         for edgeIndex in edge.GetAdjacentEdges():
 
-            if gameState.boardEdges[edgeIndex].owner == player.seatNumber and not setUpPhase:
+            edge = gameState.boardEdges[edgeIndex]
+
+            if edge.construction is not None and edge.construction.owner == player.seatNumber:
                 return True
 
         return False
@@ -95,14 +97,15 @@ class Game:
             return False
 
         #step 2: check if node respects piece connectivity, if not in setUpPhase
-
         if not setUpPhase:
 
             foundConnection = False
 
             for edgeIndex in node.GetAdjacentEdges():
 
-                if gameState.boardEdges[edgeIndex].owner == player.seatNumber:
+                edge = gameState.boardEdges[edgeIndex]
+
+                if edge.construction is not None and edge.construction.owner == player.seatNumber:
                     foundConnection = True
                     break
 
@@ -110,7 +113,6 @@ class Game:
                 return False
 
         #step 3: check if node respects the distance rule
-
         for nodeIndex in node.GetAdjacentNodes():
 
             if gameState.boardNodes[nodeIndex].construction is not None:
@@ -146,7 +148,7 @@ class Game:
                 or not player.HavePiece(g_pieces.index('CITIES')):
             return None
 
-        return [settlement.index for settlement in player.settlements]
+        return [gameState.boardNodes[settlement] for settlement in player.settlements]
 
     def GetDiceRoll(self):
 
@@ -214,14 +216,13 @@ class GameState:
 
     def ApplyAction(self, action, fromServer = False):
 
-        # TODO: Make this better, all this constructions are similar...
         if action.type == 'BuildRoad':
 
             newRoad = Construction(g_constructionTypes[0], action.playerNumber, action.index, action.position)
 
-            self.players[action.playerNumber].roads.append(newRoad)
+            self.players[action.playerNumber].roads.append(action.position)
 
-            self.boardEdges[action.position].owner = action.playerNumber
+            self.boardEdges[action.position].construction = newRoad
 
             if not fromServer:
                 self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
@@ -230,7 +231,7 @@ class GameState:
 
             newSettlement = Construction(g_constructionTypes[1], action.playerNumber, action.index, action.position)
 
-            self.players[action.playerNumber].settlements.append(newSettlement)
+            self.players[action.playerNumber].settlements.append(action.position)
 
             self.boardNodes[action.position].construction = newSettlement
 
@@ -241,7 +242,9 @@ class GameState:
 
             newCity = Construction(g_constructionTypes[2], action.playerNumber, action.index, action.position)
 
-            self.players[action.playerNumber].cities.append(newCity)
+            self.players[action.playerNumber].settlements.remove(action.position)
+
+            self.players[action.playerNumber].cities.append(action.position)
 
             self.boardNodes[action.position].construction = newCity
 

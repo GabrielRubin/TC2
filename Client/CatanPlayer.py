@@ -27,11 +27,12 @@ class Player:
         devCardPoints      = self.developmentCards[0]
 
         constructionPoints = 0
-        for settlement in self.settlements:
-            constructionPoints += settlement.victoryPoints
 
-        for city in self.cities:
-            constructionPoints += city.victoryPoints
+        for i in range(0, len(self.settlements)):
+            constructionPoints += 1
+
+        for i in range(0, len(self.cities)):
+            constructionPoints += 2
 
         achievementPoints = 0
         if self.biggestRoad:
