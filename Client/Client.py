@@ -400,6 +400,9 @@ class Client:
 
         elif self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN:
 
+            if not self.player.canPlayDevCard:
+                self.player.canPlayDevCard = True
+
             agentAction = self.player.DoMove(self.game)
 
         if agentAction is not None:
@@ -444,23 +447,43 @@ class Client:
 
                 logging.info("COMPROU!!!!")
 
+                self.player.canPlayDevCard = False
+
                 response = BuyCardRequestMessage(self.gameName)
 
             if agentAction.type == 'UseKnightsCard':
+
+                self.player.canPlayDevCard = False
 
                 response = PlayDevCardRequestMessage(self.gameName, KNIGHT_CARD_INDEX)
 
             if agentAction.type == 'UseFreeRoadsCard':
 
+                self.player.canPlayDevCard = False
+
                 response = PlayDevCardRequestMessage(self.gameName, ROAD_BUILDING_CARD_INDEX)
 
+            # TODO > Review this!!!
             if agentAction.type == 'UseYearOfPlentyCard':
 
-                response = PlayDevCardRequestMessage(self.gameName, YEAR_OF_PLENTY_CARD_INDEX)
+                response = None
 
+                self.player.canPlayDevCard = False
+
+                resources = [1, 0, 0, 0, 1]
+
+                self.SendMessage(PlayDevCardRequestMessage(self.gameName, YEAR_OF_PLENTY_CARD_INDEX))
+                self.SendMessage(DiscoveryPickMessage(self.gameName, resources))
+
+            # TODO > Review this!!!
             if agentAction.type == 'UseMonopolyCard':
 
-                response = PlayDevCardRequestMessage(self.gameName, MONOPOLY_CARD_INDEX)
+                response = None
+
+                self.player.canPlayDevCard = False
+
+                self.SendMessage(PlayDevCardRequestMessage(self.gameName, MONOPOLY_CARD_INDEX))
+                self.SendMessage(MonopolyPickMessage(self.gameName, 1))
 
             if agentAction.type == 'EndTurn':
 

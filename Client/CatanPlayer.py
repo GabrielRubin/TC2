@@ -258,6 +258,8 @@ class AgentRandom(Player):
 
             canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
+            # TODO: PLAY DEV CARDS
+
             # COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
                 possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
@@ -272,10 +274,10 @@ class AgentRandom(Player):
                                      for setNode in possibleCities]
 
             if canBuyADevCard:
-                possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
+               possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if len(possibleActions) == 0:
-                possibleActions = possibleBankTrades
+                possibleActions = possibleBankTrades # ISSO AQUI TA ZUADO
 
             return possibleActions
 

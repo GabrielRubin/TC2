@@ -126,6 +126,8 @@ class Game:
 
     def CanBuyADevCard(self, gameState, player):
 
+        #return gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost)
+
         if gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
 
             logging.info(">>>> CAN BUY CARD!")

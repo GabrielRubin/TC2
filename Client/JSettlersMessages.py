@@ -840,7 +840,6 @@ class DevCardMessage(Message):
         g, pn, ac, ct = text.split(",")
         return DevCardMessage(g, int(pn), int(ac), int(ct))
 
-# TODO: Lookup how cards are represented
 class PlayDevCardRequestMessage(Message):
     id = 1049
 
@@ -855,3 +854,36 @@ class PlayDevCardRequestMessage(Message):
     def parse(text):
         g, c = text.split(",")
         return PlayDevCardRequestMessage(g, c)
+
+
+class DiscoveryPickMessage(Message):
+    id = 1052
+
+    def __init__(self, gameName, resources):
+        self.gameName = gameName
+        self.resources = resources
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.gameName, ",".join(map(str, self.resources)))
+
+    @staticmethod
+    def parse(text):
+        data = text.split(",")
+        gameName = data[0]
+        resources = map(int, data[1:])
+        return DiscoveryPickMessage(gameName, resources)
+
+class MonopolyPickMessage(Message):
+    id = 1053
+
+    def __init__(self, gameName, resource):
+        self.gameName = gameName
+        self.resource = resource
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.resource)
+
+    @staticmethod
+    def parse(text):
+        gameName, res = text.split(",")
+        return MonopolyPickMessage(gameName, int(res))
