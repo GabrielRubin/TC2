@@ -839,3 +839,19 @@ class DevCardMessage(Message):
     def parse(text):
         g, pn, ac, ct = text.split(",")
         return DevCardMessage(g, int(pn), int(ac), int(ct))
+
+# TODO: Lookup how cards are represented
+class PlayDevCardRequestMessage(Message):
+    id = 1049
+
+    def __init__(self, gameName, card):
+        self.gameName = gameName
+        self.card = card
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.gameName, self.card)
+
+    @staticmethod
+    def parse(text):
+        g, c = text.split(",")
+        return PlayDevCardRequestMessage(g, c)

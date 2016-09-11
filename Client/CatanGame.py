@@ -126,15 +126,13 @@ class Game:
 
     def CanBuyADevCard(self, gameState, player):
 
-        logging.info(">>>>>>>>>>>>> TOTAL DEV CARDS: {0}".format(gameState.devCards))
-
         if gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
 
-            logging.info(">>>>>> CAN BUY!!!")
+            logging.info(">>>> CAN BUY CARD!")
             return True
         else:
 
-            logging.info(">>>>>> CAN'T BUY!!!")
+            logging.info(">>>> CAN'T BUY A CARD!")
             return False
 
     def GetPossibleRoads(self, gameState, player, setUpPhase = False):

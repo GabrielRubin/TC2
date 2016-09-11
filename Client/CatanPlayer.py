@@ -31,7 +31,7 @@ class Player:
 
     def GetVictoryPoints(self):
 
-        devCardPoints      = self.developmentCards[0]
+        devCardPoints      = self.developmentCards[VICTORY_POINT_CARD_INDEX]
 
         constructionPoints = 0
 
@@ -223,6 +223,14 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'PLAY':
 
+            # TODO: PLAY A KNIGHT CARD ACTION
+
+            if self.canPlayDevCard and self.developmentCards[KNIGHT_CARD_INDEX] > 0:
+
+                pass
+
+            #else:
+
             if self.rolledTheDices:
 
                 self.rolledTheDices = False
@@ -251,20 +259,20 @@ class AgentRandom(Player):
             canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
             # COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
-            #if possibleRoads is not None:
-            #    possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
-            #                        for roadEdge in possibleRoads]
+            if possibleRoads is not None:
+                possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
+                                    for roadEdge in possibleRoads]
 
-            #if possibleSettlements is not None and len(possibleSettlements) > 0:
-            #    possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-            #                        for setNode in possibleSettlements]
+            if possibleSettlements is not None and len(possibleSettlements) > 0:
+                possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
+                                    for setNode in possibleSettlements]
+
+            if possibleCities is not None and len(possibleCities) > 0:
+               possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
+                                     for setNode in possibleCities]
 
             if canBuyADevCard:
                 possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
-
-            #if possibleCities is not None and len(possibleCities) > 0:
-            #    possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
-            #                         for setNode in possibleCities]
 
             if len(possibleActions) == 0:
                 possibleActions = possibleBankTrades

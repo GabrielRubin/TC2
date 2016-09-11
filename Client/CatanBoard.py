@@ -104,12 +104,17 @@ g_resources = [
 ]
 
 g_developmentCards = [
-    'VICTORY_POINT',
     'KNIGHT',
-    'YEAR_OF_PLENTY',
     'ROAD_BUILDING',
-    'MONOPOLY'
+    'YEAR_OF_PLENTY',
+    'MONOPOLY',
+    'VICTORY_POINT'
 ]
+KNIGHT_CARD_INDEX         = 0
+ROAD_BUILDING_CARD_INDEX  = 1
+YEAR_OF_PLENTY_CARD_INDEX = 2
+MONOPOLY_CARD_INDEX       = 3
+VICTORY_POINT_CARD_INDEX  = 4
 
 g_pieces = [
     'ROADS',
