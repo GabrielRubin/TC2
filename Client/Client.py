@@ -289,6 +289,48 @@ class Client:
 
             self.RespondToServer()
 
+        elif name == "DevCardMessage":
+
+            if int(instance.playernum) == int(self.player.seatNumber):
+
+                # DANDA gain a devcard
+                if  int(instance.action) == 0:
+
+                    if int(instance.cardtype) == 0:
+                        self.player.developmentCards[1] += 1
+
+                    elif int(instance.cardtype) == 1:
+                        self.player.developmentCards[3] += 1
+                        #self.bought["roadcard"] = True
+
+                    elif int(instance.cardtype) == 2:
+                        self.player.developmentCards[2] += 1
+                        #self.bought["resourcecard"] = True
+
+                    elif int(instance.cardtype) == 3:
+                        self.player.developmentCards[4] += 1
+                        #self.bought["monopolycard"] = True
+
+                    elif int(instance.cardtype) >= 4 and int(instance.cardtype) <= 8:
+                        self.player.developmentCards[0] += 1
+
+                # DANDA used a devcard
+                elif int(instance.action) == 1:
+
+                    if int(instance.cardtype) == 0:
+                        self.player.developmentCards[1] -= 1
+
+                    elif int(instance.cardtype) == 1:
+                        self.player.developmentCards[3] -= 1
+
+                    elif int(instance.cardtype) == 2:
+                        self.player.developmentCards[2] -= 1
+
+                    elif int(instance.cardtype) == 3:
+                        self.player.developmentCards[4] -= 1
+
+                logging.info("DANDA CARDS: VICTORY_POINT->{0}  KNIGHT->{1}  YEAR_OF_PLENTY->{2}  ROAD_BUILDING->{3}  MONOPOLY->{4}".format(
+                    self.player.developmentCards[0], self.player.developmentCards[1], self.player.developmentCards[2], self.player.developmentCards[3], self.player.developmentCards[4]))
 
         elif name == "SetPlayedDevCardMessage":
 
@@ -341,7 +383,9 @@ class Client:
         elif name == "MakeOfferMessage":
 
             # TODO > Review this!!!
-            self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
+            # TRADE?
+            if instance.to[int(self.player.seatNumber)] == "true":
+                self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
         elif name == "ChoosePlayerRequestMessage":
 
@@ -398,6 +442,12 @@ class Client:
                 response = BankTradeMessage(self.gameName, agentAction.giveResources, agentAction.getResources)
 
                 self.waitBankTradeAck = True
+
+            if agentAction.type == 'BuyDevelopmentCard':
+
+                logging.info("COMPROU!!!!")
+
+                response = BuyCardRequestMessage(self.gameName)
 
             if agentAction.type == 'EndTurn':
 

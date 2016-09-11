@@ -22,6 +22,13 @@ class Player:
         self.canPlayDevCard   = False
         self.discardCardCount = 0
 
+        self.firstSettlementBuild = False
+        self.secondSettlementBuild = False
+        self.firstRoadBuild = False
+        self.secondRoadBuild = False
+
+        self.rolledTheDices = False
+
     def GetVictoryPoints(self):
 
         devCardPoints      = self.developmentCards[0]
@@ -111,6 +118,11 @@ class AgentRandom(Player):
 
         if   gameState.currState == 'START1A':
 
+            if self.firstSettlementBuild:
+                return None
+
+            self.firstSettlementBuild = True
+
             possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
 
             def RateNode(node, uniqueness):
@@ -147,11 +159,21 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'START1B':
 
+            if self.firstRoadBuild:
+                return None
+
+            self.firstRoadBuild = True
+
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
             return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == 'START2A':
+
+            if self.secondSettlementBuild:
+                return None
+
+            self.secondSettlementBuild = True
 
             possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
 
@@ -190,14 +212,27 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'START2B':
 
+            if self.secondRoadBuild:
+                return None
+
+            self.secondRoadBuild = True
+
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
             return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == 'PLAY':
 
-            # roll the dices!
-            return [ RollDicesAction(player) ]
+            if self.rolledTheDices:
+
+                self.rolledTheDices = False
+                return None
+            else:
+
+                self.rolledTheDices = True
+
+                # roll the dices!
+                return [ RollDicesAction(player) ]
 
         elif gameState.currState == 'PLAY1':
 
@@ -213,18 +248,23 @@ class AgentRandom(Player):
 
             possibleBankTrades  = self.GetPossibleBankTrades(game, player)
 
+            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
+
             # COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
-            if possibleRoads is not None:
-                possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
-                                    for roadEdge in possibleRoads]
-#
-            if possibleSettlements is not None and len(possibleSettlements) > 0:
-                possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                                    for setNode in possibleSettlements]
-#
-            if possibleCities is not None and len(possibleCities) > 0:
-                possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
-                                     for setNode in possibleCities]
+            #if possibleRoads is not None:
+            #    possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
+            #                        for roadEdge in possibleRoads]
+
+            #if possibleSettlements is not None and len(possibleSettlements) > 0:
+            #    possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
+            #                        for setNode in possibleSettlements]
+
+            if canBuyADevCard:
+                possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
+
+            #if possibleCities is not None and len(possibleCities) > 0:
+            #    possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
+            #                         for setNode in possibleCities]
 
             if len(possibleActions) == 0:
                 possibleActions = possibleBankTrades

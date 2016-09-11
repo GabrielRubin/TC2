@@ -720,10 +720,10 @@ class MakeOfferMessage(Message):
     def parse(text):
         data = text.split(",")
         game = data[0]
-        fr = data[1]
-        to = " "
-        give = " "
-        get = " "
+        fr   = data[1]
+        to   = data[2:6]   # 4 players game
+        give = data[6:11]
+        get  = data[11:]
         return MakeOfferMessage(game, fr, to, give, get)
 
 class RejectOfferMessage(Message):
@@ -808,3 +808,34 @@ class BankTradeMessage(Message):
         give = map(int, data[1:6])
         got = map(int, data[6:11])
         return BankTradeMessage(game, give, got)
+
+class BuyCardRequestMessage(Message):
+    id = 1045
+
+    def __init__(self, gameName):
+        self.gameName = gameName
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.gameName)
+
+    @staticmethod
+    def parse(text):
+        return BuyCardRequestMessage(text)
+
+# TODO: See SOCDevCard.java
+class DevCardMessage(Message):
+    id = 1046
+
+    def __init__(self, gameName, playernum, action, cardtype):
+        self.gameName = gameName
+        self.playernum = playernum
+        self.action = action
+        self.cardtype = cardtype
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3},{4}".format(self.id, self.gameName, self.playernum, self.action, self.cardtype)
+
+    @staticmethod
+    def parse(text):
+        g, pn, ac, ct = text.split(",")
+        return DevCardMessage(g, int(pn), int(ac), int(ct))
