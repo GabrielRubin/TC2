@@ -10,8 +10,9 @@ class Player:
 
         self.name             = name
         self.seatNumber       = seatNumber
-        self.resources        = [ 0 for i in range(0, len(g_resources))        ]
-        self.developmentCards = [ 0 for i in range(0, len(g_developmentCards)) ]
+        self.resources        = [ 0 for i in range(0, len(g_resources))           ]
+        self.developmentCards = [ 0 for i in range(0, len(g_developmentCards))    ]
+        self.mayPlayDevCards  = [ False for i in range(0, len(g_developmentCards))]
         self.roads            = [ ]
         self.settlements      = [ ]
         self.cities           = [ ]
@@ -31,7 +32,7 @@ class Player:
 
     def GetVictoryPoints(self):
 
-        devCardPoints      = self.developmentCards[VICTORY_POINT_CARD_INDEX]
+        devCardPoints = self.developmentCards[VICTORY_POINT_CARD_INDEX]
 
         constructionPoints = 0
 
@@ -48,6 +49,27 @@ class Player:
             achievementPoints += 2
 
         return devCardPoints + constructionPoints + achievementPoints
+
+    def UpdateMayPlayDevCards(self, recentlyCardIndex = None, canUseAll = False):
+
+        if canUseAll:
+
+            for i in range(0, len(self.developmentCards)):
+
+                self.mayPlayDevCards[i] = self.developmentCards[i] > 0
+
+        else:
+
+            if recentlyCardIndex is not None:
+
+                for i in range(0, len(self.developmentCards)):
+                    if recentlyCardIndex == i:
+
+                        self.mayPlayDevCards[i] = self.developmentCards[i] > 1
+
+                    else:
+
+                        self.mayPlayDevCards[i] = self.developmentCards[i] > 0
 
     def CanAfford(self, price):
 
@@ -225,7 +247,9 @@ class AgentRandom(Player):
 
             # TODO: PLAY A KNIGHT CARD ACTION
 
-            if self.canPlayDevCard and self.developmentCards[KNIGHT_CARD_INDEX] > 0:
+            if self.canPlayDevCard and \
+                    self.mayPlayDevCard[KNIGHT_CARD_INDEX] and \
+                            self.developmentCards[KNIGHT_CARD_INDEX] > 0:
 
                 pass
 
@@ -274,7 +298,7 @@ class AgentRandom(Player):
                                      for setNode in possibleCities]
 
             if canBuyADevCard:
-                possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
+               possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if len(possibleActions) == 0:
                 possibleActions = possibleBankTrades

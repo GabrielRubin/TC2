@@ -293,38 +293,54 @@ class Client:
 
             if int(instance.playernum) == int(self.player.seatNumber):
 
+                cardType = int(instance.cardtype)
+                if cardType > 4 and cardType <= 8:
+                    cardType = 4
+
                 # DANDA gain a devcard
                 if  int(instance.action) == 0:
 
-                    if int(instance.cardtype) == 0: #KNIGHT
+                    # alternative logic:
+                    # if int(instance.cardtype) >= 4 and int(instance.cardtype) <= 8: #VICTORY_POINTS
+                    #    self.player.developmentCards[VICTORY_POINT_CARD_INDEX] += 1
+                    #elif int(instance.cardtype) >= 0:
+                    #   self.player.developmentCards[int(instance.cardtype)] += 1
+
+                    if   cardType == 0: #KNIGHT
                         self.player.developmentCards[KNIGHT_CARD_INDEX] += 1
 
-                    elif int(instance.cardtype) == 1: #ROAD
+                    elif cardType == 1: #ROAD
                         self.player.developmentCards[ROAD_BUILDING_CARD_INDEX] += 1
 
-                    elif int(instance.cardtype) == 2: #YEAR_OF_PLENTY
+                    elif cardType == 2: #YEAR_OF_PLENTY
                         self.player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] += 1
 
-                    elif int(instance.cardtype) == 3: #MONOPOLY
+                    elif cardType == 3: #MONOPOLY
                         self.player.developmentCards[MONOPOLY_CARD_INDEX] += 1
 
-                    elif int(instance.cardtype) >= 4 and int(instance.cardtype) <= 8: #VICTORY_POINTS
+                    elif cardType == 4 : #VICTORY_POINTS
                         self.player.developmentCards[VICTORY_POINT_CARD_INDEX] += 1
 
                 # DANDA used a devcard
                 elif int(instance.action) == 1:
 
-                    if int(instance.cardtype) == 0:
+                    if   cardType == 0:
                         self.player.developmentCards[KNIGHT_CARD_INDEX] -= 1
 
-                    elif int(instance.cardtype) == 1:
+                    elif cardType == 1:
                         self.player.developmentCards[ROAD_BUILDING_CARD_INDEX] -= 1
 
-                    elif int(instance.cardtype) == 2:
+                    elif cardType == 2:
                         self.player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] -= 1
 
-                    elif int(instance.cardtype) == 3:
+                    elif cardType == 3:
+                        self.player.developmentCards[MONOPOLY_CARD_INDEX] -= 1
+
+                    elif cardType == 4 : #VICTORY_POINTS
                         self.player.developmentCards[VICTORY_POINT_CARD_INDEX] -= 1
+
+                if cardType <= 4:
+                    self.player.UpdateMayPlayDevCards(cardType, False)
 
                 logging.info("DANDA CARDS: KNIGHT->{0}  ROAD_BUILDING->{1}  YEAR_OF_PLENTY->{2} MONOPOLY->{3} VICTORY_POINT->{4}".format(
                     self.player.developmentCards[0], self.player.developmentCards[1], self.player.developmentCards[2], self.player.developmentCards[3], self.player.developmentCards[4]))
@@ -400,8 +416,8 @@ class Client:
 
         elif self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN:
 
-            if not self.player.canPlayDevCard:
-                self.player.canPlayDevCard = True
+            #@REVIEW@
+            self.player.UpdateMayPlayDevCards(None, True)
 
             agentAction = self.player.DoMove(self.game)
 
@@ -447,19 +463,13 @@ class Client:
 
                 logging.info("COMPROU!!!!")
 
-                self.player.canPlayDevCard = False
-
                 response = BuyCardRequestMessage(self.gameName)
 
             if agentAction.type == 'UseKnightsCard':
 
-                self.player.canPlayDevCard = False
-
                 response = PlayDevCardRequestMessage(self.gameName, KNIGHT_CARD_INDEX)
 
             if agentAction.type == 'UseFreeRoadsCard':
-
-                self.player.canPlayDevCard = False
 
                 response = PlayDevCardRequestMessage(self.gameName, ROAD_BUILDING_CARD_INDEX)
 
@@ -467,8 +477,6 @@ class Client:
             if agentAction.type == 'UseYearOfPlentyCard':
 
                 response = None
-
-                self.player.canPlayDevCard = False
 
                 resources = [1, 0, 0, 0, 1]
 
@@ -479,8 +487,6 @@ class Client:
             if agentAction.type == 'UseMonopolyCard':
 
                 response = None
-
-                self.player.canPlayDevCard = False
 
                 self.SendMessage(PlayDevCardRequestMessage(self.gameName, MONOPOLY_CARD_INDEX))
                 self.SendMessage(MonopolyPickMessage(self.gameName, 1))
