@@ -260,7 +260,7 @@ class AgentRandom(Player):
 
             # TODO: PLAY DEV CARDS
 
-            # COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
+            #COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
                 possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
                                     for roadEdge in possibleRoads]
@@ -274,10 +274,10 @@ class AgentRandom(Player):
                                      for setNode in possibleCities]
 
             if canBuyADevCard:
-               possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
+                possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if len(possibleActions) == 0:
-                possibleActions = possibleBankTrades # ISSO AQUI TA ZUADO
+                possibleActions = possibleBankTrades
 
             return possibleActions
 
@@ -391,9 +391,10 @@ class AgentRandom(Player):
         possibleTradeAmount = [0, 0, 0, 0, 0]
         candidateForTrade   = []
 
+        minResourceAmount = min(player.resources)
         for i in range(len(possibleTradeAmount)):
             possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
-            if player.resources[i] == 0:
+            if player.resources[i] == minResourceAmount:
                 candidateForTrade.append(i)
 
         possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
