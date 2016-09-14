@@ -4,7 +4,7 @@ PyCatron is a Python 2.7 program capable of playing Settlers of Catan that is cu
 
 ### Usage
 
-PyCatront requires [Python 2.7](https://www.python.org/) and [Java](https://www.java.com/) to run.
+PyCatron requires [Python 2.7](https://www.python.org/) and [Java](https://www.java.com/) to run.
 
 To run the program, you have to run the file `TC2Main.py` on a python editor ( like [PyCharm](https://www.jetbrains.com/pycharm/) ) or through command line ( you must have Python 2.7 in your SYSPATH ), like this:
 
@@ -21,9 +21,9 @@ Running this script automatically starts the JSettlers server under the localhos
 
 ### GamePlay
 
-PyCatron is currently under development, and currently can only play Settlers of Catan randomly, but it will soon have more gameplay capabilities.
+PyCatron is currently under development, and can only play Settlers of Catan randomly, but it will soon have more gameplay capabilities.
 
-Currently, he's capable of doing these actions at random:
+Our agent is currently capable of doing these actions at random:
 
 - Build roads, settlements and cities
 - Trade with the bank
