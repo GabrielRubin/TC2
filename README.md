@@ -21,7 +21,7 @@ Running this script automatically starts the JSettlers server under the localhos
 
 ### GamePlay
 
-PyCatron is currently under development, and can only play Settlers of Catan randomly, but it will soon have more gameplay capabilities.
+PyCatron is currently under development and can only play Settlers of Catan randomly, but it will soon have more gameplay capabilities.
 
 Our agent is currently capable of doing these actions at random:
 
