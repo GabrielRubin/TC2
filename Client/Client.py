@@ -1,3 +1,4 @@
+import sys
 import socket
 import logging
 from JSettlersMessages import *
@@ -76,7 +77,7 @@ class Client:
         id, txt = message[:4], message[5:]
 
         if not id in self.messagetbl:
-            logging.critical("Can not parse '{0}'".format(message))
+            logging.warning("Can not parse '{0}'".format(message))
             return
 
         messageClass, messageName = self.messagetbl[id]
@@ -498,8 +499,8 @@ class Client:
             if response is not None:
                 self.SendMessage(response)
 
-logging.getLogger().setLevel(logging.INFO)
-logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
-
-client = Client("TestGame", AgentRandom("Danda", 0), True, True)
-client.StartClient(("localhost", 8880))
+#logging.getLogger().setLevel(logging.INFO)
+#logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
+#
+#client = Client("TestGame", AgentRandom("Danda", 0), True, True)
+#client.StartClient(("localhost", 8880))

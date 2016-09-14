@@ -280,7 +280,7 @@ class AgentRandom(Player):
 
             possibleBankTrades  = self.GetPossibleBankTrades(game, player)
 
-            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
+            #canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
             # TODO: PLAY DEV CARDS
 
@@ -294,11 +294,11 @@ class AgentRandom(Player):
                                     for setNode in possibleSettlements]
 
             if possibleCities is not None and len(possibleCities) > 0:
-               possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
+                possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
                                      for setNode in possibleCities]
 
-            if canBuyADevCard:
-               possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
+            #if canBuyADevCard:
+            #   possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if len(possibleActions) == 0:
                 possibleActions = possibleBankTrades
@@ -364,7 +364,7 @@ class AgentRandom(Player):
         discardCardCount = int(math.floor(len(resourcesPopulation) / 2))
 
         if discardCardCount > 0:
-            assert (player.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
+            #assert(player.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
             player.discardCardCount = 0
 
         selectedResources = random.sample(resourcesPopulation, discardCardCount)
