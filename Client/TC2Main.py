@@ -62,19 +62,17 @@ if not args.noRobots:
 
     robot1Process = subprocess.Popen(
         "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd",
-        shell=False, stdout=subprocess.PIPE)
+        shell=True, stdout=subprocess.PIPE)
 
     robot2Process = subprocess.Popen(
         "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd",
-        shell=False, stdout=subprocess.PIPE)
+        shell=True, stdout=subprocess.PIPE)
 
     robot3Process = subprocess.Popen(
         "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd",
-        shell=False, stdout=subprocess.PIPE)
+        shell=True, stdout=subprocess.PIPE)
 
 if not args.noClient:
-
-    print("show!")
 
     clientProcess = subprocess.Popen("java -jar JSettlers.jar localhost 8880")
 
@@ -91,8 +89,9 @@ if args.noGame:
 else:
     ourClient = Client("TestGame", player, True, True)
 
+# TODO > sleep or not? bug?
 # Give some time so the server can start and the robots get in....
-#time.sleep(1)
+#time.sleep(3)
 
 ourClient.StartClient(("localhost", 8880))
 
@@ -106,3 +105,5 @@ if robot3Process:
     robot3Process.wait()
 if clientProcess:
     clientProcess.wait()
+
+print(serverProcess.returncode)

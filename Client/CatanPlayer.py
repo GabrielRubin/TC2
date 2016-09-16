@@ -20,7 +20,7 @@ class Player:
         self.biggestArmy      = False
         self.numberOfPieces   = [ 0 for i in range(0, len(g_pieces))]
         self.knights          = 0
-        self.canPlayDevCard   = False
+        self.playedDevCard    = False
         self.discardCardCount = 0
 
         self.firstSettlementBuild = False
@@ -250,15 +250,13 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'PLAY':
 
-            # TODO: PLAY A KNIGHT CARD ACTION
+            # TODO: TRYING TO USE KNIGHT 2 TIMES!!! WHAT???
 
-            if self.canPlayDevCard and \
-                    self.mayPlayDevCard[KNIGHT_CARD_INDEX] and \
+            if not self.playedDevCard and \
+                    self.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
                             self.developmentCards[KNIGHT_CARD_INDEX] > 0:
 
                 return [ UseKnightsCardAction(self.seatNumber, None, None) ]
-
-            #else:
 
             if self.rolledTheDices:
 
@@ -285,32 +283,34 @@ class AgentRandom(Player):
 
             possibleBankTrades  = self.GetPossibleBankTrades(game, player)
 
-            #canBuyADevCard      = game.CanBuyADevCard(gameState, player)
+            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
             '''
             possibleCardsToUse = []
 
-            if self.canPlayDevCard:
+            if not self.playedDevCard:
 
-                if self.developmentCards[MONOPOLY_CARD_INDEX] > 0 and self.mayPlayDevCard[MONOPOLY_CARD_INDEX]:
-                    possibleCardsToUse.append(self.GetMonopolyResource(player))
+                if self.developmentCards[MONOPOLY_CARD_INDEX] > 0 and self.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                    possibleCardsToUse += self.GetMonopolyResource(player)
 
-                if self.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and self.mayPlayDevCard[YEAR_OF_PLENTY_CARD_INDEX]:
-                    possibleCardsToUse.append(self.GetYearOfPlentyResource(player))
+                if self.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and self.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                    possibleCardsToUse += self.GetYearOfPlentyResource(player)
 
                 if self.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and self.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
-                    possibleCardsToUse.append(UseFreeRoadsCardAction(player.seatNumber, None, None))
-            '''
+                    possibleCardsToUse += UseFreeRoadsCardAction(player.seatNumber, None, None)
 
-            # TODO: PLAY DEV CARDS
+            '''
 
             #COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
                 possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
                                     for roadEdge in possibleRoads]
 
-            #if len(possibleCardsToUse):
+            #if len(possibleCardsToUse) > 0:
             #    possibleActions += possibleCardsToUse
+
+            #if canBuyADevCard:
+            #    possibleActions  = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if possibleSettlements is not None and len(possibleSettlements) > 0:
                 possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
@@ -319,9 +319,6 @@ class AgentRandom(Player):
             if possibleCities is not None and len(possibleCities) > 0:
                 possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
                                      for setNode in possibleCities]
-
-            #if canBuyADevCard:
-            #   possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if len(possibleActions) == 0:
                 possibleActions = possibleBankTrades

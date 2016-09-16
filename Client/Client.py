@@ -348,10 +348,10 @@ class Client:
 
         elif name == "SetPlayedDevCardMessage":
 
-            self.game.gameState.players[instance.playerNumber].canPlayDevCard = instance.cardFlag
+            self.game.gameState.players[instance.playerNumber].playedDevCard = instance.cardFlag
 
-            logging.info("Player seated on {0}:\n Can Play Dev Card = {1}".format(instance.playerNumber,
-                    self.game.gameState.players[instance.playerNumber].canPlayDevCard))
+            logging.info("Player seated on {0}:\n Played Dev Card = {1}".format(instance.playerNumber,
+                    self.game.gameState.players[instance.playerNumber].playedDevCard))
 
         elif name == "DevCardCountMessage":
 

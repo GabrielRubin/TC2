@@ -510,9 +510,9 @@ class SetPlayedDevCardMessage(Message):
     id = 1048
 
     def __init__(self, game, playerNumber, cardflag):
-        self.game      = game
+        self.game         = game
         self.playerNumber = playerNumber
-        self.cardFlag  = cardflag
+        self.cardFlag     = cardflag
 
     def to_cmd(self):
         return "{0}|{1},{2},{3}".format(self.id, self.game, self.playerNumber, str(self.cardflag).lower())
