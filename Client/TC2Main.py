@@ -92,7 +92,7 @@ else:
     ourClient = Client("TestGame", player, True, True)
 
 # Give some time so the server can start and the robots get in....
-time.sleep(1)
+#time.sleep(1)
 
 ourClient.StartClient(("localhost", 8880))
 

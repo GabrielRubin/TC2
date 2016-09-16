@@ -128,11 +128,10 @@ class UseYearOfPlentyCardAction(Action):
 
     type = 'UseYearOfPlentyCard'
 
-    def __init__(self, playerNumber, resource1, resource2):
+    def __init__(self, playerNumber, resources):
 
         self.playerNumber = playerNumber
-        self.resource1    = resource1
-        self.resource2    = resource2
+        self.resources    = resources
 
 class UseFreeRoadsCardAction(Action):
 

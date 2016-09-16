@@ -119,6 +119,11 @@ class Player:
     def GetPossibleBankTrades(self, game, player = None):
         pass
 
+    def GetMonopolyResource(self, game, player = None):
+        pass
+
+    def GetYearOfPlentyResource(self, game, player = None):
+        pass
 
 class AgentRandom(Player):
 
@@ -251,7 +256,7 @@ class AgentRandom(Player):
                     self.mayPlayDevCard[KNIGHT_CARD_INDEX] and \
                             self.developmentCards[KNIGHT_CARD_INDEX] > 0:
 
-                pass
+                return [ UseKnightsCardAction(self.seatNumber, None, None) ]
 
             #else:
 
@@ -282,12 +287,30 @@ class AgentRandom(Player):
 
             #canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
+            '''
+            possibleCardsToUse = []
+
+            if self.canPlayDevCard:
+
+                if self.developmentCards[MONOPOLY_CARD_INDEX] > 0 and self.mayPlayDevCard[MONOPOLY_CARD_INDEX]:
+                    possibleCardsToUse.append(self.GetMonopolyResource(player))
+
+                if self.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and self.mayPlayDevCard[YEAR_OF_PLENTY_CARD_INDEX]:
+                    possibleCardsToUse.append(self.GetYearOfPlentyResource(player))
+
+                if self.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and self.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
+                    possibleCardsToUse.append(UseFreeRoadsCardAction(player.seatNumber, None, None))
+            '''
+
             # TODO: PLAY DEV CARDS
 
             #COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
                 possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
                                     for roadEdge in possibleRoads]
+
+            #if len(possibleCardsToUse):
+            #    possibleActions += possibleCardsToUse
 
             if possibleSettlements is not None and len(possibleSettlements) > 0:
                 possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
@@ -318,13 +341,17 @@ class AgentRandom(Player):
 
             pass
 
-        elif gameState.currState == 'WAITING_FOR_DISCOVERY':
+        elif gameState.currState == "PLACING_FREE_ROAD1":
 
-            pass
+            possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-        elif gameState.currState == 'WAITING_FOR_MONOPOLY':
+            return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
-            pass
+        elif gameState.currState == "PLACING_FREE_ROAD2":
+
+            possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
+
+            return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         return None
 
@@ -395,7 +422,6 @@ class AgentRandom(Player):
 
     def GetPossibleBankTrades(self, game, player = None):
 
-        # TODO > possible bug in tradeRates...?
         if player is None:
             player = self
 
@@ -453,3 +479,63 @@ class AgentRandom(Player):
             return [ BankTradeOfferAction(player.seatNumber, give, get) ]
 
         return None
+
+    def GetMonopolyResource(self, game, player = None):
+
+        if player is None:
+            player = self
+
+        candidateResource = []
+
+        minResourceAmount = min(player.resources)
+
+        chosenResource = None
+
+        for i in range(0, len(player.resources) - 1):
+
+            if player.resources[i] == minResourceAmount:
+                candidateResource.append(i + 1)
+
+        if len(candidateResource) <= 0:
+
+            randomPick = random.choice([1,2,3,4,5])
+
+            logging.critical("Monopoly pick FAILED!!!! Picking at random: {0}".format(randomPick))
+
+            chosenResource = randomPick
+
+        else:
+
+            chosenResource = random.choice(candidateResource)
+
+        return [ UseMonopolyCardAction(player.seatNumber, chosenResource) ]
+
+    def GetYearOfPlentyResource(self, game, player = None):
+
+        if player is None:
+            player = self
+
+        candidateResource = []
+
+        chosenResources = [0, 0, 0, 0, 0]
+
+        minResourceAmount = min(player.resources)
+
+        for i in range(0, len(player.resources) - 1):
+
+            if player.resources[i] == minResourceAmount:
+                candidateResource.append(i)
+
+        if len(candidateResource) == 1:
+
+            chosenResources[i] = 2
+
+        else:
+
+            pick1 = random.choice(candidateResource)
+            pick2 = random.choice(candidateResource)
+
+            chosenResources[pick1] += 1
+            chosenResources[pick2] += 1
+
+        return [ UseYearOfPlentyCardAction(player.seatNumber, chosenResources) ]

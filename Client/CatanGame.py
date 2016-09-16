@@ -137,9 +137,9 @@ class Game:
             logging.info(">>>> CAN'T BUY A CARD!")
             return False
 
-    def GetPossibleRoads(self, gameState, player, setUpPhase = False):
+    def GetPossibleRoads(self, gameState, player, setUpPhase = False, freeRoad = False):
 
-        if not setUpPhase and\
+        if not setUpPhase and not freeRoad and\
                 not player.CanAfford(BuildRoadAction.cost) \
                 or not player.HavePiece(g_pieces.index('ROADS')):
             return None

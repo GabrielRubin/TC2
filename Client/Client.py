@@ -474,23 +474,19 @@ class Client:
 
                 response = PlayDevCardRequestMessage(self.gameName, ROAD_BUILDING_CARD_INDEX)
 
-            # TODO > Review this!!!
             if agentAction.type == 'UseYearOfPlentyCard':
 
                 response = None
 
-                resources = [1, 0, 0, 0, 1]
-
                 self.SendMessage(PlayDevCardRequestMessage(self.gameName, YEAR_OF_PLENTY_CARD_INDEX))
-                self.SendMessage(DiscoveryPickMessage(self.gameName, resources))
+                self.SendMessage(DiscoveryPickMessage(self.gameName, agentAction.resources))
 
-            # TODO > Review this!!!
             if agentAction.type == 'UseMonopolyCard':
 
                 response = None
 
                 self.SendMessage(PlayDevCardRequestMessage(self.gameName, MONOPOLY_CARD_INDEX))
-                self.SendMessage(MonopolyPickMessage(self.gameName, 1))
+                self.SendMessage(MonopolyPickMessage(self.gameName, agentAction.resource))
 
             if agentAction.type == 'EndTurn':
 
