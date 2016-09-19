@@ -343,7 +343,7 @@ class Client:
                 if cardType <= 4:
                     self.player.UpdateMayPlayDevCards(cardType, False)
 
-                logging.info("DANDA CARDS: KNIGHT->{0}  ROAD_BUILDING->{1}  YEAR_OF_PLENTY->{2} MONOPOLY->{3} VICTORY_POINT->{4}".format(
+                logging.info("AGENT CARDS: KNIGHT->{0}  ROAD_BUILDING->{1}  YEAR_OF_PLENTY->{2} MONOPOLY->{3} VICTORY_POINT->{4}".format(
                     self.player.developmentCards[0], self.player.developmentCards[1], self.player.developmentCards[2], self.player.developmentCards[3], self.player.developmentCards[4]))
 
         elif name == "SetPlayedDevCardMessage":
@@ -417,9 +417,6 @@ class Client:
 
         elif self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN:
 
-            #@REVIEW@
-            self.player.UpdateMayPlayDevCards(None, True)
-
             agentAction = self.player.DoMove(self.game)
 
         if agentAction is not None:
@@ -431,7 +428,8 @@ class Client:
                agentAction.type == 'BuildCity':
 
                 if self.game.gameState.currState == "START1A" or self.game.gameState.currState == "START1B" or \
-                   self.game.gameState.currState == "START2A" or self.game.gameState.currState == "START2B":
+                   self.game.gameState.currState == "START2A" or self.game.gameState.currState == "START2B" or \
+                   self.game.gameState.currState == "PLACING_FREE_ROAD1" or self.game.gameState.currState == "PLACING_FREE_ROAD2":
 
                     response = PutPieceMessage(self.gameName, self.player.seatNumber,
                                                agentAction.pieceId, agentAction.position)
@@ -462,8 +460,6 @@ class Client:
 
             if agentAction.type == 'BuyDevelopmentCard':
 
-                logging.info("COMPROU!!!!")
-
                 response = BuyCardRequestMessage(self.gameName)
 
             if agentAction.type == 'UseKnightsCard':
@@ -489,6 +485,9 @@ class Client:
                 self.SendMessage(MonopolyPickMessage(self.gameName, agentAction.resource))
 
             if agentAction.type == 'EndTurn':
+
+                # @REVIEW@
+                self.player.UpdateMayPlayDevCards(None, True)
 
                 response = EndTurnMessage(self.gameName)
 
