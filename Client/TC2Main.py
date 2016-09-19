@@ -94,7 +94,7 @@ else:
 
 # TODO > sleep or not? bug?
 # Give some time so the server can start and the robots get in....
-#time.sleep(3)
+time.sleep(2)
 
 ourClient.StartClient(("localhost", 8880))
 

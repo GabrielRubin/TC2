@@ -63,7 +63,8 @@ class Player:
             if recentlyCardIndex is not None:
 
                 for i in range(0, len(self.developmentCards)):
-                    if recentlyCardIndex == i:
+
+                    if int(recentlyCardIndex) == int(i):
 
                         self.mayPlayDevCards[i] = self.developmentCards[i] > 1
 
@@ -252,9 +253,10 @@ class AgentRandom(Player):
 
             # TODO: TRYING TO USE KNIGHT 2 TIMES!!! WHAT???
 
-            if not self.playedDevCard and \
-                    self.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
-                            self.developmentCards[KNIGHT_CARD_INDEX] > 0:
+            if not self.rolledTheDices and \
+               not self.playedDevCard and \
+                     self.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
+                       self.developmentCards[KNIGHT_CARD_INDEX] > 0:
 
                 return [ UseKnightsCardAction(self.seatNumber, None, None) ]
 
@@ -285,7 +287,6 @@ class AgentRandom(Player):
 
             canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
-            '''
             possibleCardsToUse = []
 
             if not self.playedDevCard:
@@ -297,20 +298,18 @@ class AgentRandom(Player):
                     possibleCardsToUse += self.GetYearOfPlentyResource(player)
 
                 if self.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and self.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
-                    possibleCardsToUse += UseFreeRoadsCardAction(player.seatNumber, None, None)
-
-            '''
+                    possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
 
             #COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
                 possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
                                     for roadEdge in possibleRoads]
 
-            #if len(possibleCardsToUse) > 0:
-            #    possibleActions += possibleCardsToUse
+            if len(possibleCardsToUse) > 0:
+                possibleActions += possibleCardsToUse
 
-            #if canBuyADevCard:
-            #    possibleActions  = [ BuyDevelopmentCardAction(player.seatNumber) ]
+            if canBuyADevCard:
+                possibleActions  = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if possibleSettlements is not None and len(possibleSettlements) > 0:
                 possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
