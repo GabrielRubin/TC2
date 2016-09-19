@@ -50,9 +50,12 @@ if args.agentType == 'rand':
 mycwd = os.getcwd()
 
 os.chdir("..")
+# print("changing to folder "+os.path.join(os.getcwd(), "JSettlers-1.0.6"))
+# os.chdir("\""+os.path.join(os.getcwd(), "JSettlers-1.0.6")+"\"")
+# The line above does not seem to work in my computer because of spaces or quotes
+os.chdir('JSettlers-1.0.6')
 
-os.chdir(os.getcwd() + "\JSettlers-1.0.6")
-
+# Double negation in the switches here are a bit confusing TBH...
 if not args.noServer:
 
     serverProcess = subprocess.Popen("java -jar JSettlersServer.jar 8880 10 dbUser dbPass",

@@ -9,6 +9,7 @@ PyCatron requires [Python 2.7](https://www.python.org/) and [Java](https://www.j
 To run the program, you have to run the file `TC2Main.py` on a python editor ( like [PyCharm](https://www.jetbrains.com/pycharm/) ) or through command line ( you must have Python 2.7 in your SYSPATH ), like this:
 
 ```sh
+$ cd Client
 $ python TC2Main.py
 ```
 
