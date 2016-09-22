@@ -6,6 +6,7 @@ from CatanPlayer import *
 from CatanGame import *
 from CatanAction import *
 
+
 class Client:
 
     def __init__(self, gameName, player, autoStart, showServerMessages):
@@ -19,7 +20,6 @@ class Client:
 
         self.gameName       = gameName
         self.player         = player
-        self.playerBuildReq = None
 
         self.autoStart      = autoStart
         self.botsInit       = False
@@ -28,6 +28,8 @@ class Client:
 
         self.waitBankTradeAck = False
         self.gotBankTradeAck  = False
+
+        self.playerBuildAction = None
 
         self.messagetbl = {}
         for g in globals():
@@ -278,8 +280,8 @@ class Client:
 
                 if self.game.gameState.currPlayer == self.player.seatNumber:
 
-                    response = PutPieceMessage(self.gameName, self.player.seatNumber,
-                                               self.playerBuildReq.pieceId, self.playerBuildReq.position)
+                    response = self.playerBuildAction.GetMessage(self.gameName,
+                                              currGameStateName=self.game.gameState.currState)
 
                     self.SendMessage(response)
 
@@ -298,7 +300,7 @@ class Client:
                 if cardType > 4 and cardType <= 8:
                     cardType = 4
 
-                # DANDA gain a devcard
+                # AGENT gain a devcard
                 if  int(instance.action) == 0:
 
                     # alternative logic:
@@ -322,7 +324,7 @@ class Client:
                     elif cardType == 4 : #VICTORY_POINTS
                         self.player.developmentCards[VICTORY_POINT_CARD_INDEX] += 1
 
-                # DANDA used a devcard
+                # AGENT used a devcard
                 elif int(instance.action) == 1:
 
                     if   cardType == 0:
@@ -421,55 +423,20 @@ class Client:
 
         if agentAction is not None:
 
-            response = None
+            response = agentAction.GetMessage(self.gameName,
+                                              currGameStateName=self.game.gameState.currState)
 
             if agentAction.type == 'BuildRoad' or \
                agentAction.type == 'BuildSettlement' or \
                agentAction.type == 'BuildCity':
 
-                if self.game.gameState.currState == "START1A" or self.game.gameState.currState == "START1B" or \
-                   self.game.gameState.currState == "START2A" or self.game.gameState.currState == "START2B" or \
-                   self.game.gameState.currState == "PLACING_FREE_ROAD1" or self.game.gameState.currState == "PLACING_FREE_ROAD2":
-
-                    response = PutPieceMessage(self.gameName, self.player.seatNumber,
-                                               agentAction.pieceId, agentAction.position)
-                else:
-                    response = BuildRequestMessage(self.gameName, agentAction.pieceId)
-
-                    self.playerBuildReq = agentAction
-
-            if agentAction.type == 'RollDices':
-
-                response = RollDiceMessage(self.gameName)
-
-            if agentAction.type == 'PlaceRobber':
-
-                response = MoveRobberMessage(self.gameName, self.player.seatNumber, agentAction.robberPos)
-
-            if agentAction.type == 'DiscardResources':
-
-                response = DiscardMessage(self.gameName, agentAction.resources[0], agentAction.resources[1],
-                                                         agentAction.resources[2], agentAction.resources[3],
-                                                         agentAction.resources[4], agentAction.resources[5])
+                self.playerBuildAction = agentAction
 
             if agentAction.type == 'BankTradeOffer':
 
-                response = BankTradeMessage(self.gameName, agentAction.giveResources, agentAction.getResources)
-
                 self.waitBankTradeAck = True
 
-            if agentAction.type == 'BuyDevelopmentCard':
-
-                response = BuyCardRequestMessage(self.gameName)
-
-            if agentAction.type == 'UseKnightsCard':
-
-                response = PlayDevCardRequestMessage(self.gameName, KNIGHT_CARD_INDEX)
-
-            if agentAction.type == 'UseFreeRoadsCard':
-
-                response = PlayDevCardRequestMessage(self.gameName, ROAD_BUILDING_CARD_INDEX)
-
+            # TODO - review these 3 cases later:
             if agentAction.type == 'UseYearOfPlentyCard':
 
                 response = None
@@ -485,11 +452,8 @@ class Client:
                 self.SendMessage(MonopolyPickMessage(self.gameName, agentAction.resource))
 
             if agentAction.type == 'EndTurn':
-
                 # @REVIEW@
                 self.player.UpdateMayPlayDevCards(None, True)
-
-                response = EndTurnMessage(self.gameName)
 
             if response is not None:
                 self.SendMessage(response)

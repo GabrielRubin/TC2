@@ -194,7 +194,7 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
-            return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == 'START2A':
 
@@ -247,7 +247,7 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
-            return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == 'PLAY':
 
@@ -300,16 +300,15 @@ class AgentRandom(Player):
                 if self.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and self.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
                     possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
 
-            #COMMENT THESE 3 POSSIBLE ACTIONS TO TEST TRADING WITH THE BANK
             if possibleRoads is not None:
-                possibleActions += [BuildRoadAction(player, roadEdge.index, len(player.roads))
+                possibleActions += [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
                                     for roadEdge in possibleRoads]
 
             if len(possibleCardsToUse) > 0:
                 possibleActions += possibleCardsToUse
 
             if canBuyADevCard:
-                possibleActions  = [ BuyDevelopmentCardAction(player.seatNumber) ]
+                possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
 
             if possibleSettlements is not None and len(possibleSettlements) > 0:
                 possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
@@ -341,13 +340,13 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-            return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == "PLACING_FREE_ROAD2":
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-            return [BuildRoadAction(player, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
         return None
 
@@ -484,8 +483,6 @@ class AgentRandom(Player):
         candidateResource = []
 
         minResourceAmount = min(player.resources)
-
-        chosenResource = None
 
         for i in range(0, len(player.resources) - 1):
 

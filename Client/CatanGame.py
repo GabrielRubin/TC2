@@ -2,7 +2,7 @@ import random
 from CatanBoard import *
 from JSettlersMessages import *
 from CatanAction import *
-import logging
+import copy
 
 class Game:
 
@@ -226,6 +226,24 @@ class GameState:
              0xb4, 0xc5, 0xd6, 0xe7]
 
         return [self.boardEdges[i] for i in list(set(g_boardEdges) - set(oceanEdges))]
+
+    def GetNextGameState(self, action):
+
+        nextGameState = copy.deepcopy(self)
+
+        if nextGameState.currState == "START1A":
+            pass
+
+        elif nextGameState.currState == "START1B":
+            pass
+
+        elif nextGameState.currState == "START2A":
+            pass
+
+        elif nextGameState.currState == "START2B":
+            pass
+
+
 
     def ApplyAction(self, action, fromServer = False):
 

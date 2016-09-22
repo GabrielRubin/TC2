@@ -36,7 +36,7 @@ parser.add_argument("-ng", "--noGame", help="agent don't start a new game; waits
                     action="store_true", default=False)
 
 parser.add_argument("-l", "--logging", help="log stuff. There are two levels of logging: {0}".format(LogType),
-                    default='i')
+                    default='d')
 
 parser.add_argument("-sl", "--saveLog", help="if log is enabled, let it be saved on the specified file")
 
@@ -98,15 +98,20 @@ time.sleep(2)
 
 ourClient.StartClient(("localhost", 8880))
 
-if serverProcess:
-    serverProcess.wait()
-if robot1Process:
-    robot1Process.wait()
-if robot2Process:
-    robot2Process.wait()
-if robot3Process:
-    robot3Process.wait()
 if clientProcess:
     clientProcess.wait()
+    clientProcess.kill()
+if robot1Process:
+    robot1Process.wait()
+    robot1Process.kill()
+if robot2Process:
+    robot2Process.wait()
+    robot2Process.kill()
+if robot3Process:
+    robot3Process.wait()
+    robot3Process.kill()
+if serverProcess:
+    serverProcess.wait()
+    serverProcess.kill()
 
 print(serverProcess.returncode)

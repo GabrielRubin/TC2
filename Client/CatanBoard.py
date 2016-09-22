@@ -110,6 +110,7 @@ g_developmentCards = [
     'MONOPOLY',
     'VICTORY_POINT'
 ]
+
 KNIGHT_CARD_INDEX         = 0
 ROAD_BUILDING_CARD_INDEX  = 1
 YEAR_OF_PLENTY_CARD_INDEX = 2

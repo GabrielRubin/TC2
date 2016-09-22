@@ -1,3 +1,6 @@
+from JSettlersMessages import *
+from CatanBoard import *
+
 g_ActionType = \
 [
     'BuildRoad',
@@ -24,12 +27,38 @@ g_OfferType = [
     'Decline'
 ]
 
-class Action:
+class Action(object):
 
     def __init__(self):
         pass
 
-class BuildRoadAction(Action):
+    def GetMessage(self, gameName, currGameStateName = None):
+        pass
+
+class BuildAction(Action):
+
+    def __init__(self, playerNumber, position, index, pieceId):
+
+        self.playerNumber = playerNumber
+        self.position     = position
+        self.index        = index
+        self.pieceId      = pieceId
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        putPieceStates = ["START1A", "START1B", "START2A", "START2B",
+                          "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
+                          "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
+
+        if currGameStateName is not None and \
+            currGameStateName in putPieceStates:
+
+            return PutPieceMessage(gameName, self.playerNumber, self.pieceId, self.position)
+
+        return BuildRequestMessage(gameName, self.pieceId)
+
+
+class BuildRoadAction(BuildAction):
 
     type = 'BuildRoad'
     cost = [ 1,  # brick
@@ -43,11 +72,9 @@ class BuildRoadAction(Action):
 
     def __init__(self, playerNumber, position, index):
 
-        self.playerNumber = playerNumber
-        self.position     = position
-        self.index        = index
+        super(BuildRoadAction, self).__init__(playerNumber, position, index, BuildRoadAction.pieceId)
 
-class BuildSettlementAction(Action):
+class BuildSettlementAction(BuildAction):
 
     type = 'BuildSettlement'
     cost = [ 1,  # brick
@@ -60,12 +87,9 @@ class BuildSettlementAction(Action):
     pieceId = 1
 
     def __init__(self, playerNumber, position, index):
+        super(BuildSettlementAction, self).__init__(playerNumber, position, index, BuildSettlementAction.pieceId)
 
-        self.playerNumber = playerNumber
-        self.position     = position
-        self.index        = index
-
-class BuildCityAction(Action):
+class BuildCityAction(BuildAction):
 
     type = 'BuildCity'
     cost = [ 0,  # brick
@@ -78,10 +102,7 @@ class BuildCityAction(Action):
     pieceId = 2
 
     def __init__(self, playerNumber, position, index):
-
-        self.playerNumber = playerNumber
-        self.position     = position
-        self.index        = index
+        super(BuildCityAction, self).__init__(playerNumber, position, index, BuildCityAction.pieceId)
 
 class RollDicesAction(Action):
 
@@ -90,6 +111,10 @@ class RollDicesAction(Action):
     def __init__(self, playerNumber):
 
         self.playerNumber = playerNumber
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return RollDiceMessage(gameName)
 
 class BuyDevelopmentCardAction(Action):
 
@@ -105,6 +130,10 @@ class BuyDevelopmentCardAction(Action):
 
         self.playerName = playerNumber
 
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return BuyCardRequestMessage(gameName)
+
 class UseKnightsCardAction(Action):
 
     type = 'UseKnightsCard'
@@ -114,6 +143,10 @@ class UseKnightsCardAction(Action):
         self.playerNumber      = playerNumber
         self.robberPos         = newRobberPos
         self.targetPlayerIndex = targetPlayerIndex
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return PlayDevCardRequestMessage(gameName, KNIGHT_CARD_INDEX)
 
 class UseMonopolyCardAction(Action):
 
@@ -143,6 +176,10 @@ class UseFreeRoadsCardAction(Action):
         self.road1Edge    = road1Edge
         self.road2Edge    = road2Edge
 
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return PlayDevCardRequestMessage(gameName, ROAD_BUILDING_CARD_INDEX)
+
 class PlaceRobberAction(Action):
 
     type = 'PlaceRobber'
@@ -152,6 +189,10 @@ class PlaceRobberAction(Action):
         self.playerNumber = playerNumber
         self.robberPos    = newRobberPos
 
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return MoveRobberMessage(gameName, self.playerNumber, self.robberPos)
+
 class EndTurnAction(Action):
 
     type = 'EndTurn'
@@ -159,6 +200,10 @@ class EndTurnAction(Action):
     def __init__(self, playerNumber):
 
         self.playerNumber = playerNumber
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return EndTurnMessage(gameName)
 
 class DiscardResourcesAction(Action):
 
@@ -168,6 +213,12 @@ class DiscardResourcesAction(Action):
 
         self.playerNumber = playerNumber
         self.resources    = resources
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return DiscardMessage(gameName, self.resources[0], self.resources[1],
+                                        self.resources[2], self.resources[3],
+                                        self.resources[4], self.resources[5])
 
 class ChoosePlayerToStealFromAction(Action):
 
@@ -199,3 +250,7 @@ class BankTradeOfferAction(Action):
         self.playerNumber  = playerNumber
         self.giveResources = giveResources
         self.getResources  = getResources
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return BankTradeMessage(gameName, self.giveResources, self.getResources)
