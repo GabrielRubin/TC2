@@ -390,7 +390,6 @@ class DiscardMessage(Message):
     def parse(text):
         pass
 
-# TODO: FIX!
 class MakeOfferMessage(Message):
     id = 1041
 

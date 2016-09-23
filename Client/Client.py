@@ -6,7 +6,6 @@ from CatanPlayer import *
 from CatanGame import *
 from CatanAction import *
 
-
 class Client:
 
     def __init__(self, gameName, player, autoStart, showServerMessages):
@@ -30,6 +29,9 @@ class Client:
         self.gotBankTradeAck  = False
 
         self.playerBuildAction = None
+
+        # TODO -> Assert that debugClientGame is equivalent to the game that is updated from server
+        #self.debugClientGame = None
 
         self.messagetbl = {}
         for g in globals():
@@ -376,7 +378,7 @@ class Client:
             elif instance.pieceType[0] == 'CITY':
                 putPieceAction = BuildCityAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].cities))
 
-            self.game.gameState.ApplyAction(putPieceAction, True)
+            self.UpdateGame(putPieceAction)
 
             logging.info("Player seated on {0} constructed a {1}, have this constructions now:\n"
                          " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
@@ -398,7 +400,7 @@ class Client:
 
         elif name == "MakeOfferMessage":
 
-            # TODO > Review this!!!
+            # TODO -> Make proper trade offer...
             # TRADE?
             if instance.to[int(self.player.seatNumber)] == "true":
                 self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
@@ -414,6 +416,8 @@ class Client:
         agentAction = None
 
         if self.game.gameState.currState == "WAITING_FOR_DISCARDS":
+
+            # FIXME -> we need to be careful, our player is the one in-game, not in this client...
 
             agentAction = self.player.ChooseCardsToDiscard(self.game)
 
@@ -436,27 +440,26 @@ class Client:
 
                 self.waitBankTradeAck = True
 
-            # TODO - review these 3 cases later:
-            if agentAction.type == 'UseYearOfPlentyCard':
-
-                response = None
-
-                self.SendMessage(PlayDevCardRequestMessage(self.gameName, YEAR_OF_PLENTY_CARD_INDEX))
-                self.SendMessage(DiscoveryPickMessage(self.gameName, agentAction.resources))
-
-            if agentAction.type == 'UseMonopolyCard':
-
-                response = None
-
-                self.SendMessage(PlayDevCardRequestMessage(self.gameName, MONOPOLY_CARD_INDEX))
-                self.SendMessage(MonopolyPickMessage(self.gameName, agentAction.resource))
-
             if agentAction.type == 'EndTurn':
                 # @REVIEW@
                 self.player.UpdateMayPlayDevCards(None, True)
 
             if response is not None:
-                self.SendMessage(response)
+
+                if isinstance(response, list):
+
+                    for index in range(0, len(response)):
+                        self.SendMessage(response[index])
+
+                else:
+                    self.SendMessage(response)
+
+
+    def UpdateGame(self, action):
+
+        self.game.GetNextGameState(action, fromServer=True, isUpdate=True)
+
+        self.player = self.game.gameState.players[self.player.seatNumber]
 
 #logging.getLogger().setLevel(logging.INFO)
 #logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG

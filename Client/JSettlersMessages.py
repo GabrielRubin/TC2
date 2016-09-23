@@ -822,7 +822,6 @@ class BuyCardRequestMessage(Message):
     def parse(text):
         return BuyCardRequestMessage(text)
 
-# TODO: See SOCDevCard.java
 class DevCardMessage(Message):
     id = 1046
 

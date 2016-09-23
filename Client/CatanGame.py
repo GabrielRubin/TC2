@@ -180,6 +180,19 @@ class Game:
 
         return [PlaceRobberAction(player.seatNumber, position) for position in possibleRobberPositions]
 
+    def GetNextGameState(self, action, isUpdate = False, fromServer = False):
+
+        if isUpdate:
+            gameState = self.gameState
+        else:
+            gameState = copy.deepcopy(self.gameState)
+
+        action.ApplyAction(gameState, fromServer=fromServer)
+
+        # TODO -> Check biggest road, most knights and more...
+
+        return gameState
+
 class GameState:
 
     def __init__(self):
@@ -227,57 +240,39 @@ class GameState:
 
         return [self.boardEdges[i] for i in list(set(g_boardEdges) - set(oceanEdges))]
 
-    def GetNextGameState(self, action):
-
-        nextGameState = copy.deepcopy(self)
-
-        if nextGameState.currState == "START1A":
-            pass
-
-        elif nextGameState.currState == "START1B":
-            pass
-
-        elif nextGameState.currState == "START2A":
-            pass
-
-        elif nextGameState.currState == "START2B":
-            pass
-
-
-
-    def ApplyAction(self, action, fromServer = False):
-
-        if action.type == 'BuildRoad':
-
-            newRoad = Construction(g_constructionTypes[0], action.playerNumber, action.index, action.position)
-
-            self.players[action.playerNumber].roads.append(action.position)
-
-            self.boardEdges[action.position].construction = newRoad
-
-            if not fromServer:
-                self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
-
-        elif action.type == 'BuildSettlement':
-
-            newSettlement = Construction(g_constructionTypes[1], action.playerNumber, action.index, action.position)
-
-            self.players[action.playerNumber].settlements.append(action.position)
-
-            self.boardNodes[action.position].construction = newSettlement
-
-            if not fromServer:
-                self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
-
-        elif action.type == 'BuildCity':
-
-            newCity = Construction(g_constructionTypes[2], action.playerNumber, action.index, action.position)
-
-            self.players[action.playerNumber].settlements.remove(action.position)
-
-            self.players[action.playerNumber].cities.append(action.position)
-
-            self.boardNodes[action.position].construction = newCity
-
-            if not fromServer:
-                self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
+    #def ApplyAction(self, action, fromServer = False):
+#
+    #    if action.type == 'BuildRoad':
+#
+    #        newRoad = Construction(g_constructionTypes[0], action.playerNumber, action.index, action.position)
+#
+    #        self.players[action.playerNumber].roads.append(action.position)
+#
+    #        self.boardEdges[action.position].construction = newRoad
+#
+    #        if not fromServer:
+    #            self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
+#
+    #    elif action.type == 'BuildSettlement':
+#
+    #        newSettlement = Construction(g_constructionTypes[1], action.playerNumber, action.index, action.position)
+#
+    #        self.players[action.playerNumber].settlements.append(action.position)
+#
+    #        self.boardNodes[action.position].construction = newSettlement
+#
+    #        if not fromServer:
+    #            self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]
+#
+    #    elif action.type == 'BuildCity':
+#
+    #        newCity = Construction(g_constructionTypes[2], action.playerNumber, action.index, action.position)
+#
+    #        self.players[action.playerNumber].settlements.remove(action.position)
+#
+    #        self.players[action.playerNumber].cities.append(action.position)
+#
+    #        self.boardNodes[action.position].construction = newCity
+#
+    #        if not fromServer:
+    #            self.players.resources = [x1 - x2 for (x1, x2) in zip(self.players.resources, action.cost)]

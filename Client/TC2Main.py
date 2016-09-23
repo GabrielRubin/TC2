@@ -4,6 +4,7 @@ import time
 import argparse
 
 from Client import *
+from AgentRandom import *
 
 AgentTypes = { 'rand' : 'random', 'min' : 'minimax', 'exp' : 'expectimax', 'mcts' : 'monte carlo tree search'}
 
@@ -92,7 +93,7 @@ if args.noGame:
 else:
     ourClient = Client("TestGame", player, True, True)
 
-# TODO > sleep or not? bug?
+
 # Give some time so the server can start and the robots get in....
 time.sleep(2)
 

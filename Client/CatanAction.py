@@ -35,14 +35,18 @@ class Action(object):
     def GetMessage(self, gameName, currGameStateName = None):
         pass
 
+    def ApplyAction(self, gameState, fromServer = False):
+        pass
+
 class BuildAction(Action):
 
-    def __init__(self, playerNumber, position, index, pieceId):
+    def __init__(self, playerNumber, position, index, pieceId, cost):
 
         self.playerNumber = playerNumber
         self.position     = position
         self.index        = index
         self.pieceId      = pieceId
+        self.cost         = cost
 
     def GetMessage(self, gameName, currGameStateName = None):
 
@@ -56,6 +60,41 @@ class BuildAction(Action):
             return PutPieceMessage(gameName, self.playerNumber, self.pieceId, self.position)
 
         return BuildRequestMessage(gameName, self.pieceId)
+
+
+    def ApplyAction(self, gameState, fromServer = False):
+
+        newConstruction = Construction(g_constructionTypes[self.pieceId],
+                                       self.playerNumber, self.index, self.position)
+
+        if self.pieceId == 0:   # ROADS
+
+            gameState.players[self.playerNumber].roads.append(self.position)
+
+            gameState.boardEdges[self.position].construction = newConstruction
+
+        elif self.pieceId == 1: # SETTLEMENTS
+
+            gameState.players[self.playerNumber].settlements.append(self.position)
+
+            gameState.boardNodes[self.position].construction = newConstruction
+
+        else:                   # CITIES
+
+            gameState.players[self.playerNumber].settlements.remove(self.position)
+
+            gameState.players[self.playerNumber].cities.append(self.position)
+
+            gameState.boardNodes[self.position].construction = newConstruction
+
+        if not fromServer:
+
+            currResources = gameState.players[self.playerNumber].resources
+
+            gameState.players[self.playerNumber].resources = \
+                [ x1 - x2 for (x1, x2) in zip(currResources, self.cost) ]
+
+        return gameState
 
 
 class BuildRoadAction(BuildAction):
@@ -72,7 +111,8 @@ class BuildRoadAction(BuildAction):
 
     def __init__(self, playerNumber, position, index):
 
-        super(BuildRoadAction, self).__init__(playerNumber, position, index, BuildRoadAction.pieceId)
+        super(BuildRoadAction, self).__init__(playerNumber, position, index,
+                                              BuildRoadAction.pieceId, BuildRoadAction.cost)
 
 class BuildSettlementAction(BuildAction):
 
@@ -87,7 +127,8 @@ class BuildSettlementAction(BuildAction):
     pieceId = 1
 
     def __init__(self, playerNumber, position, index):
-        super(BuildSettlementAction, self).__init__(playerNumber, position, index, BuildSettlementAction.pieceId)
+        super(BuildSettlementAction, self).__init__(playerNumber, position, index,
+                                                    BuildSettlementAction.pieceId, BuildSettlementAction.cost)
 
 class BuildCityAction(BuildAction):
 
@@ -102,7 +143,8 @@ class BuildCityAction(BuildAction):
     pieceId = 2
 
     def __init__(self, playerNumber, position, index):
-        super(BuildCityAction, self).__init__(playerNumber, position, index, BuildCityAction.pieceId)
+        super(BuildCityAction, self).__init__(playerNumber, position, index,
+                                              BuildCityAction.pieceId, BuildCityAction.cost)
 
 class RollDicesAction(Action):
 
@@ -157,6 +199,11 @@ class UseMonopolyCardAction(Action):
         self.playerNumber = playerNumber
         self.resource     = resource
 
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return [ PlayDevCardRequestMessage(gameName, MONOPOLY_CARD_INDEX),
+                 MonopolyPickMessage(gameName, self.resource)            ]
+
 class UseYearOfPlentyCardAction(Action):
 
     type = 'UseYearOfPlentyCard'
@@ -165,6 +212,11 @@ class UseYearOfPlentyCardAction(Action):
 
         self.playerNumber = playerNumber
         self.resources    = resources
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return [PlayDevCardRequestMessage(gameName, YEAR_OF_PLENTY_CARD_INDEX),
+                DiscoveryPickMessage(gameName, self.resources)                ]
 
 class UseFreeRoadsCardAction(Action):
 
