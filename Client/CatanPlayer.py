@@ -1,7 +1,7 @@
 from CatanBoard import *
 from CatanAction import *
 
-class Player():
+class Player:
 
     def __init__(self, name, seatNumber):
 

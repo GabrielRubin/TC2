@@ -13,10 +13,6 @@ class AgentRandom(Player):
         if gameState is None:
             gameState = game.gameState
 
-        #if player not in gameState.players:
-        #    logging.critical("PLAYER NOT IN GAME!!!!!\n CurrentPlayers : {0}\n I am: {1}".format(gameState.players, player))
-        #    return None
-
         if not ignoreTurn and gameState.currPlayer != player.seatNumber:
             logging.critical("ITS NOT THIS PLAYER'S TURN!!!!")
             return None
