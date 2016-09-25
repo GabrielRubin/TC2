@@ -1,5 +1,6 @@
 from CatanBoard import *
 from CatanAction import *
+import logging
 
 class Player:
 
@@ -46,6 +47,41 @@ class Player:
             achievementPoints += 2
 
         return devCardPoints + constructionPoints + achievementPoints
+
+    # @REVIEW@
+    def UpdatePlayerResources(self, game, diceNumber = None):
+
+        logging.info("UPDATING PLAYER {0} RESOURCES...".format(self.seatNumber))
+
+        if diceNumber is not None:
+
+            for s in range(0, len(self.settlements)):
+
+                adjacentHexes = game.gameState.boardNodes[self.settlements[s]].GetAdjacentHexes()
+
+                for h in range(0, len(adjacentHexes)):
+
+                    if adjacentHexes[h] is not None:
+
+                        if int(game.gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
+
+                            logging.info(">> GAIN 1 {0}".format(game.gameState.boardHexes[adjacentHexes[h]].production))
+
+                            self.resources[g_resources.index(game.gameState.boardHexes[adjacentHexes[h]].production)] += 1
+
+            for c in range(0, len(self.cities)):
+
+                adjacentHexes = game.gameState.boardNodes[self.cities[c]].GetAdjacentHexes()
+
+                for h in range(0, len(adjacentHexes)):
+
+                    if adjacentHexes[h] is not None:
+
+                        if int(game.gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
+
+                            logging.info(">> GAIN 2 {0}".format(game.gameState.boardHexes[adjacentHexes[h]].production))
+
+                            self.resources[g_resources.index(game.gameState.boardHexes[adjacentHexes[h]].production)] += 2
 
     def UpdateMayPlayDevCards(self, recentlyCardIndex = None, canUseAll = False):
 

@@ -5,6 +5,7 @@ from JSettlersMessages import *
 from CatanPlayer import *
 from CatanGame import *
 from CatanAction import *
+from AgentRandom import *
 
 class Client:
 
@@ -392,6 +393,9 @@ class Client:
 
             logging.info("---- Dices are rolled! ----\n Dice Result = {0}".format(instance.result))
 
+            # @REVIEW@
+            self.game.gameState.players[self.game.gameState.currPlayer].UpdatePlayerResources(self.game, instance.result)
+
         elif name == "MoveRobberMessage":
 
             self.game.gameState.robberPos = instance.position
@@ -461,8 +465,8 @@ class Client:
 
         self.player = self.game.gameState.players[self.player.seatNumber]
 
-#logging.getLogger().setLevel(logging.INFO)
-#logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
-#
-#client = Client("TestGame", AgentRandom("Danda", 0), True, True)
-#client.StartClient(("localhost", 8880))
+logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
+
+client = Client("TestGame", AgentRandom("Danda", 0), True, True)
+client.StartClient(("localhost", 8880))
