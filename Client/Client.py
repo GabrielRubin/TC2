@@ -465,8 +465,8 @@ class Client:
 
         self.player = self.game.gameState.players[self.player.seatNumber]
 
-logging.getLogger().setLevel(logging.INFO)
-logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
+#logging.getLogger().setLevel(logging.INFO)
+#logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG
 
-client = Client("TestGame", AgentRandom("Danda", 0), True, True)
-client.StartClient(("localhost", 8880))
+#client = Client("TestGame", AgentRandom("Danda", 0), True, True)
+#client.StartClient(("localhost", 8880))
