@@ -128,7 +128,7 @@ class Game:
 
         #return gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost)
 
-        if gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
+        if sum(gameState.developmentCardsDeck) > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
             return True
         else:
             return False
@@ -163,10 +163,6 @@ class Game:
 
         return [gameState.boardNodes[settlement] for settlement in player.settlements]
 
-    def GetDiceRoll(self):
-
-        return random.randint(1, 6) + random.randint(1, 6)
-
     def GetPossibleRobberPositions(self, gameState, player):
 
         oceanHexes = \
@@ -180,14 +176,14 @@ class Game:
 
         return [PlaceRobberAction(player.seatNumber, position) for position in possibleRobberPositions]
 
-    def GetNextGameState(self, action, isUpdate = False, fromServer = False):
+    def GetNextGameState(self, action, isUpdate = False):
 
         if isUpdate:
             gameState = self.gameState
         else:
             gameState = copy.deepcopy(self.gameState)
 
-        action.ApplyAction(gameState, fromServer=fromServer)
+        action.ApplyAction(gameState)
 
         # TODO -> Check biggest road, most knights and more...
 
@@ -206,10 +202,46 @@ class GameState:
         self.currTurn    = 0
         self.players     = [ None, None, None, None ]
         self.robberPos   = 0
-        self.devCards    = 25
+
+        self.developmentCardsDeck = [14, 2, 2, 2, 5]
 
         self.longestRoadPlayer = 0
         self.largestArmPlayer  = 0
+
+        #TODO -> store the starting player index
+        self.startingPlayer = 0
+
+    def UpdateDevCardsFromServer(self, currCount):
+
+        if currCount < sum(self.developmentCardsDeck):
+
+            diff = max(sum(self.developmentCardsDeck) - currCount, 0)
+
+            currDevCardsPopulation = [0 for i in range(0, self.developmentCardsDeck[0])] + \
+                                     [1 for i in range(0, self.developmentCardsDeck[1])] + \
+                                     [2 for i in range(0, self.developmentCardsDeck[2])] + \
+                                     [3 for i in range(0, self.developmentCardsDeck[3])] + \
+                                     [4 for i in range(0, self.developmentCardsDeck[4])]
+
+            usedDevCards = random.sample(currDevCardsPopulation, diff)
+
+            for index in range(0, len(usedDevCards)):
+                self.developmentCardsDeck[usedDevCards[index]] -= 1
+
+    def DrawDevCard(self, playerNumber):
+
+        if sum(self.developmentCardsDeck) > 0:
+
+            currDevCardsPopulation = [0 for i in range(0, self.developmentCardsDeck[0])] + \
+                                     [1 for i in range(0, self.developmentCardsDeck[1])] + \
+                                     [2 for i in range(0, self.developmentCardsDeck[2])] + \
+                                     [3 for i in range(0, self.developmentCardsDeck[3])] + \
+                                     [4 for i in range(0, self.developmentCardsDeck[4])]
+
+            index = random.choice(currDevCardsPopulation)
+
+            self.developmentCardsDeck[index] -= 1
+            self.players[playerNumber].developmentCards[index] += 1
 
     def GetConstructableNodes(self):
 

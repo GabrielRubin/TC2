@@ -249,7 +249,7 @@ class AgentRandom(Player):
         if player is None:
             player = self
 
-        if sum(player.resources) < 7:
+        if sum(player.resources) <= 7:
             return None
 
         resourcesPopulation = [0 for i in range(0, player.resources[0])] + [1 for j in range(0, player.resources[1])] + \

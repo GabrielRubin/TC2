@@ -16,17 +16,17 @@ class Player:
         self.cities           = [ ]
         self.biggestRoad      = False
         self.biggestArmy      = False
-        self.numberOfPieces   = [ 0 for i in range(0, len(g_pieces))]
+        self.numberOfPieces   = [ 15, 5, 4 ]
         self.knights          = 0
         self.playedDevCard    = False
         self.discardCardCount = 0
 
-        self.firstSettlementBuild = False
+        self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
-        self.firstRoadBuild = False
-        self.secondRoadBuild = False
+        self.firstRoadBuild        = False
+        self.secondRoadBuild       = False
 
-        self.rolledTheDices = False
+        self.rolledTheDices        = False
 
     def GetVictoryPoints(self):
 
@@ -48,8 +48,28 @@ class Player:
 
         return devCardPoints + constructionPoints + achievementPoints
 
-    # @REVIEW@
-    def UpdatePlayerResources(self, game, diceNumber = None):
+    def GetStartingResources(self, gameState):
+
+        for index in range(0, len(self.settlements)):
+
+            settlement = gameState.boardNodes[self.settlements[index]]
+
+            #its the second settlement
+            if settlement.construction.index == 1:
+
+                adjacentHexes = settlement.GetAdjacentHexes()
+
+                for h in range(0, len(adjacentHexes)):
+
+                    if adjacentHexes[h] is not None:
+
+                        if gameState.boardHexes[adjacentHexes[h]].production is not None:
+
+                            logging.info(" STARTING RESOURCE >> GAIN 1 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
+
+                            self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
+
+    def UpdatePlayerResources(self, gameState, diceNumber = None):
 
         logging.info("UPDATING PLAYER {0} RESOURCES...".format(self.seatNumber))
 
@@ -57,31 +77,36 @@ class Player:
 
             for s in range(0, len(self.settlements)):
 
-                adjacentHexes = game.gameState.boardNodes[self.settlements[s]].GetAdjacentHexes()
+                adjacentHexes = gameState.boardNodes[self.settlements[s]].GetAdjacentHexes()
 
                 for h in range(0, len(adjacentHexes)):
 
-                    if adjacentHexes[h] is not None:
+                    if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
 
-                        if int(game.gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
+                        if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
 
-                            logging.info(">> GAIN 1 {0}".format(game.gameState.boardHexes[adjacentHexes[h]].production))
+                            if gameState.boardHexes[adjacentHexes[h]].production is not None:
 
-                            self.resources[g_resources.index(game.gameState.boardHexes[adjacentHexes[h]].production)] += 1
+                                logging.info("  >> GAIN 1 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
+
+                                self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
 
             for c in range(0, len(self.cities)):
 
-                adjacentHexes = game.gameState.boardNodes[self.cities[c]].GetAdjacentHexes()
+                adjacentHexes = gameState.boardNodes[self.cities[c]].GetAdjacentHexes()
 
                 for h in range(0, len(adjacentHexes)):
 
-                    if adjacentHexes[h] is not None:
+                    if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
 
-                        if int(game.gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
+                        if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
 
-                            logging.info(">> GAIN 2 {0}".format(game.gameState.boardHexes[adjacentHexes[h]].production))
+                            if gameState.boardHexes[adjacentHexes[h]].production is not None:
 
-                            self.resources[g_resources.index(game.gameState.boardHexes[adjacentHexes[h]].production)] += 2
+                                logging.info("  >> GAIN 2 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
+
+                                self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 2
+
 
     def UpdateMayPlayDevCards(self, recentlyCardIndex = None, canUseAll = False):
 

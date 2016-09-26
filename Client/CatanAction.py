@@ -1,6 +1,8 @@
 from JSettlersMessages import *
 from CatanBoard import *
 
+import random
+
 g_ActionType = \
 [
     'BuildRoad',
@@ -35,7 +37,7 @@ class Action(object):
     def GetMessage(self, gameName, currGameStateName = None):
         pass
 
-    def ApplyAction(self, gameState, fromServer = False):
+    def ApplyAction(self, gameState):
         pass
 
 class BuildAction(Action):
@@ -62,10 +64,19 @@ class BuildAction(Action):
         return BuildRequestMessage(gameName, self.pieceId)
 
 
-    def ApplyAction(self, gameState, fromServer = False):
+    def ApplyAction(self, gameState):
 
         newConstruction = Construction(g_constructionTypes[self.pieceId],
                                        self.playerNumber, self.index, self.position)
+
+        freeBuildStates = ["START1A", "START1B", "START2A", "START2B",
+                           "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
+
+        if gameState.currState not in freeBuildStates:
+            currResources = gameState.players[self.playerNumber].resources
+
+            gameState.players[self.playerNumber].resources = \
+                [x1 - x2 for (x1, x2) in zip(currResources, self.cost)]
 
         if self.pieceId == 0:   # ROADS
 
@@ -73,11 +84,57 @@ class BuildAction(Action):
 
             gameState.boardEdges[self.position].construction = newConstruction
 
+            gameState.players[self.playerNumber].numberOfPieces[0] -= 1
+
+            #TODO -> Check biggest road...
+            # gameState.CheckBiggestRoad()
+
+            if gameState.currState == "START1B":
+
+                nextPlayer = (gameState.currPlayer + 1) % len(gameState.players)
+
+                if nextPlayer == gameState.startingPlayer:
+                    gameState.currState = "START2A"
+
+                else:
+                    gameState.currPlayer = nextPlayer
+                    gameState.currState  = "START1A"
+
+            elif gameState.currState == "START2B":
+
+                nextPlayer = (gameState.currPlayer - 1) % len(gameState.players)
+
+                if nextPlayer == gameState.startingPlayer:
+
+                    gameState.currPlayer = nextPlayer
+                    gameState.currState  = "PLAY"
+
+                else:
+                    gameState.currPlayer = nextPlayer
+                    gameState.currState = "START2A"
+
+            elif gameState.currState == "PLACING_FREE_ROAD1":
+                gameState.currState = "PLACING_FREE_ROAD2"
+
+            elif gameState.currState == "PLACING_FREE_ROAD2":
+                gameState.currState = "PLAY1"
+
         elif self.pieceId == 1: # SETTLEMENTS
 
             gameState.players[self.playerNumber].settlements.append(self.position)
 
             gameState.boardNodes[self.position].construction = newConstruction
+
+            gameState.players[self.playerNumber].numberOfPieces[1] -= 1
+
+            if gameState.currState == "START1A":
+                gameState.currState = "START1B"
+
+            elif gameState.currState == "START2A":
+
+                gameState.players[self.playerNumber].GetStartingResources(gameState)
+
+                gameState.currState = "START2B"
 
         else:                   # CITIES
 
@@ -87,14 +144,7 @@ class BuildAction(Action):
 
             gameState.boardNodes[self.position].construction = newConstruction
 
-        if not fromServer:
-
-            currResources = gameState.players[self.playerNumber].resources
-
-            gameState.players[self.playerNumber].resources = \
-                [ x1 - x2 for (x1, x2) in zip(currResources, self.cost) ]
-
-        return gameState
+            gameState.players[self.playerNumber].numberOfPieces[2] -= 1
 
 
 class BuildRoadAction(BuildAction):
@@ -150,13 +200,26 @@ class RollDicesAction(Action):
 
     type = 'RollDices'
 
-    def __init__(self, playerNumber):
+    def __init__(self, playerNumber = None, result = None):
 
         self.playerNumber = playerNumber
+
+        if result is not None:
+            self.result = result
+        else:
+            self.result = random.randint(1, 6) + random.randint(1, 6)
 
     def GetMessage(self, gameName, currGameStateName = None):
 
         return RollDiceMessage(gameName)
+
+    def ApplyAction(self, gameState):
+
+        if self.playerNumber is not None:
+            gameState.players[self.playerNumber].rolledTheDices = True
+
+        for playerIndex in range(0, len(gameState.players)):
+            gameState.players[playerIndex].UpdatePlayerResources(gameState, self.result)
 
 class BuyDevelopmentCardAction(Action):
 
@@ -168,19 +231,49 @@ class BuyDevelopmentCardAction(Action):
              0,  # lumber
              0 ] # unknown
 
-    def __init__(self, playerNumber):
+    def __init__(self, playerNumber, fromServer = False):
 
-        self.playerName = playerNumber
+        self.playerNumber = playerNumber
+
+        self.fromServer = fromServer
 
     def GetMessage(self, gameName, currGameStateName = None):
 
         return BuyCardRequestMessage(gameName)
 
-class UseKnightsCardAction(Action):
+    def ApplyAction(self, gameState):
+
+        currResources = gameState.players[self.playerNumber].resources
+
+        gameState.players[self.playerNumber].resources = \
+            [ x1 - x2 for (x1, x2) in zip(currResources, BuyDevelopmentCardAction.cost) ]
+
+        if not self.fromServer:
+            gameState.DrawDevCard(self.playerNumber)
+
+class UseDevelopmentCardAction(Action):
+
+    def __init__(self, playerNumber, index):
+
+        self.playerNumber = playerNumber
+
+        self.index        = index
+
+    def ApplyAction(self, gameState):
+
+        self.gameState.players[self.playerNumber].developmentCards[self.index] -= 1
+
+        self.gameState.players[self.playerNumber].mayPlayDevCards[self.index] = False
+
+        self.gameState.players[self.playerNumber].playedDevCard = True
+
+class UseKnightsCardAction(UseDevelopmentCardAction):
 
     type = 'UseKnightsCard'
 
     def __init__(self, playerNumber, newRobberPos, targetPlayerIndex):
+
+        super(UseKnightsCardAction, self).__init__(playerNumber, KNIGHT_CARD_INDEX)
 
         self.playerNumber      = playerNumber
         self.robberPos         = newRobberPos
@@ -190,47 +283,91 @@ class UseKnightsCardAction(Action):
 
         return PlayDevCardRequestMessage(gameName, KNIGHT_CARD_INDEX)
 
-class UseMonopolyCardAction(Action):
+    def ApplyAction(self, gameState):
+
+        super(UseKnightsCardAction, self).ApplyAction(gameState)
+
+        self.gameState.currState = "PLACING_ROBBER"
+
+        self.gameState.players[self.playerNumber].knights += 1
+
+class UseMonopolyCardAction(UseDevelopmentCardAction):
 
     type = 'UseMonopolyCard'
 
     def __init__(self, playerNumber, resource):
 
-        self.playerNumber = playerNumber
+        super(UseMonopolyCardAction, self).__init__(playerNumber, MONOPOLY_CARD_INDEX)
+
         self.resource     = resource
 
     def GetMessage(self, gameName, currGameStateName = None):
 
-        return [ PlayDevCardRequestMessage(gameName, MONOPOLY_CARD_INDEX),
+        return [ PlayDevCardRequestMessage(gameName, self.index),
                  MonopolyPickMessage(gameName, self.resource)            ]
 
-class UseYearOfPlentyCardAction(Action):
+    def ApplyAction(self, gameState):
+
+        super(UseMonopolyCardAction, self).ApplyAction(gameState)
+
+        total = 0
+
+        for index in range(0, len(gameState.players)):
+
+            if index == self.playerNumber:
+                continue
+
+            amount = gameState.players[index].resources[self.resource]
+
+            gameState.players[index].resources[self.resource] -= amount
+
+            total += amount
+
+        gameState.players[self.playerNumber].resources[self.resource] += total
+
+class UseYearOfPlentyCardAction(UseDevelopmentCardAction):
 
     type = 'UseYearOfPlentyCard'
 
     def __init__(self, playerNumber, resources):
 
-        self.playerNumber = playerNumber
+        super(UseYearOfPlentyCardAction, self).__init__(playerNumber, YEAR_OF_PLENTY_CARD_INDEX)
+
         self.resources    = resources
 
     def GetMessage(self, gameName, currGameStateName = None):
 
-        return [PlayDevCardRequestMessage(gameName, YEAR_OF_PLENTY_CARD_INDEX),
+        return [PlayDevCardRequestMessage(gameName, self.index),
                 DiscoveryPickMessage(gameName, self.resources)                ]
 
-class UseFreeRoadsCardAction(Action):
+    def ApplyAction(self, gameState):
+
+        super(UseYearOfPlentyCardAction, self).ApplyAction(gameState)
+
+        gameState.players[self.playerNumber].resources[self.resources[0]] += 1
+
+        gameState.players[self.playerNumber].resources[self.resources[1]] += 1
+
+class UseFreeRoadsCardAction(UseDevelopmentCardAction):
 
     type = 'UseFreeRoadsCard'
 
     def __init__(self, playerNumber, road1Edge, road2Edge):
 
-        self.playerNumber = playerNumber
+        super(UseFreeRoadsCardAction, self).__init__(playerNumber, ROAD_BUILDING_CARD_INDEX)
+
         self.road1Edge    = road1Edge
         self.road2Edge    = road2Edge
 
     def GetMessage(self, gameName, currGameStateName = None):
 
-        return PlayDevCardRequestMessage(gameName, ROAD_BUILDING_CARD_INDEX)
+        return PlayDevCardRequestMessage(gameName, self.index)
+
+    def ApplyAction(self, gameState):
+
+        super(UseFreeRoadsCardAction, self).ApplyAction(gameState)
+
+        gameState.currState = "PLACING_FREE_ROAD1"
 
 class PlaceRobberAction(Action):
 
@@ -245,6 +382,10 @@ class PlaceRobberAction(Action):
 
         return MoveRobberMessage(gameName, self.playerNumber, self.robberPos)
 
+    def ApplyAction(self, gameState):
+
+        gameState.robberPos = self.robberPos
+
 class EndTurnAction(Action):
 
     type = 'EndTurn'
@@ -256,6 +397,12 @@ class EndTurnAction(Action):
     def GetMessage(self, gameName, currGameStateName = None):
 
         return EndTurnMessage(gameName)
+
+    def ApplyAction(self, gameState):
+
+        #TODO -> change gameState.currPlayer...
+
+        gameState.currState = "PLAY"
 
 class DiscardResourcesAction(Action):
 
@@ -272,6 +419,13 @@ class DiscardResourcesAction(Action):
                                         self.resources[2], self.resources[3],
                                         self.resources[4], self.resources[5])
 
+    def ApplyAction(self, gameState):
+
+        currResources = gameState.players[self.playerNumber]
+
+        gameState.players[self.playerNumber].resources = \
+            [ x1 - x2 for (x1, x2) in zip(currResources, self.resources) ]
+
 class ChoosePlayerToStealFromAction(Action):
 
     type = 'ChoosePlayerToStealFrom'
@@ -280,6 +434,10 @@ class ChoosePlayerToStealFromAction(Action):
 
         self.playerNumber       = playerNumer
         self.targetPlayerNumber = targetPlayerNumber
+
+    #TODO -> GetMessage
+
+    #TODO -> ApplyAction
 
 class TradeOfferAction(Action):
 
@@ -292,6 +450,10 @@ class TradeOfferAction(Action):
         self.targetPlayerNumber = targetPlayerNumber
         self.offerResources     = offerResources
         self.wantedResources    = wantedResources
+
+    # TODO -> GetMessage
+
+    # TODO -> ApplyAction
 
 class BankTradeOfferAction(Action):
 
@@ -306,3 +468,15 @@ class BankTradeOfferAction(Action):
     def GetMessage(self, gameName, currGameStateName = None):
 
         return BankTradeMessage(gameName, self.giveResources, self.getResources)
+
+    def ApplyAction(self, gameState):
+
+        currResources1 = gameState.players[self.playerNumber]
+
+        gameState.players[self.playerNumber].resources = \
+            [x1 - x2 for (x1, x2) in zip(currResources1, self.giveResources)]
+
+        currResources2 = gameState.players[self.playerNumber]
+
+        gameState.players[self.playerNumber].resources = \
+            [x1 + x2 for (x1, x2) in zip(currResources2, self.getResources)]
