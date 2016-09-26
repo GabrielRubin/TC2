@@ -358,7 +358,11 @@ class Client:
 
             logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
 
-            self.game.gameState.currState = instance.stateName
+            # FIXME
+            alreadyDoneStates = ["START1A", "START1B", "START2A", "START2B", "PLAY"]
+
+            if instance.stateName not in alreadyDoneStates:
+                self.game.gameState.currState = instance.stateName
 
             if instance.stateName == "START1A":
 
@@ -456,7 +460,11 @@ class Client:
 
         elif name == "TurnMessage":
 
-            self.game.gameState.currPlayer = instance.playerNumber
+            # FIXME
+            alreadyDoneStates = ["START1A", "START1B", "START2A", "START2B"]
+
+            if self.game.gameState.currState not in alreadyDoneStates:
+             self.game.gameState.currPlayer = instance.playerNumber
 
             self.RespondToServer()
 
@@ -508,6 +516,10 @@ class Client:
 
             self.game.gameState.startingPlayer = instance.playerNumber
 
+            # FIXME -> bug
+            self.game.gameState.currState      = "START1A"
+            self.RespondToServer()
+
     def RespondToServer(self):
 
         agentAction = None
@@ -534,6 +546,8 @@ class Client:
             if agentAction.type == 'BankTradeOffer':
 
                 self.waitBankTradeAck = True
+
+                self.UpdateGame(agentAction)
 
             if agentAction.type == 'EndTurn':
                 # @REVIEW@

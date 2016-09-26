@@ -421,7 +421,7 @@ class DiscardResourcesAction(Action):
 
     def ApplyAction(self, gameState):
 
-        currResources = gameState.players[self.playerNumber]
+        currResources = gameState.players[self.playerNumber].resources
 
         gameState.players[self.playerNumber].resources = \
             [ x1 - x2 for (x1, x2) in zip(currResources, self.resources) ]
@@ -471,12 +471,12 @@ class BankTradeOfferAction(Action):
 
     def ApplyAction(self, gameState):
 
-        currResources1 = gameState.players[self.playerNumber]
+        currResources1 = gameState.players[self.playerNumber].resources
 
         gameState.players[self.playerNumber].resources = \
             [x1 - x2 for (x1, x2) in zip(currResources1, self.giveResources)]
 
-        currResources2 = gameState.players[self.playerNumber]
+        currResources2 = gameState.players[self.playerNumber].resources
 
         gameState.players[self.playerNumber].resources = \
             [x1 + x2 for (x1, x2) in zip(currResources2, self.getResources)]
