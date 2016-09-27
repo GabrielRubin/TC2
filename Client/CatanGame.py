@@ -208,8 +208,7 @@ class GameState:
         self.longestRoadPlayer = 0
         self.largestArmPlayer  = 0
 
-        #TODO -> store the starting player index
-        self.startingPlayer = 0
+        self.startingPlayer = -1
 
     def UpdateDevCardsFromServer(self, currCount):
 

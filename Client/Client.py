@@ -17,6 +17,7 @@ class Client:
         self.joinedAGame    = False
         self.isSeated       = False
         self.gameStarted    = False
+        self.setupDone      = False
 
         self.gameName       = gameName
         self.player         = player
@@ -356,19 +357,18 @@ class Client:
 
         elif name == "GameStateMessage":
 
+            print("NEW GAME STATE = {0}".format(instance.stateName))
+
             logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
 
+            '''
             # FIXME
             alreadyDoneStates = ["START1A", "START1B", "START2A", "START2B", "PLAY"]
 
             if instance.stateName not in alreadyDoneStates:
                 self.game.gameState.currState = instance.stateName
-
-            if instance.stateName == "START1A":
-
-                logging.info("Game Begin!\n Players in this game are: {0}".format([player.name for player in self.game.gameState.players]))
-
-            elif instance.stateName == "PLACING_ROAD" or \
+            '''
+            if instance.stateName == "PLACING_ROAD" or \
                  instance.stateName == "PLACING_SETTLEMENT" or \
                  instance.stateName == "PLACING_CITY":
 
@@ -460,15 +460,31 @@ class Client:
 
         elif name == "TurnMessage":
 
-            # FIXME
-            alreadyDoneStates = ["START1A", "START1B", "START2A", "START2B"]
+            print("currState = {0}".format(self.game.gameState.currState))
 
-            if self.game.gameState.currState not in alreadyDoneStates:
-             self.game.gameState.currPlayer = instance.playerNumber
+            if self.setupDone:
+
+                self.game.gameState.currState = "PLAY"
+                self.game.gameState.currPlayer = (self.game.gameState.currPlayer + 1) % len(self.game.gameState.players)
+
+            elif self.game.gameState.currState == "PLAY":
+
+                self.setupDone = True
+
+            print("Client currPlayer: {0} - Server currPlayer: {1}".format(self.game.gameState.currPlayer, instance.playerNumber))
+
+            if self.game.gameState.startingPlayer == -1:
+
+                self.game.gameState.startingPlayer = instance.playerNumber
+                self.game.gameState.currPlayer     = instance.playerNumber
+                self.game.gameState.currState      = "START1A"
 
             self.RespondToServer()
 
         elif name == "PutPieceMessage":
+
+            if instance.playerNumber != self.game.gameState.currPlayer:
+                print("ITS NOT THIS PLAYERS TURN!!!! Received: {0}, Expected: {1}".format(instance.playerNumber, self.game.gameState.currPlayer))
 
             if instance.pieceType[0] == 'ROAD':
                 putPieceAction = BuildRoadAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].roads) )
@@ -511,14 +527,6 @@ class Client:
             choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game)
 
             self.SendMessage(ChoosePlayerMessage(self.gameName, choosePlayerAction.targetPlayerNumber))
-
-        elif name == "FirstPlayerMessage":
-
-            self.game.gameState.startingPlayer = instance.playerNumber
-
-            # FIXME -> bug
-            self.game.gameState.currState      = "START1A"
-            self.RespondToServer()
 
     def RespondToServer(self):
 

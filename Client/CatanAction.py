@@ -221,6 +221,8 @@ class RollDicesAction(Action):
         for playerIndex in range(0, len(gameState.players)):
             gameState.players[playerIndex].UpdatePlayerResources(gameState, self.result)
 
+        gameState.currState = "PLAY1"
+
 class BuyDevelopmentCardAction(Action):
 
     type = 'BuyDevelopmentCard'
@@ -401,6 +403,8 @@ class EndTurnAction(Action):
     def ApplyAction(self, gameState):
 
         #TODO -> change gameState.currPlayer...
+
+        gameState.players[self.playerNumber].rolledTheDices = False
 
         gameState.currState = "PLAY"
 

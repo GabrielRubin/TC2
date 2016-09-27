@@ -133,15 +133,8 @@ class AgentRandom(Player):
 
                 return [ UseKnightsCardAction(self.seatNumber, None, None) ]
 
-            if self.rolledTheDices:
+            if not self.rolledTheDices:
 
-                self.rolledTheDices = False
-                return None
-            else:
-
-                self.rolledTheDices = True
-
-                # roll the dices!
                 return [ RollDicesAction(player) ]
 
         elif gameState.currState == 'PLAY1':
