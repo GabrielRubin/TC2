@@ -88,7 +88,7 @@ if args.logging == 'i':
 elif args.logging == 'd':
     logging.getLogger().setLevel(logging.DEBUG)
 
-logging.getLogger().setLevel(logging.CRITICAL)
+#logging.getLogger().setLevel(logging.CRITICAL)
 
 if args.noGame:
     ourClient = Client("TestGame", player, False, True)

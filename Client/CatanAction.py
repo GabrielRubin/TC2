@@ -102,15 +102,16 @@ class BuildAction(Action):
 
             elif gameState.currState == "START2B":
 
-                nextPlayer = (gameState.currPlayer - 1) % len(gameState.players)
+                if gameState.currPlayer == gameState.startingPlayer:
 
-                if nextPlayer == gameState.startingPlayer:
-
-                    gameState.currPlayer = nextPlayer
                     gameState.currState  = "PLAY"
 
                 else:
+
+                    nextPlayer = (gameState.currPlayer - 1) % len(gameState.players)
+
                     gameState.currPlayer = nextPlayer
+
                     gameState.currState = "START2A"
 
             elif gameState.currState == "PLACING_FREE_ROAD1":
@@ -218,10 +219,15 @@ class RollDicesAction(Action):
         if self.playerNumber is not None:
             gameState.players[self.playerNumber].rolledTheDices = True
 
-        for playerIndex in range(0, len(gameState.players)):
-            gameState.players[playerIndex].UpdatePlayerResources(gameState, self.result)
+        if self.result == 7:
+            gameState.currState        = "WAITING_FOR_DISCARDS"
+            gameState.currPlayerChoice = 0
 
-        gameState.currState = "PLAY1"
+        else:
+            for playerIndex in range(0, len(gameState.players)):
+                gameState.players[playerIndex].UpdatePlayerResources(gameState, self.result)
+
+            gameState.currState = "PLAY1"
 
 class BuyDevelopmentCardAction(Action):
 
@@ -388,6 +394,8 @@ class PlaceRobberAction(Action):
 
         gameState.robberPos = self.robberPos
 
+        gameState.currState = "WAITING_FOR_CHOICE"
+
 class EndTurnAction(Action):
 
     type = 'EndTurn'
@@ -402,9 +410,9 @@ class EndTurnAction(Action):
 
     def ApplyAction(self, gameState):
 
-        #TODO -> change gameState.currPlayer...
-
         gameState.players[self.playerNumber].rolledTheDices = False
+
+        gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
         gameState.currState = "PLAY"
 
@@ -430,18 +438,50 @@ class DiscardResourcesAction(Action):
         gameState.players[self.playerNumber].resources = \
             [ x1 - x2 for (x1, x2) in zip(currResources, self.resources) ]
 
+        gameState.currPlayerChoice += 1
+
+        if gameState.currPlayerChoice >= len(gameState.players):
+
+            gameState.currPlayerChoice = -1
+
+            gameState.currState = "PLACING_ROBBER"
+
 class ChoosePlayerToStealFromAction(Action):
 
     type = 'ChoosePlayerToStealFrom'
 
-    def __init__(self, playerNumer, targetPlayerNumber):
+    def __init__(self, playerNumber, targetPlayerNumber):
 
-        self.playerNumber       = playerNumer
+        self.playerNumber       = playerNumber
         self.targetPlayerNumber = targetPlayerNumber
 
-    #TODO -> GetMessage
+    def GetMessage(self, gameName, currGameStateName = None):
 
-    #TODO -> ApplyAction
+        return ChoosePlayerMessage(gameName, self.targetPlayerNumber)
+
+    def ApplyAction(self, gameState):
+
+        targetPlayer = gameState.players[self.targetPlayerNumber]
+
+        resourcesPopulation = [0 for i in range(0, targetPlayer.resources[0])] + \
+                              [1 for j in range(0, targetPlayer.resources[1])] + \
+                              [2 for k in range(0, targetPlayer.resources[2])] + \
+                              [3 for l in range(0, targetPlayer.resources[3])] + \
+                              [4 for m in range(0, targetPlayer.resources[4])] + \
+                              [5 for n in range(0, targetPlayer.resources[5])]
+
+        if len(resourcesPopulation) > 0:
+
+            stolenResource = random.choice(resourcesPopulation)
+
+            gameState[self.playerNumber].resources[stolenResource] += 1
+
+            gameState[self.targetPlayerNumber].resources[stolenResource] -= 1
+
+        if gameState.players[self.playerNumber].rolledTheDices:
+            gameState.currState = "PLAY1"
+        else:
+            gameState.currState = "PLAY"
 
 class TradeOfferAction(Action):
 
@@ -475,12 +515,14 @@ class BankTradeOfferAction(Action):
 
     def ApplyAction(self, gameState):
 
-        currResources1 = gameState.players[self.playerNumber].resources
+        # ADD THE 'UNKNOWN' RESOURCE TYPE (not present in trade transaction)
+        give = self.giveResources + [0]
+        get  = self.getResources  + [0]
 
         gameState.players[self.playerNumber].resources = \
-            [x1 - x2 for (x1, x2) in zip(currResources1, self.giveResources)]
-
-        currResources2 = gameState.players[self.playerNumber].resources
+            [x1 - x2 for (x1, x2) in
+             zip(gameState.players[self.playerNumber].resources, give)]
 
         gameState.players[self.playerNumber].resources = \
-            [x1 + x2 for (x1, x2) in zip(currResources2, self.getResources)]
+            [x1 + x2 for (x1, x2) in
+             zip(gameState.players[self.playerNumber].resources, get)]

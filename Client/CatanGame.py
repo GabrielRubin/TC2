@@ -197,11 +197,12 @@ class GameState:
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
-        self.currState   = None
-        self.currPlayer  = -1
-        self.currTurn    = 0
-        self.players     = [ None, None, None, None ]
-        self.robberPos   = 0
+        self.currState        = None
+        self.currPlayer       = -1
+        self.currPlayerChoice = -1
+        self.currTurn         = 0
+        self.players          = [ None, None, None, None ]
+        self.robberPos        = 0
 
         self.developmentCardsDeck = [14, 2, 2, 2, 5]
 

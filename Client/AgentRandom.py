@@ -200,6 +200,7 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
+            # TODO -> CHOSE A PLAYER TO STEAL FROM
             pass
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
@@ -245,9 +246,12 @@ class AgentRandom(Player):
         if sum(player.resources) <= 7:
             return None
 
-        resourcesPopulation = [0 for i in range(0, player.resources[0])] + [1 for j in range(0, player.resources[1])] + \
-                              [2 for k in range(0, player.resources[2])] + [3 for l in range(0, player.resources[3])] + \
-                              [4 for m in range(0, player.resources[4])] + [5 for n in range(0, player.resources[5])]
+        resourcesPopulation = [0 for i in range(0, player.resources[0])] + \
+                              [1 for j in range(0, player.resources[1])] + \
+                              [2 for k in range(0, player.resources[2])] + \
+                              [3 for l in range(0, player.resources[3])] + \
+                              [4 for m in range(0, player.resources[4])] + \
+                              [5 for n in range(0, player.resources[5])]
 
         discardCardCount = int(math.floor(len(resourcesPopulation) / 2))
 
@@ -257,9 +261,12 @@ class AgentRandom(Player):
 
         selectedResources = random.sample(resourcesPopulation, discardCardCount)
 
-        return DiscardResourcesAction(player.seatNumber, [selectedResources.count(0), selectedResources.count(1),
-                                                          selectedResources.count(2), selectedResources.count(3),
-                                                          selectedResources.count(4), selectedResources.count(5)])
+        return DiscardResourcesAction(player.seatNumber, [selectedResources.count(0),
+                                                          selectedResources.count(1),
+                                                          selectedResources.count(2),
+                                                          selectedResources.count(3),
+                                                          selectedResources.count(4),
+                                                          selectedResources.count(5)])
 
     def ChoosePlayerToStealFrom(self, game, player = None):
 

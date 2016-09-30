@@ -357,29 +357,28 @@ class Client:
 
         elif name == "GameStateMessage":
 
-            print("NEW GAME STATE = {0}".format(instance.stateName))
+            #print("NEW GAME STATE = {0}".format(instance.stateName))
 
             logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
 
-            '''
-            # FIXME
-            alreadyDoneStates = ["START1A", "START1B", "START2A", "START2B", "PLAY"]
-
-            if instance.stateName not in alreadyDoneStates:
-                self.game.gameState.currState = instance.stateName
-            '''
             if instance.stateName == "PLACING_ROAD" or \
-                 instance.stateName == "PLACING_SETTLEMENT" or \
-                 instance.stateName == "PLACING_CITY":
+               instance.stateName == "PLACING_SETTLEMENT" or \
+               instance.stateName == "PLACING_CITY":
 
                 if self.game.gameState.currPlayer == self.player.seatNumber:
 
                     response = self.playerBuildAction.GetMessage(self.gameName,
-                                              currGameStateName=self.game.gameState.currState)
+                                              currGameStateName=instance.stateName)
 
                     self.SendMessage(response)
 
                 return
+
+            elif instance.stateName == "WAITING_FOR_DISCARDS":
+
+                # TODO -> DO DISCARD FOR ALL PLAYERS
+
+                self.game.gameState.currPlayerChoice = -1
 
             elif instance.stateName == "OVER":
                 pass
@@ -460,24 +459,25 @@ class Client:
 
         elif name == "TurnMessage":
 
-            print("currState = {0}".format(self.game.gameState.currState))
-
-            if self.setupDone:
-
-                self.game.gameState.currState = "PLAY"
-                self.game.gameState.currPlayer = (self.game.gameState.currPlayer + 1) % len(self.game.gameState.players)
-
-            elif self.game.gameState.currState == "PLAY":
-
-                self.setupDone = True
-
-            print("Client currPlayer: {0} - Server currPlayer: {1}".format(self.game.gameState.currPlayer, instance.playerNumber))
+            #print("currState = {0}".format(self.game.gameState.currState))
 
             if self.game.gameState.startingPlayer == -1:
 
                 self.game.gameState.startingPlayer = instance.playerNumber
                 self.game.gameState.currPlayer     = instance.playerNumber
                 self.game.gameState.currState      = "START1A"
+
+            if self.setupDone:
+
+                self.game.gameState.currState = "PLAY"
+                self.game.gameState.currPlayer = (self.game.gameState.currPlayer + 1) % len(self.game.gameState.players)
+
+            elif self.game.gameState.currState == "PLAY1":
+
+                self.game.gameState.currPlayer = (self.game.gameState.currPlayer + 1) % len(self.game.gameState.players)
+                self.setupDone = True
+
+            #print("Client currPlayer: {0} - Server currPlayer: {1}".format(self.game.gameState.currPlayer, instance.playerNumber))
 
             self.RespondToServer()
 
@@ -507,7 +507,7 @@ class Client:
 
             logging.info("---- Dices are rolled! ----\n Dice Result = {0}".format(instance.result))
 
-            self.UpdateGame( RollDicesAction(result=instance.result) )
+            self.UpdateGame( RollDicesAction(self.game.gameState.currPlayer, result=instance.result) )
 
         elif name == "MoveRobberMessage":
 
