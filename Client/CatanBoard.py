@@ -187,13 +187,14 @@ class BoardNode:
                            #  |
             adjacentHexes =    [ -0x10,
 
-                              -0x11, 0x10]
+                              -0x12, 0x10]
 
         else:              #  |
                            # / \
             adjacentHexes = [ -0x21,  0x01,
 
                                  -0x01]
+
         return [ self.index + h if self.index + h in g_boardHexes else None
                  for h in adjacentHexes ]
 

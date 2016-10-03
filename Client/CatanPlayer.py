@@ -1,6 +1,7 @@
 from CatanBoard import *
 from CatanAction import *
 import logging
+import math
 
 class Player:
 
@@ -27,6 +28,7 @@ class Player:
         self.secondRoadBuild       = False
 
         self.rolledTheDices        = False
+        self.placedRobber          = False
 
     def GetVictoryPoints(self):
 
@@ -65,7 +67,8 @@ class Player:
 
                         if gameState.boardHexes[adjacentHexes[h]].production is not None:
 
-                            logging.info(" STARTING RESOURCE >> GAIN 1 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
+                            logging.info("{0} : STARTING RESOURCE >> GAIN 1 {1}".format(
+                                self.name, gameState.boardHexes[adjacentHexes[h]].production))
 
                             self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
 
@@ -172,6 +175,9 @@ class Player:
     def ChooseCardsToDiscard(self, game, player = None):
         pass
 
+    def ChooseRobberPosition(self, game, player = None):
+        pass
+
     def ChoosePlayerToStealFrom(self, game, player = None):
         pass
 
@@ -183,3 +189,109 @@ class Player:
 
     def GetYearOfPlentyResource(self, game, player = None):
         pass
+
+    def UpdateResourcesFromServer(self, action, element, value):
+
+        if element in g_resources:  # RESOURCE
+
+            if action == 'SET':
+                self.resources[g_resources.index(element)] = value
+
+            elif action == 'GAIN':
+                self.resources[g_resources.index(element)] += value
+
+            elif action == 'LOSE':
+
+                if element == 'UNKNOWN':
+
+                    resourceAmount = sum(self.resources) - value
+
+                    self.resources[g_resources.index('UNKNOWN')] = resourceAmount
+
+                    for index in range(len(self.resources) - 1):
+                        self.resources[index] = 0
+                else:
+                    self.resources[g_resources.index(element)] -= value
+
+            if self.resources[g_resources.index(element)] < 0:
+                self.resources[g_resources.index('UNKNOWN')] += self.resources[g_resources.index(element)]
+                self.resources[g_resources.index(element)] = 0
+
+        elif element in g_pieces:  # PIECES
+
+            if action == 'SET':
+                self.numberOfPieces[g_pieces.index(element)] = value
+
+            elif action == 'GAIN':
+                self.numberOfPieces[g_pieces.index(element)] += value
+
+            elif action == 'LOSE':
+                self.numberOfPieces[g_pieces.index(element)] -= value
+
+        elif element == 'KNIGHTS':  # KNIGHTS
+
+            if action == 'SET':
+                self.knights = value
+
+            elif action == 'GAIN':
+                self.knights += value
+
+            elif action == 'LOSE':
+                self.knights -= value
+
+    def Build(self, gameState, pieceType, position):
+
+        if pieceType == 'ROAD':
+
+            newConstruction = Construction(g_constructionTypes[0],
+                                           self.seatNumber, len(self.roads), position)
+
+            gameState.boardEdges[position].construction = newConstruction
+
+            self.roads.append(position)
+
+            self.numberOfPieces[0] -= 1
+
+        elif pieceType == 'SETTLEMENT':
+
+            newConstruction = Construction(g_constructionTypes[1],
+                                           self.seatNumber, len(self.settlements), position)
+
+            gameState.boardNodes[position].construction = newConstruction
+
+            self.settlements.append(position)
+
+            self.numberOfPieces[1] -= 1
+
+        elif pieceType == 'CITY':
+
+            newConstruction = Construction(g_constructionTypes[2],
+                                           self.seatNumber, len(self.cities), position)
+
+            gameState.boardNodes[position].construction = newConstruction
+
+            self.settlements.remove(position)
+
+            self.cities.append(position)
+
+            self.numberOfPieces[1] += 1
+
+            self.numberOfPieces[2] -= 1
+
+    def PlaceRobber(self, gameState, position):
+
+        gameState.robberPos = position
+
+        self.placedRobber = True
+
+    def StartTurn(self):
+
+        self.placedRobber   = False
+
+        self.rolledTheDices = False
+
+    def DefaultDiscard(self):
+        #ROBOT PLAYER DEFAULT DISCARD METHOD
+        if sum(self.resources) > 7:
+            # SET THE NEW RESOURCES AS UNKNOWN - (WE CANT KNOW WHAT RESOURCES THE ROBOT HAVE DISCARDED)
+            self.resources = [0, 0, 0, 0, 0, int(math.ceil(sum(self.resources) / 2.0))]

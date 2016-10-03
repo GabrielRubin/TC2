@@ -5,17 +5,13 @@ import math
 
 class AgentRandom(Player):
 
-    def GetPossibleActions(self, game, player = None, gameState = None, ignoreTurn = False):
+    def GetPossibleActions(self, game, player = None, gameState = None):
 
         if player is None:
             player = self
 
         if gameState is None:
             gameState = game.gameState
-
-        if not ignoreTurn and gameState.currPlayer != player.seatNumber:
-            logging.critical("ITS NOT THIS PLAYER'S TURN!!!!")
-            return None
 
         if   gameState.currState == 'START1A':
 
@@ -120,7 +116,8 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
-            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
+                    for roadEdge in possibleRoads]
 
         elif gameState.currState == 'PLAY':
 
@@ -145,13 +142,13 @@ class AgentRandom(Player):
 
             possibleRoads       = game.GetPossibleRoads(gameState, player)
 
+            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
+
             possibleSettlements = game.GetPossibleSettlements(gameState, player)
 
             possibleCities      = game.GetPossibleCities(gameState, player)
 
             possibleBankTrades  = self.GetPossibleBankTrades(game, player)
-
-            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
 
             possibleCardsToUse = []
 
@@ -166,60 +163,70 @@ class AgentRandom(Player):
                 if self.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and self.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
                     possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
 
-            if possibleRoads is not None:
-                possibleActions += [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
-                                    for roadEdge in possibleRoads]
+            if possibleRoads is not None and len(possibleRoads) > 0:
+                possibleActions.append([BuildRoadAction(player.seatNumber, roadEdge.index,
+                                                    len(player.roads))
+                                        for roadEdge in possibleRoads])
 
             if len(possibleCardsToUse) > 0:
-                possibleActions += possibleCardsToUse
+                possibleActions.append(possibleCardsToUse)
 
-            if canBuyADevCard:
-                possibleActions = [ BuyDevelopmentCardAction(player.seatNumber) ]
+            if canBuyADevCard and not self.biggestArmy:
+                possibleActions.append([ BuyDevelopmentCardAction(player.seatNumber) ])
 
             if possibleSettlements is not None and len(possibleSettlements) > 0:
-                possibleActions = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                                    for setNode in possibleSettlements]
+                possibleActions.append([BuildSettlementAction(player.seatNumber, setNode.index,
+                                                         len(player.settlements))
+                                        for setNode in possibleSettlements])
 
             if possibleCities is not None and len(possibleCities) > 0:
-                possibleActions = [ BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
-                                     for setNode in possibleCities]
+                possibleActions.append([ BuildCityAction(player.seatNumber, setNode.index,
+                                                    len(player.cities))
+                                        for setNode in possibleCities])
 
             if len(possibleActions) == 0:
-                possibleActions = possibleBankTrades
+                chosenPossibilities = possibleBankTrades
 
-            return possibleActions
+            else:
+                chosenPossibilities = random.choice(possibleActions)
+
+            return chosenPossibilities
 
         elif gameState.currState == 'PLACING_ROBBER':
 
             # Rolled out 7  * or *  Used a knight card
-            return game.GetPossibleRobberPositions(gameState, player)
+            return self.ChooseRobberPosition(game, player)
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            return [self.ChooseCardsToDisard(game, player)]
+            return [self.ChooseCardsToDiscard(game, player)]
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
-            # TODO -> CHOSE A PLAYER TO STEAL FROM
-            pass
+            return [self.ChoosePlayerToStealFrom(game)]
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index,
+                                    len(player.roads))
+                    for roadEdge in possibleRoads]
 
         elif gameState.currState == "PLACING_FREE_ROAD2":
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge.index,
+                                    len(player.roads))
+                    for roadEdge in possibleRoads]
 
         return None
 
     def DoMove(self, game):
 
-        if game.gameState.currPlayer != self.seatNumber:
+        if game.gameState.currPlayer != self.seatNumber and \
+            game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
         possibleActions = self.GetPossibleActions(game)
@@ -244,7 +251,7 @@ class AgentRandom(Player):
             player = self
 
         if sum(player.resources) <= 7:
-            return None
+            return DiscardResourcesAction(player.seatNumber, [0, 0, 0, 0, 0, 0])
 
         resourcesPopulation = [0 for i in range(0, player.resources[0])] + \
                               [1 for j in range(0, player.resources[1])] + \
@@ -253,7 +260,7 @@ class AgentRandom(Player):
                               [4 for m in range(0, player.resources[4])] + \
                               [5 for n in range(0, player.resources[5])]
 
-        discardCardCount = int(math.floor(len(resourcesPopulation) / 2))
+        discardCardCount = int(math.floor(len(resourcesPopulation) / 2.0))
 
         if discardCardCount > 0:
             #assert(player.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
@@ -268,20 +275,19 @@ class AgentRandom(Player):
                                                           selectedResources.count(4),
                                                           selectedResources.count(5)])
 
+    def ChooseRobberPosition(self, game, player = None):
+
+        possiblePositions = game.GetPossibleRobberPositions(game.gameState)
+
+        return [PlaceRobberAction(player.seatNumber, position)
+                for position in possiblePositions]
+
     def ChoosePlayerToStealFrom(self, game, player = None):
 
         if player is None:
             player = self
 
-        robberHex       = game.gameState.boardHexes[game.gameState.robberPos]
-
-        possibleNodes   = [game.gameState.boardNodes[nodeIndex] for nodeIndex in robberHex.GetAdjacentNodes()]
-
-        possiblePlayers = []
-
-        for node in possibleNodes:
-            if node.construction is not None and node.construction.owner not in possiblePlayers:
-                possiblePlayers.append(node.construction.owner)
+        possiblePlayers = game.gameState.GetPossiblePlayersToSteal(self.seatNumber)
 
         if len(possiblePlayers) > 0:
             return ChoosePlayerToStealFromAction(player.seatNumber, random.choice(possiblePlayers))
@@ -405,3 +411,38 @@ class AgentRandom(Player):
             chosenResources[pick2] += 1
 
         return [ UseYearOfPlentyCardAction(player.seatNumber, chosenResources) ]
+
+    def UpdateResourcesFromServer(self, action, element, value):
+
+        if element in g_resources:  # RESOURCE
+
+            if action == 'SET':
+                self.resources[g_resources.index(element)] = value
+
+            elif action == 'GAIN':
+                self.resources[g_resources.index(element)] += value
+
+            elif action == 'LOSE':
+                self.resources[g_resources.index(element)] -= value
+
+        elif element in g_pieces:  # PIECES
+
+            if action == 'SET':
+                self.numberOfPieces[g_pieces.index(element)] = value
+
+            elif action == 'GAIN':
+                self.numberOfPieces[g_pieces.index(element)] += value
+
+            elif action == 'LOSE':
+                self.numberOfPieces[g_pieces.index(element)] -= value
+
+        elif element == 'KNIGHTS':  # KNIGHTS
+
+            if action == 'SET':
+                self.knights = value
+
+            elif action == 'GAIN':
+                self.knights += value
+
+            elif action == 'LOSE':
+                self.knights -= value

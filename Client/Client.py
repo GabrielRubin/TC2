@@ -9,7 +9,7 @@ from AgentRandom import *
 
 class Client:
 
-    def __init__(self, gameName, player, autoStart, showServerMessages):
+    def __init__(self, gameName, player, autoStart, showServerMessages, debugSimulator = False):
 
         self.socket         = None
         self.game           = None
@@ -17,12 +17,19 @@ class Client:
         self.joinedAGame    = False
         self.isSeated       = False
         self.gameStarted    = False
-        self.setupDone      = False
 
         self.gameName       = gameName
         self.player         = player
 
-        self.debugPlayer    = Player("serverDebug", player.seatNumber)
+        self.debugSimulator = debugSimulator
+
+        if self.debugSimulator:
+            self.debugGame  = Game(GameState())
+
+            self.debugGame.AddPlayer(Player("DebugP1", 0), 0)
+            self.debugGame.AddPlayer(Player("DebugP2", 1), 1)
+            self.debugGame.AddPlayer(Player("DebugP3", 2), 2)
+            self.debugGame.AddPlayer(Player("DebugP4", 3), 3)
 
         self.autoStart      = autoStart
         self.botsInit       = False
@@ -30,18 +37,25 @@ class Client:
         self.serverMessages = showServerMessages
 
         self.waitBankTradeAck = False
-        self.gotBankTradeAck  = False
 
         self.playerBuildAction = None
 
         # TODO -> Assert that debugClientGame is equivalent to the game that is updated from server
-        #self.debugClientGame = None
+        #self.debugGame = None
+
+        self.expectedResourceCount = [0, 0, 0, 0]
 
         self.messagetbl = {}
         for g in globals():
             cg = globals()[g]
             if g.endswith("Message") and hasattr(cg, "id"):
                 self.messagetbl[str(cg.id)] = (cg, g)
+
+    def Assert(self, condition, message):
+
+        if not condition:
+            logging.critical("ASSERT FAILED! - {0}".format(message))
+            sys.exit(-1)
 
     # Connection to jsettlers game server
     def ConnectToServer(self, serverAddress):
@@ -138,20 +152,11 @@ class Client:
 
     def TreatMessage(self, name, instance):
 
-        if   name == "GameTextMsgMessage" and self.serverMessages:
+        if name == "GameTextMsgMessage" and self.serverMessages:
 
             logging.info("Server> " + instance.message)
 
-            if self.waitBankTradeAck:
-
-                if self.gotBankTradeAck:
-                    self.waitBankTradeAck = False
-                    self.gotBankTradeAck  = False
-                    self.RespondToServer()
-                else:
-                    self.waitBankTradeAck = False
-
-        if   name == "ChannelsMessage":
+        elif name == "ChannelsMessage":
 
             logging.info("There are {0} channels available: {1}".format(len(instance.channels), instance.channels))
 
@@ -217,175 +222,133 @@ class Client:
 
             self.game.CreateBoard(instance)
 
+            if self.debugSimulator:
+                self.debugGame.CreateBoard(instance)
+
         elif name == "LongestRoadMessage":
 
-            self.game.gameState.longestRoadPlayer = int(instance.playerNumber)
+            self.game.gameState.SetLongestRoad(instance.playerNumber)
 
             logging.info("Received longest road player: {0}".format(self.game.gameState.longestRoadPlayer))
 
         elif name == "LargestArmyMessage":
 
-            self.game.gameState.largestArmyPlayer = int(instance.playerNumber)
+            self.game.gameState.SetLargestArmy(instance.playerNumber)
 
             logging.info("Received largest army player: {0}".format(self.game.gameState.largestArmyPlayer))
 
         elif name == "PlayerElementMessage":
 
-            # TODO -> review this flag...
             if self.waitBankTradeAck:
+                self.waitBankTradeAck = False
+                self.RespondToServer()
 
-                self.gotBankTradeAck = True
+            #if self.game.gameState.currState != "PLAY":
 
-            serverOnlyUpdateStates = ["WAITING_FOR_CHOICE", "WAITING_FOR_DISCOVERY",
-                                      "WAITING_FOR_MONOPOLY"]
+            self.game.gameState.players[instance.playerNumber].\
+                UpdateResourcesFromServer(instance.action, instance.element, instance.value)
 
-            '''
-            if instance.element in g_resources: #RESOURCE
+            negativeResource = False
 
-                if instance.action == 'SET':
-                    self.game.gameState.players[instance.playerNumber].resources[g_resources.index(instance.element)] = instance.value
-                elif instance.action == 'GAIN':
-                    self.game.gameState.players[instance.playerNumber].resources[g_resources.index(instance.element)] += instance.value
-                elif instance.action == 'LOSE':
-                    self.game.gameState.players[instance.playerNumber].resources[g_resources.index(instance.element)] -= instance.value
+            for index in range(0, len(g_resources)):
+                if self.game.gameState.players[instance.playerNumber].resources[index] < 0:
+                    negativeResource = True
+                    break
 
-            elif instance.element in g_pieces: #PIECES
+            self.Assert(not negativeResource, "NEGATIVE RESOURCE:\n player: {0} - resources: {1}".format(
+                self.game.gameState.players[instance.playerNumber].name,
+                self.game.gameState.players[instance.playerNumber].resources
+            ))
 
-                if instance.action == 'SET':
-                    self.game.gameState.players[instance.playerNumber].numberOfPieces[g_pieces.index(instance.element)] = instance.value
-                elif instance.action == 'GAIN':
-                    self.game.gameState.players[instance.playerNumber].numberOfPieces[g_pieces.index(instance.element)] += instance.value
-                elif instance.action == 'LOSE':
-                    self.game.gameState.players[instance.playerNumber].numberOfPieces[g_pieces.index(instance.element)] -= instance.value
+            if self.debugSimulator:
 
-            elif instance.element == 'KNIGHTS': #KNIGHTS
-
-                if instance.action == 'SET':
-                    self.game.gameState.players[instance.playerNumber].knights = instance.value
-                elif instance.action == 'GAIN':
-                    self.game.gameState.players[instance.playerNumber].knights += instance.value
-                elif instance.action == 'LOSE':
-                    self.game.gameState.players[instance.playerNumber].knights -= instance.value
-            '''
-            # UPDATE DEBUG PLAYER....
-            if instance.playerNumber == self.player.seatNumber:
-
-                if instance.element in g_resources:  # RESOURCE
-
-                    if instance.action == 'SET':
-
-                        self.debugPlayer.resources[g_resources.index(instance.element)] = instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .resources[g_resources.index(instance.element)] = instance.value
-
-                    elif instance.action == 'GAIN':
-
-                        self.debugPlayer.resources[g_resources.index(instance.element)] += instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .resources[g_resources.index(instance.element)] += instance.value
-
-                    elif instance.action == 'LOSE':
-                        self.debugPlayer.resources[g_resources.index(instance.element)] -= instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .resources[g_resources.index(instance.element)] -= instance.value
-
-                elif instance.element in g_pieces:  # PIECES
-
-                    if instance.action == 'SET':
-
-                        self.debugPlayer.numberOfPieces[g_pieces.index(instance.element)] = instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .numberOfPieces[g_pieces.index(instance.element)] = instance.value
-
-                    elif instance.action == 'GAIN':
-
-                        self.debugPlayer.numberOfPieces[g_pieces.index(instance.element)] += instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .numberOfPieces[g_pieces.index(instance.element)] += instance.value
-
-                    elif instance.action == 'LOSE':
-
-                        self.debugPlayer.numberOfPieces[g_pieces.index(instance.element)] -= instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .numberOfPieces[g_pieces.index(instance.element)] -= instance.value
-
-                elif instance.element == 'KNIGHTS':  # KNIGHTS
-
-                    if instance.action == 'SET':
-
-                        self.debugPlayer.knights = instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .knights = instance.value
-
-                    elif instance.action == 'GAIN':
-
-                        self.debugPlayer.knights += instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber]\
-                                .knights += instance.value
-
-                    elif instance.action == 'LOSE':
-
-                        self.debugPlayer.knights -= instance.value
-
-                        if self.game.gameState.currState in serverOnlyUpdateStates:
-                            self.game.gameState.players[instance.playerNumber] \
-                                .knights -= instance.value
-
-                # DEBUG - WE HAVE:
-                logging.debug("CLIENT >>>> Player seated on {0} is {1}, his resources are: \n RESOURCES = client: {2} - server: {3} \n PIECES = client: {4} - server: {5} \n KNIGHTS = client: {6} - server: {7}".format(
+                logging.debug("CLIENT >>>>\n Player seated on {0} is {1}, his resources are: "
+                              "\n RESOURCES = client: {2} - simulator{3} \n PIECES = client: {4} - simulator{5} "
+                              "\n KNIGHTS = client: {6} - simulator {7}".format(
                     instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
-                    self.game.gameState.players[instance.playerNumber].resources, self.debugPlayer.resources,
-                    self.game.gameState.players[instance.playerNumber].numberOfPieces, self.debugPlayer.numberOfPieces,
-                    self.game.gameState.players[instance.playerNumber].knights, self.debugPlayer.knights
+                    self.game.gameState.players[instance.playerNumber].resources,
+                    self.debugGame.gameState.players[instance.playerNumber].resources,
+                    self.game.gameState.players[instance.playerNumber].numberOfPieces,
+                    self.debugGame.gameState.players[instance.playerNumber].numberOfPieces,
+                    self.game.gameState.players[instance.playerNumber].knights,
+                    self.debugGame.gameState.players[instance.playerNumber].knights
                 ))
+            else:
+
+                logging.debug("CLIENT >>>> Player seated on {0} is {1} : {2} {3} {4}".format(
+                    instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
+                    instance.action, instance.element, instance.value
+                ))
+
+                logging.debug("CLIENT >>>> Player seated on {0} is {1}, his resources are: "
+                              "\n RESOURCES = {2} \n PIECES = {3} "
+                              "\n KNIGHTS = {4}".format(
+                    instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
+                    self.game.gameState.players[instance.playerNumber].resources,
+                    self.game.gameState.players[instance.playerNumber].numberOfPieces,
+                    self.game.gameState.players[instance.playerNumber].knights
+                ))
+
+        # SERVER DON'T WORK =)
+        #elif name == "ResourceCountMessage":
+
+        #    #self.expectedResourceCount[instance.playerNumber] = instance.count
+        #    logging.critical("SERVER>>> Player seated on: {0} : {1} have {2} resources\n currently, he have: {3}".
+        #        format(
+        #        instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
+        #        instance.count, self.game.gameState.players[instance.playerNumber].resources
+        #    ))
 
         elif name == "GameStateMessage":
 
-            #print("NEW GAME STATE = {0}".format(instance.stateName))
-
             logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
 
-            if instance.stateName == "PLACING_ROAD" or \
-               instance.stateName == "PLACING_SETTLEMENT" or \
-               instance.stateName == "PLACING_CITY":
+            self.game.gameState.currState = instance.stateName
+
+            if self.debugSimulator:
+                logging.debug("GAME STATE = {0} ----  DEBUG GAME STATE = {1}".format(self.game.gameState.currState, self.debugGame.gameState.currState))
+
+            if self.game.gameState.currState == "PLAY" and not self.game.gameState.setupDone:
+
+                self.game.gameState.setupDone = True
+
+                for index in range(0, len(self.game.gameState.players)):
+                    if index != self.player.seatNumber:
+                        self.game.gameState.players[index].GetStartingResources(self.game.gameState)
+
+
+            #SERVER DONT WORK PROPERLY - THERE IS NO PLACE FOR THIS :'(
+            #for index in range(0, len(self.game.gameState.players)):
+            #    self.Assert(sum(self.game.gameState.players[index].resources) == self.expectedResourceCount[index],
+            #                "RESOURCE COUNT IS WRONG!\n player: {0} - resources: {1} - expected: {2}".format(
+            #                    self.game.gameState.players[index].name,
+            #                    self.game.gameState.players[index].resources,
+            #                    self.expectedResourceCount[index]
+            #                ))
+
+            elif self.game.gameState.currState == "PLACING_ROAD" or \
+                 self.game.gameState.currState == "PLACING_SETTLEMENT" or \
+                 self.game.gameState.currState == "PLACING_CITY":
 
                 if self.game.gameState.currPlayer == self.player.seatNumber:
 
                     response = self.playerBuildAction.GetMessage(self.gameName,
                                               currGameStateName=instance.stateName)
 
+                    self.playerBuildAction = None
+
                     self.SendMessage(response)
 
                 return
 
-            elif instance.stateName == "WAITING_FOR_DISCARDS":
-
-                # TODO -> DO DISCARD FOR ALL PLAYERS
-
-                self.game.gameState.currPlayerChoice = -1
-
-            elif instance.stateName == "OVER":
+            elif self.game.gameState.currState == "OVER":
                 pass
 
             self.RespondToServer()
 
         elif name == "DevCardMessage":
+
+            #self.UpdateGame(BuyDevelopmentCardAction(instance.playernum))
 
             if int(instance.playernum) == int(self.player.seatNumber):
 
@@ -395,15 +358,6 @@ class Client:
 
                 # AGENT gain a devcard
                 if  int(instance.action) == 0:
-
-                    # TEMP - Update our agent's resources
-                    self.UpdateGame( BuyDevelopmentCardAction(self.player.seatNumber, True) )
-
-                    # alternative logic:
-                    # if int(instance.cardtype) >= 4 and int(instance.cardtype) <= 8: #VICTORY_POINTS
-                    #    self.player.developmentCards[VICTORY_POINT_CARD_INDEX] += 1
-                    #elif int(instance.cardtype) >= 0:
-                    #   self.player.developmentCards[int(instance.cardtype)] += 1
 
                     if   cardType == 0: #KNIGHT
                         self.player.developmentCards[KNIGHT_CARD_INDEX] += 1
@@ -459,41 +413,54 @@ class Client:
 
         elif name == "TurnMessage":
 
-            #print("currState = {0}".format(self.game.gameState.currState))
+            # DEBUG PLAYER RESOURCE COUNT:
+            #for index in range(0, len(self.game.gameState.players)):
+
+            #    logging.critical("{0} resources = {1} : count = {2}".format(
+            #        self.game.gameState.players[index].name,
+            #        self.game.gameState.players[index].resources,
+            #        sum(self.game.gameState.players[index].resources)
+            #    ))
+
+            self.game.gameState.players[instance.playerNumber].StartTurn()
+            self.game.gameState.currPlayer = instance.playerNumber
 
             if self.game.gameState.startingPlayer == -1:
 
                 self.game.gameState.startingPlayer = instance.playerNumber
                 self.game.gameState.currPlayer     = instance.playerNumber
-                self.game.gameState.currState      = "START1A"
 
-            if self.setupDone:
+                if self.debugSimulator:
 
-                self.game.gameState.currState = "PLAY"
-                self.game.gameState.currPlayer = (self.game.gameState.currPlayer + 1) % len(self.game.gameState.players)
+                    self.debugGame.gameState.startingPlayer = instance.playerNumber
+                    self.debugGame.gameState.currPlayer     = instance.playerNumber
+                    self.debugGame.gameState.currState      = "START1A"
 
-            elif self.game.gameState.currState == "PLAY1":
-
-                self.game.gameState.currPlayer = (self.game.gameState.currPlayer + 1) % len(self.game.gameState.players)
-                self.setupDone = True
-
-            #print("Client currPlayer: {0} - Server currPlayer: {1}".format(self.game.gameState.currPlayer, instance.playerNumber))
-
-            self.RespondToServer()
+            if self.game.gameState.currPlayer == self.player.seatNumber:
+                self.RespondToServer()
 
         elif name == "PutPieceMessage":
 
             if instance.playerNumber != self.game.gameState.currPlayer:
-                print("ITS NOT THIS PLAYERS TURN!!!! Received: {0}, Expected: {1}".format(instance.playerNumber, self.game.gameState.currPlayer))
+                logging.critical("ITS NOT THIS PLAYERS TURN!!!! Received: {0}, Expected: {1}".format(instance.playerNumber, self.game.gameState.currPlayer))
 
-            if instance.pieceType[0] == 'ROAD':
-                putPieceAction = BuildRoadAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].roads) )
-            elif instance.pieceType[0] == 'SETTLEMENT':
-                putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].settlements))
-            elif instance.pieceType[0] == 'CITY':
-                putPieceAction = BuildCityAction(instance.playerNumber, instance.position, len(self.game.gameState.players[instance.playerNumber].cities))
+            if self.debugSimulator:
 
-            self.UpdateGame(putPieceAction)
+                if instance.pieceType[0] == 'ROAD':
+                    putPieceAction = BuildRoadAction(instance.playerNumber, instance.position,
+                                                     len(self.game.gameState.players[instance.playerNumber].roads))
+                elif instance.pieceType[0] == 'SETTLEMENT':
+                    putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position,
+                                                           len(self.game.gameState.players[instance.playerNumber].settlements))
+                elif instance.pieceType[0] == 'CITY':
+                    putPieceAction = BuildCityAction(instance.playerNumber, instance.position,
+                                                     len(self.game.gameState.players[instance.playerNumber].cities))
+
+                putPieceAction.ApplyAction(self.debugGame.gameState)
+
+            self.game.gameState.players[instance.playerNumber].Build(self.game.gameState,
+                                                                     instance.pieceType[0],
+                                                                     instance.position)
 
             logging.info("Player seated on {0} constructed a {1}, have this constructions now:\n"
                          " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
@@ -503,17 +470,35 @@ class Client:
                 [hex(city) for city in self.game.gameState.players[instance.playerNumber].cities]
             ))
 
+            if self.debugSimulator:
+
+                logging.info("***DEBUG GAME***\nDebugPlayer seated on {0} constructed a {1}, have this constructions now:\n"
+                             " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
+                    instance.playerNumber, instance.pieceType[0],
+                    [hex(road) for road in self.debugGame.gameState.players[instance.playerNumber].roads],
+                    [hex(settlement) for settlement in self.debugGame.gameState.players[instance.playerNumber].settlements],
+                    [hex(city) for city in self.debugGame.gameState.players[instance.playerNumber].cities]
+                ))
+
         elif name == "DiceResultMessage":
 
             logging.info("---- Dices are rolled! ----\n Dice Result = {0}".format(instance.result))
 
-            self.UpdateGame( RollDicesAction(self.game.gameState.currPlayer, result=instance.result) )
+            if self.debugSimulator:
+
+                RollDicesAction(self.game.gameState.currPlayer, result=instance.result).\
+                    ApplyAction(self.debugGame.gameState)
 
         elif name == "MoveRobberMessage":
 
-            self.game.gameState.robberPos = instance.position
-
             logging.info("Player {0} placed the robber on hex {1}".format(instance.playerNumber, hex(self.game.gameState.robberPos)))
+
+            self.game.gameState.players[instance.playerNumber].PlaceRobber(self.game.gameState, instance.position)
+
+            if self.debugSimulator:
+
+                PlaceRobberAction(self.game.gameState.currPlayer, instance.position).\
+                    ApplyAction(self.debugGame.gameState)
 
         elif name == "MakeOfferMessage":
 
@@ -526,19 +511,19 @@ class Client:
 
             choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game)
 
-            self.SendMessage(ChoosePlayerMessage(self.gameName, choosePlayerAction.targetPlayerNumber))
+            self.SendMessage(choosePlayerAction.GetMessage(self.gameName))
+
+            if self.debugSimulator:
+
+                choosePlayerAction.ApplyAction(self.debugGame.gameState)
 
     def RespondToServer(self):
 
-        agentAction = None
+        #localActionUpdates = ['BankTradeOffer','DiscardResources',
+        #                      'UseKnightsCard','UseMonopolyCard','UseYearOfPlentyCard',
+        #                      'UseFreeRoadsCard', 'EndTurn']
 
-        if self.game.gameState.currState == "WAITING_FOR_DISCARDS":
-
-            agentAction = self.player.ChooseCardsToDiscard(self.game)
-
-        elif self.player.seatNumber == self.game.gameState.currPlayer: # ITS OUR TURN:
-
-            agentAction = self.player.DoMove(self.game)
+        agentAction = self.player.DoMove(self.game)
 
         if agentAction is not None:
 
@@ -555,11 +540,13 @@ class Client:
 
                 self.waitBankTradeAck = True
 
-                self.UpdateGame(agentAction)
-
             if agentAction.type == 'EndTurn':
                 # @REVIEW@
                 self.player.UpdateMayPlayDevCards(None, True)
+
+            if self.debugSimulator:
+
+                agentAction.ApplyAction(self.debugGame.gameState)
 
             if response is not None:
 
@@ -570,13 +557,6 @@ class Client:
 
                 else:
                     self.SendMessage(response)
-
-
-    def UpdateGame(self, action):
-
-        self.game.GetNextGameState(action, isUpdate=True)
-
-        self.player = self.game.gameState.players[self.player.seatNumber]
 
 #logging.getLogger().setLevel(logging.INFO)
 #logging.getLogger().setLevel(logging.DEBUG) # FOR DEBUG

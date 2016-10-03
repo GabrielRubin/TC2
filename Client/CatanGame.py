@@ -77,6 +77,8 @@ class Game:
                 if gameState.boardNodes[nodeIndex].construction is not None:
                     if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber:
                         return True
+                    else:
+                        return False
 
         # if there are no settlements or cities that we own near here, check for other roads...
         for edgeIndex in edge.GetAdjacentEdges():
@@ -163,29 +165,25 @@ class Game:
 
         return [gameState.boardNodes[settlement] for settlement in player.settlements]
 
-    def GetPossibleRobberPositions(self, gameState, player):
+    def GetPossibleRobberPositions(self, gameState):
 
-        oceanHexes = \
+        #DISCONSIDER OCEAN AND CURRENT ROBBER HEXES
+        invalidHexes = \
             [0x17, 0x39, 0x5b, 0x7d,
              0x15, 0x9d, 0x13, 0xbd,
              0x11, 0xdd, 0x31, 0xdb,
              0x51, 0xd9, 0x71, 0x93,
              0xb5, 0xd7, gameState.robberPos]
 
-        possibleRobberPositions = list(set(g_boardHexes) - set(oceanHexes))
+        possibleRobberPositions = list(set(g_boardHexes) - set(invalidHexes))
 
-        return [PlaceRobberAction(player.seatNumber, position) for position in possibleRobberPositions]
+        return possibleRobberPositions
 
-    def GetNextGameState(self, action, isUpdate = False):
+    def GetNextGameState(self, action):
 
-        if isUpdate:
-            gameState = self.gameState
-        else:
-            gameState = copy.deepcopy(self.gameState)
+        gameState = copy.deepcopy(self.gameState)
 
         action.ApplyAction(gameState)
-
-        # TODO -> Check biggest road, most knights and more...
 
         return gameState
 
@@ -206,10 +204,27 @@ class GameState:
 
         self.developmentCardsDeck = [14, 2, 2, 2, 5]
 
-        self.longestRoadPlayer = 0
-        self.largestArmPlayer  = 0
+        self.longestRoadPlayer  = -1
+        self.largestArmyPlayer  = -1
 
         self.startingPlayer = -1
+
+        self.setupDone = False
+
+    def GetPossiblePlayersToSteal(self, playerIndex):
+
+        robberHex       = self.boardHexes[self.robberPos]
+
+        possibleNodes   = [self.boardNodes[nodeIndex] for nodeIndex in robberHex.GetAdjacentNodes()]
+
+        possiblePlayers = []
+
+        for node in possibleNodes:
+            if node.construction is not None and node.construction.owner not in possiblePlayers \
+                    and node.construction.owner != playerIndex:
+                possiblePlayers.append(node.construction.owner)
+
+        return possiblePlayers
 
     def UpdateDevCardsFromServer(self, currCount):
 
@@ -227,6 +242,31 @@ class GameState:
 
             for index in range(0, len(usedDevCards)):
                 self.developmentCardsDeck[usedDevCards[index]] -= 1
+
+    def SetLargestArmy(self, playerNumber):
+
+        if playerNumber < 0 or playerNumber > len(self.players):
+            return
+
+        if self.largestArmyPlayer != -1:
+
+            self.players[self.largestArmyPlayer].biggestArmy = False
+
+        self.largestArmyPlayer = playerNumber
+
+        self.players[self.largestArmyPlayer].biggestArmy = True
+
+    def SetLongestRoad(self, playerNumber):
+
+        if playerNumber < 0 or playerNumber > len(self.players):
+            return
+
+        if self.longestRoadPlayer != -1:
+            self.players[self.longestRoadPlayer].biggestRoad = False
+
+        self.longestRoadPlayer = playerNumber
+
+        self.players[self.longestRoadPlayer].biggestRoad = True
 
     def DrawDevCard(self, playerNumber):
 

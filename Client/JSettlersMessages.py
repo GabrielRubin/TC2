@@ -886,3 +886,17 @@ class MonopolyPickMessage(Message):
     def parse(text):
         gameName, res = text.split(",")
         return MonopolyPickMessage(gameName, int(res))
+
+class ResourceCountMessage(Message):
+    id = 1063
+    def __init__(self, game, playerNumber, count):
+        self.game = game
+        self.playerNumber = playerNumber
+        self.count = count
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id, self.game, self.playerNumber
+                                        , self.count)
+    @staticmethod
+    def parse(text):
+        g, pn, c = text.split(",")
+        return ResourceCountMessage(g, int(pn), int(c))
