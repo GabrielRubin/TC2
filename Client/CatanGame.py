@@ -58,7 +58,7 @@ class Game:
 
         # check for near settlements
 
-        for nodeIndex in edge.GetAdjacentNodes():
+        for nodeIndex in edge.adjacentNodes:
 
             if setUpPhase:
                 # when the game is on setUpPhase, we can only build roads near our recently built settlement:
@@ -81,7 +81,7 @@ class Game:
                         return False
 
         # if there are no settlements or cities that we own near here, check for other roads...
-        for edgeIndex in edge.GetAdjacentEdges():
+        for edgeIndex in edge.adjacentEdges:
 
             edge = gameState.boardEdges[edgeIndex]
 
@@ -107,7 +107,7 @@ class Game:
 
             foundConnection = False
 
-            for edgeIndex in node.GetAdjacentEdges():
+            for edgeIndex in node.adjacentEdges:
 
                 edge = gameState.boardEdges[edgeIndex]
 
@@ -119,7 +119,7 @@ class Game:
                 return False
 
         #step 3: check if node respects the distance rule
-        for nodeIndex in node.GetAdjacentNodes():
+        for nodeIndex in node.adjacentNodes:
 
             if gameState.boardNodes[nodeIndex].construction is not None:
                 return False
@@ -143,7 +143,7 @@ class Game:
             return None
 
         return [edge for edge in
-                gameState.GetConstructableEdges() if
+                gameState.constructableEdges if
                 self.CanBuildRoad(gameState, player, edge, len(player.roads), setUpPhase)]
 
     def GetPossibleSettlements(self, gameState, player, setUpPhase = False):
@@ -154,7 +154,7 @@ class Game:
             return None
 
         return [node for node in
-                gameState.GetConstructableNodes() if
+                gameState.constructableNodes if
                 self.CanBuildSettlement(gameState, player, node, setUpPhase)]
 
     def GetPossibleCities(self, gameState, player):
@@ -164,20 +164,6 @@ class Game:
             return None
 
         return [gameState.boardNodes[settlement] for settlement in player.settlements]
-
-    def GetPossibleRobberPositions(self, gameState):
-
-        #DISCONSIDER OCEAN AND CURRENT ROBBER HEXES
-        invalidHexes = \
-            [0x17, 0x39, 0x5b, 0x7d,
-             0x15, 0x9d, 0x13, 0xbd,
-             0x11, 0xdd, 0x31, 0xdb,
-             0x51, 0xd9, 0x71, 0x93,
-             0xb5, 0xd7, gameState.robberPos]
-
-        possibleRobberPositions = list(set(g_boardHexes) - set(invalidHexes))
-
-        return possibleRobberPositions
 
     def GetNextGameState(self, action):
 
@@ -195,6 +181,10 @@ class GameState:
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
+        self.constructableNodes = self.GetConstructableNodes()
+        self.constructableEdges = self.GetConstructableEdges()
+        self.possibleRobberPos  = self.GetPossibleRobberPositions()
+
         self.currState        = None
         self.currPlayer       = -1
         self.currPlayerChoice = -1
@@ -211,11 +201,13 @@ class GameState:
 
         self.setupDone = False
 
+        self.winner = -1
+
     def GetPossiblePlayersToSteal(self, playerIndex):
 
         robberHex       = self.boardHexes[self.robberPos]
 
-        possibleNodes   = [self.boardNodes[nodeIndex] for nodeIndex in robberHex.GetAdjacentNodes()]
+        possibleNodes   = [self.boardNodes[nodeIndex] for nodeIndex in robberHex.adjacentNodes]
 
         possiblePlayers = []
 
@@ -311,3 +303,15 @@ class GameState:
              0xb4, 0xc5, 0xd6, 0xe7]
 
         return [self.boardEdges[i] for i in list(set(g_boardEdges) - set(oceanEdges))]
+
+    def GetPossibleRobberPositions(self):
+
+        #DISCONSIDER OCEAN AND CURRENT ROBBER HEXES
+        invalidHexes = \
+            [0x17, 0x39, 0x5b, 0x7d,
+             0x15, 0x9d, 0x13, 0xbd,
+             0x11, 0xdd, 0x31, 0xdb,
+             0x51, 0xd9, 0x71, 0x93,
+             0xb5, 0xd7]
+
+        return list(set(g_boardHexes) - set(invalidHexes))

@@ -132,6 +132,10 @@ class BoardHex:
         self.production = None
         self.number     = 0
 
+        self.adjacentHexes = self.GetAdjacentHexes()
+        self.adjacentNodes = self.GetAdjacentNodes()
+        self.adjacentEdges = self.GetAdjacentEdges()
+
     def SetTerrain(self, terrainId):
 
         # If the id is too big, is probably a port:
@@ -180,6 +184,10 @@ class BoardNode:
         self.index        = index
         self.construction = None
         self.portType     = None
+
+        self.adjacentHexes = self.GetAdjacentHexes()
+        self.adjacentNodes = self.GetAdjacentNodes()
+        self.adjacentEdges = self.GetAdjacentEdges()
 
     def GetAdjacentHexes(self):
 
@@ -237,14 +245,18 @@ class BoardNode:
 
     def GetPossibleResources(self):
 
-        return [hex.production for hex in self.GetAdjacentHexes()]
+        return [hex.production for hex in self.adjacentHexes()]
 
 class BoardEdge:
 
     def __init__(self, index):
 
-        self.index        = index;
-        self.construction = None;
+        self.index        = index
+        self.construction = None
+
+        self.adjacentHexes = self.GetAdjacentHexes()
+        self.adjacentNodes = self.GetAdjacentNodes()
+        self.adjacentEdges = self.GetAdjacentEdges()
 
     def GetAdjacentHexes(self):
 

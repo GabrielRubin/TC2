@@ -15,16 +15,16 @@ class AgentRandom(Player):
 
         if   gameState.currState == 'START1A':
 
-            if self.firstSettlementBuild:
+            if player.firstSettlementBuild:
                 return None
 
-            self.firstSettlementBuild = True
+            player.firstSettlementBuild = True
 
             possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
 
             def RateNode(node, uniqueness):
 
-                possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.GetAdjacentHexes()
+                possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.adjacentHexes
                                      if boardHex is not None]
 
                 if len(possibleResources) < 2:
@@ -56,10 +56,10 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'START1B':
 
-            if self.firstRoadBuild:
+            if player.firstRoadBuild:
                 return None
 
-            self.firstRoadBuild = True
+            player.firstRoadBuild = True
 
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
@@ -67,16 +67,16 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'START2A':
 
-            if self.secondSettlementBuild:
+            if player.secondSettlementBuild:
                 return None
 
-            self.secondSettlementBuild = True
+            player.secondSettlementBuild = True
 
             possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
 
             def RateNode(node, ownedResources, uniqueness):
 
-                possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.GetAdjacentHexes()
+                possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.adjacentHexes
                                      if boardHex is not None]
 
                 if len(possibleResources) < 2:
@@ -109,10 +109,10 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'START2B':
 
-            if self.secondRoadBuild:
+            if player.secondRoadBuild:
                 return None
 
-            self.secondRoadBuild = True
+            player.secondRoadBuild = True
 
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
@@ -123,16 +123,16 @@ class AgentRandom(Player):
 
             # FIXME: TRYING TO USE KNIGHT 2 TIMES!!! WHAT??? (fixed?)
 
-            if not self.rolledTheDices and \
-               not self.playedDevCard and \
-                     self.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
-                       self.developmentCards[KNIGHT_CARD_INDEX] > 0:
+            if not player.rolledTheDices and \
+               not player.playedDevCard and \
+                    player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
+                            player.developmentCards[KNIGHT_CARD_INDEX] > 0:
 
-                return [ UseKnightsCardAction(self.seatNumber, None, None) ]
+                return [ UseKnightsCardAction( player.seatNumber, None, None ) ]
 
-            if not self.rolledTheDices:
+            if not player.rolledTheDices:
 
-                return [ RollDicesAction(player) ]
+                return [ RollDicesAction( player.seatNumber ) ]
 
         elif gameState.currState == 'PLAY1':
 
@@ -148,19 +148,19 @@ class AgentRandom(Player):
 
             possibleCities      = game.GetPossibleCities(gameState, player)
 
-            possibleBankTrades  = self.GetPossibleBankTrades(game, player)
+            possibleBankTrades  = player.GetPossibleBankTrades(game, player)
 
             possibleCardsToUse = []
 
-            if not self.playedDevCard:
+            if not player.playedDevCard:
 
-                if self.developmentCards[MONOPOLY_CARD_INDEX] > 0 and self.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-                    possibleCardsToUse += self.GetMonopolyResource(player)
+                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                    possibleCardsToUse += player.GetMonopolyResource(player)
 
-                if self.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and self.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-                    possibleCardsToUse += self.GetYearOfPlentyResource(player)
+                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                    possibleCardsToUse += player.GetYearOfPlentyResource(player)
 
-                if self.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and self.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
+                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
                     possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
 
             if possibleRoads is not None and len(possibleRoads) > 0:
@@ -171,7 +171,7 @@ class AgentRandom(Player):
             if len(possibleCardsToUse) > 0:
                 possibleActions.append(possibleCardsToUse)
 
-            if canBuyADevCard and not self.biggestArmy:
+            if canBuyADevCard and not player.biggestArmy:
                 possibleActions.append([ BuyDevelopmentCardAction(player.seatNumber) ])
 
             if possibleSettlements is not None and len(possibleSettlements) > 0:
@@ -195,15 +195,15 @@ class AgentRandom(Player):
         elif gameState.currState == 'PLACING_ROBBER':
 
             # Rolled out 7  * or *  Used a knight card
-            return self.ChooseRobberPosition(game, player)
+            return player.ChooseRobberPosition(game, player)
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            return [self.ChooseCardsToDiscard(game, player)]
+            return [player.ChooseCardsToDiscard(game, player)]
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
-            return [self.ChoosePlayerToStealFrom(game)]
+            return [player.ChoosePlayerToStealFrom(game)]
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
 
@@ -277,7 +277,7 @@ class AgentRandom(Player):
 
     def ChooseRobberPosition(self, game, player = None):
 
-        possiblePositions = game.GetPossibleRobberPositions(game.gameState)
+        possiblePositions = game.gameState.possibleRobberPos + [game.gameState.robberPos]
 
         return [PlaceRobberAction(player.seatNumber, position)
                 for position in possiblePositions]
@@ -315,7 +315,7 @@ class AgentRandom(Player):
         possibleTradeAmount = [0, 0, 0, 0, 0]
         candidateForTrade   = []
 
-        minResourceAmount = min(player.resources)
+        minResourceAmount = min(player.resources[:-1]) #Don't count the 'UNKNOWN' resource
         for i in range(len(possibleTradeAmount)):
             possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
             if player.resources[i] == minResourceAmount:
@@ -337,6 +337,10 @@ class AgentRandom(Player):
 
             chosenResources   = random.sample(possibleTradePopulation, maxTrades)
             expectedResources = random.sample(candidateForTrade, maxTrades)
+
+            logging.debug("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
+                chosenResources, expectedResources, maxTrades
+            ))
 
             give = [chosenResources.count(0) * tradeRates[0], chosenResources.count(1) * tradeRates[1],
                     chosenResources.count(2) * tradeRates[2], chosenResources.count(3) * tradeRates[3],
