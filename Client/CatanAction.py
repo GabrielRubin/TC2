@@ -443,9 +443,16 @@ class EndTurnAction(Action):
         gameState.players[self.playerNumber].rolledTheDices = False
         gameState.players[self.playerNumber].placedRobber   = False
 
-        gameState.currState = "PLAY"
+        if gameState.players[self.playerNumber].GetVictoryPoints() >= 10:
 
-        gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
+            gameState.currState = "OVER"
+
+            gameState.winner    = self.playerNumber
+
+        else:
+            gameState.currState = "PLAY"
+
+            gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
 class DiscardResourcesAction(Action):
 

@@ -59,7 +59,7 @@ class Player:
             #its the second settlement
             if settlement.construction.index == 1:
 
-                adjacentHexes = settlement.GetAdjacentHexes()
+                adjacentHexes = settlement.adjacentHexes
 
                 for h in range(0, len(adjacentHexes)):
 
@@ -80,7 +80,7 @@ class Player:
 
             for s in range(0, len(self.settlements)):
 
-                adjacentHexes = gameState.boardNodes[self.settlements[s]].GetAdjacentHexes()
+                adjacentHexes = gameState.boardNodes[self.settlements[s]].adjacentHexes
 
                 for h in range(0, len(adjacentHexes)):
 
@@ -96,7 +96,7 @@ class Player:
 
             for c in range(0, len(self.cities)):
 
-                adjacentHexes = gameState.boardNodes[self.cities[c]].GetAdjacentHexes()
+                adjacentHexes = gameState.boardNodes[self.cities[c]].adjacentHexes
 
                 for h in range(0, len(adjacentHexes)):
 
@@ -162,7 +162,7 @@ class Player:
 
             portType = game.gameState.boardNodes[cityIndex].portType
             if portType is not None:
-                availablePorts[g_portType(portType)] = True
+                availablePorts[g_portType.index(portType)] = True
 
         return availablePorts
 
