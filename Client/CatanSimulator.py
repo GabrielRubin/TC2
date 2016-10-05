@@ -10,7 +10,7 @@ def runGame():
 
     game = Game(GameState())
 
-    game.AddPlayer(AgentRandom("P1", 0), 0)
+    game.AddPlayer(AgentAlphabeta("P1", 0), 0)
     game.AddPlayer(AgentRandom("P2", 1), 1)
     game.AddPlayer(AgentRandom("P3", 2), 2)
     game.AddPlayer(AgentRandom("P4", 3), 3)
@@ -24,7 +24,7 @@ def runGame():
 
     game.CreateBoard(BoardLayoutMessage.parse(boardLayoutMessage))
 
-    #logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.CRITICAL)
 
     while True:
 
@@ -36,17 +36,17 @@ def runGame():
 
         if game.gameState.currState == "OVER":
 
-            #print("GAME OVER!")
+            print("GAME OVER!")
 
-            logging.debug("Game Over! Player {0} Wins!".format(game.gameState.players[game.gameState.winner].name))
+            logging.critical("Game Over! Player {0} Wins!".format(game.gameState.players[game.gameState.winner].name))
 
-            logging.debug("GAME STATS:")
+            logging.critical("GAME STATS:")
 
             for i in range(0, 4):
 
-                logging.debug("Player {0} stats:".format(game.gameState.players[i].name))
+                logging.critical("Player {0} stats:".format(game.gameState.players[i].name))
 
-                logging.debug("his resources are: "
+                logging.critical("his resources are: "
                               "\n RESOURCES = {0} "
                               "\n PIECES    = {1} "
                               "\n KNIGHTS   = {2} ".format(
@@ -63,9 +63,9 @@ def runGame():
                         g_developmentCards[j], game.gameState.players[i].developmentCards[j]
                     )
 
-                logging.debug(" DevCards : {0}".format(devCards))
+                logging.critical(" DevCards : {0}".format(devCards))
 
-                logging.debug(" Roads: {0}\n Settlements: {1}\n Cities: {2}".format(
+                logging.critical(" Roads: {0}\n Settlements: {1}\n Cities: {2}".format(
                     [hex(road) for road in game.gameState.players[i].roads],
                     [hex(settlement) for settlement in game.gameState.players[i].settlements],
                     [hex(city) for city in game.gameState.players[i].cities]
@@ -75,10 +75,12 @@ def runGame():
 
 if __name__ == '__main__':
 
-    import timeit
+    runGame()
 
-    timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
-
-    print(timer.timeit(300))
+    # import timeit
+    #
+    # timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
+    #
+    # print(timer.timeit(300))
 
     #print(min(timer.repeat(10, 30)))

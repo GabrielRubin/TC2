@@ -6,6 +6,7 @@ from CatanPlayer import *
 from CatanGame import *
 from CatanAction import *
 from AgentRandom import *
+from AgentAlphabeta import *
 
 class Client:
 

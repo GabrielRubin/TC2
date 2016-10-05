@@ -1,9 +1,11 @@
-from CatanPlayer import *
+from AgentRandom import *
 import random
 import logging
 import math
+import copy
+import time
 
-class AgentAlphabeta(Player):
+class AgentAlphabeta(AgentRandom):
 
     def GetPossibleActions(self, game, player = None, gameState = None):
 
@@ -136,21 +138,19 @@ class AgentAlphabeta(Player):
 
         elif gameState.currState == 'PLAY1':
 
-            # TODO -> improve the agent performance in-game
+            possibleActions     = [[], [], [], [], [], [], []]
 
-            possibleActions = []
+            possibleRoads       = game.GetPossibleRoads(gameState, player)        # 0 - possibleRoads
 
-            possibleRoads       = game.GetPossibleRoads(gameState, player)
+            possibleSettlements = game.GetPossibleSettlements(gameState, player)  # 1 - possibleSettlements
 
-            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
+            possibleCities      = game.GetPossibleCities(gameState, player)       # 2 - possibleCities
 
-            possibleSettlements = game.GetPossibleSettlements(gameState, player)
+            canBuyADevCard      = game.CanBuyADevCard(gameState, player)          # 3 - buyDevCard
 
-            possibleCities      = game.GetPossibleCities(gameState, player)
+            possibleCardsToUse  = []                                              # 4 - useDevCard
 
-            possibleBankTrades  = player.GetPossibleBankTrades(game, player)
-
-            possibleCardsToUse = []
+            bankTrade           = player.GetPossibleBankTrades(game, player)      # 5 - bankTrade
 
             if not player.playedDevCard:
 
@@ -163,34 +163,28 @@ class AgentAlphabeta(Player):
                 if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
                     possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
 
-            if possibleRoads is not None and len(possibleRoads) > 0:
-                possibleActions.append([BuildRoadAction(player.seatNumber, roadEdge.index,
-                                                    len(player.roads))
-                                        for roadEdge in possibleRoads])
-
             if len(possibleCardsToUse) > 0:
                 possibleActions.append(possibleCardsToUse)
 
-            if canBuyADevCard and not player.biggestArmy:
-                possibleActions.append([ BuyDevelopmentCardAction(player.seatNumber) ])
+            if possibleRoads:
+                possibleActions[0] = [BuildRoadAction(player.seatNumber, roadEdge.index,
+                                                        len(player.roads))
+                                            for roadEdge in possibleRoads]
+            if possibleSettlements:
+                possibleActions[1] = [BuildSettlementAction(player.seatNumber, setNode.index,
+                                                             len(player.settlements))
+                                        for setNode in possibleSettlements]
+            if possibleCities:
+                possibleActions[2] = [ BuildCityAction(player.seatNumber, setNode.index,
+                                                        len(player.cities))
+                                            for setNode in possibleCities]
+            if canBuyADevCard:
+                possibleActions[3] = [ BuyDevelopmentCardAction(player.seatNumber) ]
+            possibleActions[4] = possibleCardsToUse
+            possibleActions[5] = bankTrade
+            possibleActions[6] = [ EndTurnAction(player.seatNumber) ]
 
-            if possibleSettlements is not None and len(possibleSettlements) > 0:
-                possibleActions.append([BuildSettlementAction(player.seatNumber, setNode.index,
-                                                         len(player.settlements))
-                                        for setNode in possibleSettlements])
-
-            if possibleCities is not None and len(possibleCities) > 0:
-                possibleActions.append([ BuildCityAction(player.seatNumber, setNode.index,
-                                                    len(player.cities))
-                                        for setNode in possibleCities])
-
-            if len(possibleActions) == 0:
-                chosenPossibilities = possibleBankTrades
-
-            else:
-                chosenPossibilities = random.choice(possibleActions)
-
-            return chosenPossibilities
+            return possibleActions
 
         elif gameState.currState == 'PLACING_ROBBER':
 
@@ -225,263 +219,172 @@ class AgentAlphabeta(Player):
 
     def DoMove(self, game):
 
+        print("do move! {0}".format(time.clock()))
+
         if game.gameState.currPlayer != self.seatNumber and \
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
-        possibleActions = self.GetPossibleActions(game)
+        return self.Alphabeta(game, [0, 0, 0, 0], -1, 2)[1]
+
+    # TODO -> turn this ugly algorithm from BADBADNOTGOOD to 'ok'
+    def Alphabeta(self, game, values, depth, maxDepth):
+
+        if depth >= maxDepth:
+
+            return ([
+                        self.GetGameStateReward(game.gameState, 0),
+                        self.GetGameStateReward(game.gameState, 1),
+                        self.GetGameStateReward(game.gameState, 2),
+                        self.GetGameStateReward(game.gameState, 3)
+                    ],
+                    None)
+
+        playerNumber = game.gameState.currPlayer
+
+        possibleActions = self.GetPossibleActions(game, game.gameState.players[playerNumber])
+
+        if depth == -1 and possibleActions is not None:
+
+            if len(possibleActions) == 1:
+
+                return (values, possibleActions[0])
+
+            elif game.gameState.currState == "PLAY1":
+
+                for i in range(0, len(possibleActions)):
+
+                    if possibleActions[i] is not None and len(possibleActions[i]) > 0:
+                        break
+                    if i == 6: # EndTurnAction
+                        return (values, possibleActions[i][0])
+
+            depth = 0
 
         logging.debug("possible actions = {0}".format(possibleActions))
 
+        best = None
+
+        # FOR "PROPER" TURNS
         if game.gameState.currState == "PLAY1":
 
             if possibleActions is not None and len(possibleActions) > 0:
-                return random.choice(possibleActions)
 
-            return EndTurnAction(self.seatNumber)
+                for i in range(0, len(possibleActions)):
 
-        if possibleActions is not None and len(possibleActions) > 0:
-            return random.choice(possibleActions)
+                    if possibleActions[i] is not None:
 
-        return None
+                        for j in range(0, len(possibleActions[i])):
 
-    def ChooseCardsToDiscard(self, game, player = None):
+                            copyGame = copy.deepcopy(game)
 
-        if player is None:
-            player = self
+                            possibleActions[i][j].ApplyAction(copyGame.gameState)
 
-        if sum(player.resources) <= 7:
-            return DiscardResourcesAction(player.seatNumber, [0, 0, 0, 0, 0, 0])
+                            if copyGame.gameState.currPlayer != playerNumber:
+                                currentDepth = depth + 1
+                            else:
+                                currentDepth = depth
 
-        resourcesPopulation = [0 for i in range(0, player.resources[0])] + \
-                              [1 for j in range(0, player.resources[1])] + \
-                              [2 for k in range(0, player.resources[2])] + \
-                              [3 for l in range(0, player.resources[3])] + \
-                              [4 for m in range(0, player.resources[4])] + \
-                              [5 for n in range(0, player.resources[5])]
+                            result = self.Alphabeta(copyGame, list(values), currentDepth, maxDepth)
 
-        discardCardCount = int(math.floor(len(resourcesPopulation) / 2.0))
+                            value = result[0][playerNumber]
 
-        if discardCardCount > 0:
-            #assert(player.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
-            player.discardCardCount = 0
+                            if value > values[playerNumber]:
 
-        selectedResources = random.sample(resourcesPopulation, discardCardCount)
+                                values[playerNumber] = value
 
-        return DiscardResourcesAction(player.seatNumber, [selectedResources.count(0),
-                                                          selectedResources.count(1),
-                                                          selectedResources.count(2),
-                                                          selectedResources.count(3),
-                                                          selectedResources.count(4),
-                                                          selectedResources.count(5)])
+                                best = possibleActions[i][j]
 
-    def ChooseRobberPosition(self, game, player = None):
+                                #print("Turn: best! {0}".format(best))
 
-        possiblePositions = game.gameState.possibleRobberPos + [game.gameState.robberPos]
+                                values = result[0]
 
-        return [PlaceRobberAction(player.seatNumber, position)
-                for position in possiblePositions]
-
-    def ChoosePlayerToStealFrom(self, game, player = None):
-
-        if player is None:
-            player = self
-
-        possiblePlayers = game.gameState.GetPossiblePlayersToSteal(self.seatNumber)
-
-        if len(possiblePlayers) > 0:
-            return ChoosePlayerToStealFromAction(player.seatNumber, random.choice(possiblePlayers))
-
-        return None
-
-    def GetPossibleBankTrades(self, game, player = None):
-
-        if player is None:
-            player = self
-
-        availablePorts = self.GetPorts(game)
-
-        if availablePorts[-1]:
-            minTradeRate = 3
-        else:
-            minTradeRate = 4
-
-        tradeRates = [minTradeRate, minTradeRate, minTradeRate, minTradeRate, minTradeRate]
-
-        for i in range(0, len(tradeRates)):
-            if availablePorts[i]:
-                tradeRates[i] = 2
-
-        possibleTradeAmount = [0, 0, 0, 0, 0]
-        candidateForTrade   = []
-
-        minResourceAmount = min(player.resources[:-1]) #Don't count the 'UNKNOWN' resource
-        for i in range(len(possibleTradeAmount)):
-            possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
-            if player.resources[i] == minResourceAmount:
-                candidateForTrade.append(i)
-
-        possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
-                                  [1 for j in range(0, possibleTradeAmount[1])] + \
-                                  [2 for k in range(0, possibleTradeAmount[2])] + \
-                                  [3 for l in range(0, possibleTradeAmount[3])] + \
-                                  [4 for m in range(0, possibleTradeAmount[4])]
-
-        logging.debug("Player {0} is checking if he can trade...\n"
-                      " He have this resources: {1}\n"
-                      " And he thinks he can trade these: {2}".format(player.name, player.resources, possibleTradeAmount))
-
-        if sum(possibleTradeAmount) > 0:
-
-            maxTrades = min(sum(possibleTradeAmount), len(candidateForTrade))
-
-            chosenResources   = random.sample(possibleTradePopulation, maxTrades)
-            expectedResources = random.sample(candidateForTrade, maxTrades)
-
-            logging.debug("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
-                chosenResources, expectedResources, maxTrades
-            ))
-
-            give = [chosenResources.count(0) * tradeRates[0], chosenResources.count(1) * tradeRates[1],
-                    chosenResources.count(2) * tradeRates[2], chosenResources.count(3) * tradeRates[3],
-                    chosenResources.count(4) * tradeRates[4]]
-
-            get  = [expectedResources.count(0), expectedResources.count(1),
-                    expectedResources.count(2), expectedResources.count(3),
-                    expectedResources.count(4)]
-
-            logging.debug("Player {0} will trade with the bank!\n"
-                          " GIVE = {1}\n"
-                          " GET  = {2}".format(player.name, give, get))
-
-            return [ BankTradeOfferAction(player.seatNumber, give, get) ]
-
-        return None
-
-    def GetMonopolyResource(self, game, player = None):
-
-        if player is None:
-            player = self
-
-        candidateResource = []
-
-        minResourceAmount = min(player.resources)
-
-        for i in range(0, len(player.resources) - 1):
-
-            if player.resources[i] == minResourceAmount:
-                candidateResource.append(i + 1)
-
-        if len(candidateResource) <= 0:
-
-            randomPick = random.choice([1,2,3,4,5])
-
-            logging.critical("Monopoly pick FAILED!!!! Picking at random: {0}".format(randomPick))
-
-            chosenResource = randomPick
-
+        # FOR SETUP TURNS AND OTHER EVENTS
         else:
 
-            chosenResource = random.choice(candidateResource)
+            if possibleActions is not None and len(possibleActions) > 0:
 
-        return [ UseMonopolyCardAction(player.seatNumber, chosenResource) ]
+                for i in range(0, len(possibleActions)):
 
-    def GetYearOfPlentyResource(self, game, player = None):
+                    copyGame = copy.deepcopy(game)
 
-        if player is None:
-            player = self
+                    possibleActions[i].ApplyAction(copyGame.gameState)
 
-        candidateResource = []
+                    if copyGame.gameState.currPlayer != playerNumber:
+                        currentDepth = depth + 1
+                    else:
+                        currentDepth = depth
 
-        chosenResources = [0, 0, 0, 0, 0]
+                    result = self.Alphabeta(copyGame, list(values), currentDepth, maxDepth)
 
-        minResourceAmount = min(player.resources)
+                    value = result[0][playerNumber]
 
-        for i in range(0, len(player.resources) - 1):
+                    if value > values[playerNumber]:
 
-            if player.resources[i] == minResourceAmount:
-                candidateResource.append(i)
+                        values[playerNumber] = value
 
-        if len(candidateResource) == 1:
+                        best = possibleActions[i]
 
-            chosenResources[i] = 2
+                        #print("N-turn: best! {0}".format(best))
 
-        else:
+                        values = result[0]
 
-            pick1 = random.choice(candidateResource)
-            pick2 = random.choice(candidateResource)
+        return (values, best)
 
-            chosenResources[pick1] += 1
-            chosenResources[pick2] += 1
+    def GetGameStateReward(self, gameState, playerNumber):
 
-        return [ UseYearOfPlentyCardAction(player.seatNumber, chosenResources) ]
+        playerPoints   = gameState.players[playerNumber].GetVictoryPoints()
 
-    def UpdateResourcesFromServer(self, action, element, value):
+        longestRoadPts = 0
 
-        if element in g_resources:  # RESOURCE
+        largestArmyPts = 0
 
-            if action == 'SET':
-                self.resources[g_resources.index(element)] = value
+        numRoads       = len(gameState.players[playerNumber].roads)
 
-            elif action == 'GAIN':
-                self.resources[g_resources.index(element)] += value
+        numSettlements = len(gameState.players[playerNumber].settlements)
 
-            elif action == 'LOSE':
-                self.resources[g_resources.index(element)] -= value
+        numCities      = len(gameState.players[playerNumber].cities)
 
-        elif element in g_pieces:  # PIECES
+        if gameState.longestRoadPlayer == playerNumber:
+            longestRoadPts = 3
 
-            if action == 'SET':
-                self.numberOfPieces[g_pieces.index(element)] = value
+        if gameState.largestArmyPlayer == playerNumber:
+            largestArmyPts = 3
 
-            elif action == 'GAIN':
-                self.numberOfPieces[g_pieces.index(element)] += value
+        return playerPoints * 0.5 + numRoads * 1 + numSettlements * 2 + numCities * 3 + \
+                largestArmyPts + longestRoadPts
 
-            elif action == 'LOSE':
-                self.numberOfPieces[g_pieces.index(element)] -= value
+'''
+REFERENCE: (alpha-beta for tictactoe
+availCells = find_empty_cells(board)
 
-        elif element == 'KNIGHTS':  # KNIGHTS
-
-            if action == 'SET':
-                self.knights = value
-
-            elif action == 'GAIN':
-                self.knights += value
-
-            elif action == 'LOSE':
-                self.knights -= value
-
-    def alphabeta(self, board, player, alpha, beta):
-
-      availCells = find_empty_cells(board)
-
-      if len(availCells) == 0:
-        if find_winner(board) == O:
-          return (-1, None)
-        elif find_winner(board) is None:
-          return (0, None)
-        elif find_winner(board) == X:
-          return (1, None)
-
-      best = None
-      for move in availCells:
-        board[move] = player
-        if player == X:
-          val = self.alphabeta(board, O, alpha, beta)[0]
-          if val > alpha:
+if len(availCells) == 0:
+ if find_winner(board) == O:
+   return (-1, None)
+ elif find_winner(board) is None:
+   return (0, None)
+ elif find_winner(board) == X:
+   return (1, None)
+best = None
+for move in availCells:
+    board[move] = player
+    if player == X:
+        val = self.alphabeta(board, O, alpha, beta)[0]
+        if val > alpha:
             alpha = val
             best = move
-        else:
-          val = self.alphabeta(board, X, alpha, beta)[0]
-          if val < beta:
+    else:
+        val = self.alphabeta(board, X, alpha, beta)[0]
+        if val < beta:
             beta = val
             best = move
 
-        board[move] = 0
-        if alpha >= beta:
-          break
+    board[move] = 0
+    if alpha >= beta:
+        break
 
-      if player == X:
-        return (alpha, best)
-      else:
-        return (beta, best)
+if player == X:
+    return (alpha, best)
+else:
+    return (beta, best)
+'''
