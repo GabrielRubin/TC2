@@ -274,6 +274,39 @@ class GameState:
 
             self.developmentCardsDeck[index] -= 1
             self.players[playerNumber].developmentCards[index] += 1
+            self.players[playerNumber].UpdateMayPlayDevCards(recentlyCardIndex=index)
+
+    def UpdateLongestRoad(self):
+
+        roadCount = [0 for i in range(0, len(self.players))]
+
+        for i in range(0, len(self.players)):
+
+            roadCount[i] = self.players[i].CountRoads(self)
+
+        maxRoads = max(roadCount)
+
+        if maxRoads >= 5:
+
+            if roadCount.count(maxRoads) > 1 and self.longestRoadPlayer != -1 and \
+                roadCount[self.longestRoadPlayer] == maxRoads:
+                return
+
+            self.SetLongestRoad(roadCount.index(maxRoads))
+
+    def UpdateLargestArmy(self):
+
+        totalKnights = [self.players[i].knights for i in range(0, len(self.players))]
+
+        maxKnights = max(totalKnights)
+
+        if maxKnights >= 3:
+
+            if totalKnights.count(maxKnights) > 1 and self.largestArmyPlayer != -1 and \
+                self.players[self.largestArmyPlayer].knights == maxKnights:
+                return
+
+            self.SetLargestArmy(totalKnights.index(maxKnights))
 
     def GetConstructableNodes(self):
 

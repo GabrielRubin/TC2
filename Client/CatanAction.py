@@ -20,7 +20,8 @@ g_ActionType = \
     'DiscardResources',
     'ChoosePlayerToStealFrom',
     'TradeOffer',
-    'BankTradeOffer'
+    'BankTradeOffer',
+    'ChangeGameState'
 ]
 
 g_OfferType = [
@@ -101,8 +102,8 @@ class BuildRoadAction(BuildAction):
 
         super(BuildRoadAction, self).ApplyAction(gameState)
 
-        # TODO -> Check biggest road...
-        # gameState.CheckBiggestRoad()
+        # TODO -> Verify...
+        gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1B":
 
@@ -275,8 +276,6 @@ class UseDevelopmentCardAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseDevelopmentCardAction.type))
-
         gameState.players[self.playerNumber].developmentCards[self.index] -= 1
 
         gameState.players[self.playerNumber].mayPlayDevCards[self.index] = False
@@ -307,6 +306,8 @@ class UseKnightsCardAction(UseDevelopmentCardAction):
         gameState.currState = "PLACING_ROBBER"
 
         gameState.players[self.playerNumber].knights += 1
+
+        gameState.UpdateLargestArmy()
 
 class UseMonopolyCardAction(UseDevelopmentCardAction):
 
@@ -454,6 +455,8 @@ class EndTurnAction(Action):
 
             gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
+            gameState.players[gameState.currPlayer].UpdateMayPlayDevCards(canUseAll=True)
+
 class DiscardResourcesAction(Action):
 
     type = 'DiscardResources'
@@ -571,3 +574,17 @@ class BankTradeOfferAction(Action):
         gameState.players[self.playerNumber].resources = \
             [x1 + x2 for (x1, x2) in
              zip(gameState.players[self.playerNumber].resources, get)]
+
+class ChangeGameStateAction(Action):
+
+    type = 'ChangeGameState'
+
+    def __init__(self, newGameState):
+        self.gameState = newGameState
+
+    def GetMessage(self, gameName, currGameStateName=None):
+        return None
+
+    def ApplyAction(self, gameState):
+
+        gameState.currState = self.gameState

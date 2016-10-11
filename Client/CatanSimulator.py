@@ -10,7 +10,7 @@ def runGame():
 
     game = Game(GameState())
 
-    game.AddPlayer(AgentAlphabeta("P1", 0), 0)
+    game.AddPlayer(AgentRandom("P1", 0), 0)
     game.AddPlayer(AgentRandom("P2", 1), 1)
     game.AddPlayer(AgentRandom("P3", 2), 2)
     game.AddPlayer(AgentRandom("P4", 3), 3)
@@ -24,32 +24,44 @@ def runGame():
 
     game.CreateBoard(BoardLayoutMessage.parse(boardLayoutMessage))
 
-    logging.getLogger().setLevel(logging.CRITICAL)
-
     while True:
 
         currPlayer     = game.gameState.players[game.gameState.currPlayer]
 
         agentAction    = currPlayer.DoMove(game)
 
+        #print(game.gameState.currState)
         agentAction.ApplyAction(game.gameState)
 
         if game.gameState.currState == "OVER":
 
-            print("GAME OVER!")
+            # FIXME - NEVER ENDING WITH LARGEST ARMY!
+            if game.gameState.largestArmyPlayer != -1:
+                print("LARGEST ARMY! - {0}".format(game.gameState.largestArmyPlayer))
 
             logging.critical("Game Over! Player {0} Wins!".format(game.gameState.players[game.gameState.winner].name))
 
             logging.critical("GAME STATS:")
+
+            logging.critical(" largest army player: {0} \n longest road player: {1} ".format(
+                game.gameState.largestArmyPlayer,
+                game.gameState.longestRoadPlayer
+            ))
 
             for i in range(0, 4):
 
                 logging.critical("Player {0} stats:".format(game.gameState.players[i].name))
 
                 logging.critical("his resources are: "
-                              "\n RESOURCES = {0} "
-                              "\n PIECES    = {1} "
-                              "\n KNIGHTS   = {2} ".format(
+                              "\n POINTS       = {0} "
+                              "\n LARGEST ARMY = {1} "
+                              "\n LONGEST ROAD = {2}"
+                              "\n RESOURCES    = {3} "
+                              "\n PIECES       = {4} "
+                              "\n KNIGHTS      = {5} ".format(
+                    game.gameState.players[i].GetVictoryPoints(),
+                    game.gameState.players[i].biggestArmy,
+                    game.gameState.players[i].biggestRoad,
                     game.gameState.players[i].resources,
                     game.gameState.players[i].numberOfPieces,
                     game.gameState.players[i].knights
@@ -75,12 +87,14 @@ def runGame():
 
 if __name__ == '__main__':
 
-    runGame()
+    logging.getLogger().disabled = True
 
-    # import timeit
-    #
-    # timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
-    #
-    # print(timer.timeit(300))
+    #runGame()
+
+    import timeit
+
+    timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
+
+    print(timer.timeit(300))
 
     #print(min(timer.repeat(10, 30)))

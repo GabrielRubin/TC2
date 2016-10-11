@@ -290,6 +290,78 @@ class Player:
 
         self.rolledTheDices = False
 
+    def CountRoads(self, gameState):
+
+        startingRoads = []
+
+        for road in self.roads:
+
+            isStartPos = False
+
+            for adjacentEdge in gameState.boardEdges[road].adjacentEdges:
+
+                if adjacentEdge is None:
+                    continue
+
+                if gameState.boardEdges[adjacentEdge].construction is None or \
+                    gameState.boardEdges[adjacentEdge].construction.owner != self.seatNumber:
+                        startingRoads.append(road)
+                        isStartPos = True
+                        break
+
+            if isStartPos:
+                continue
+
+            for adjacentNode in gameState.boardEdges[road].adjacentNodes:
+
+                if adjacentNode is None:
+                    continue
+
+                if gameState.boardNodes[adjacentNode].construction is not None and \
+                    gameState.boardNodes[adjacentNode].construction.owner != self.seatNumber:
+                    startingRoads.append(road)
+                    break
+
+        def DepthSearch(playerNumber, currRoad, length, visited):
+
+            # Already visited?
+            if currRoad in visited:
+                return length
+            # Is None or don't belong to the player?
+            if gameState.boardEdges[currRoad].construction is None or \
+                gameState.boardEdges[currRoad].construction.owner != playerNumber:
+                return length
+            # Is adjacent to another player's settlement/city?
+            for node in gameState.boardEdges[currRoad].adjacentNodes:
+                if gameState.boardNodes[node] is not None and \
+                   gameState.boardNodes[node].construction is not None and \
+                   gameState.boardNodes[node].construction.owner != playerNumber:
+                    return length
+
+            length += 1
+
+            visited.append(currRoad)
+
+            possiblePaths = [DepthSearch(playerNumber, nextRoad, length, visited) if
+                             gameState.boardEdges[currRoad] is not None else -1 for
+                             nextRoad in gameState.boardEdges[currRoad].adjacentEdges]
+
+            if len(possiblePaths) <= 0:
+                return 0
+
+            return max(possiblePaths)
+
+        results = []
+
+        for startingRoad in startingRoads:
+            for nextEdge in gameState.boardEdges[startingRoad].adjacentEdges:
+                results.append(DepthSearch(self.seatNumber, nextEdge, 1, [startingRoad]))
+
+        if len(results) <= 0:
+            return 0
+
+        return max(results)
+
     def DefaultDiscard(self):
         #ROBOT PLAYER DEFAULT DISCARD METHOD
         if sum(self.resources) > 7:
