@@ -225,10 +225,110 @@ class AgentAlphabeta(AgentRandom):
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
-        return self.Alphabeta(game, [0, 0, 0, 0], -1, 2)[1]
+        return self.Max_N(game, [0, 0, 0, 0], -1, 2)[1]
+
+    def Utility(self):
+        pass
+
+    # TODO: ALPHABETA
+    def Alphabeta(self, game, depth=5, alpha=float('-inf'), beta=float('inf'), player_turn=True):
+
+        score = self.Utility()
+
+        playerNumber    = game.gameState.currPlayer
+        possibleActions = self.GetPossibleActions(game, game.gameState.players[playerNumber])
+
+        has_available_moves = len(possibleActions) > 0
+        someone_wins = score != 0
+        max_depth_reached = depth == 0
+
+        if max_depth_reached or someone_wins or not has_available_moves:
+            return score
+
+        if game.gameState.currState == "PLAY1":
+
+            if possibleActions is not None and len(possibleActions) > 0:
+
+                for i in range(0, len(possibleActions)):
+
+                    if possibleActions[i] is not None:
+
+                        for j in range(0, len(possibleActions[i])):
+
+                            copyGame = copy.deepcopy(game)
+
+                            possibleActions[i][j].ApplyAction(copyGame.gameState)
+
+                            if copyGame.gameState.currPlayer != playerNumber:
+                                currentDepth = depth - 1
+                            else:
+                                currentDepth = depth
+
+                            result = self.Alphabeta(copyGame, currentDepth, alpha, beta, not player_turn)
+
+                            value = result[0][playerNumber]
+
+                            if value > values[playerNumber]:
+                                values[playerNumber] = value
+
+                                best = possibleActions[i][j]
+
+                                # print("Turn: best! {0}".format(best))
+
+                                values = result[0]
+
+        # FOR SETUP TURNS AND OTHER EVENTS
+        else:
+
+            if possibleActions is not None and len(possibleActions) > 0:
+
+                for i in range(0, len(possibleActions)):
+
+                    copyGame = copy.deepcopy(game)
+
+                    possibleActions[i].ApplyAction(copyGame.gameState)
+
+                    if copyGame.gameState.currPlayer != playerNumber:
+                        currentDepth = depth - 1
+                    else:
+                        currentDepth = depth
+
+                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, not player_turn)
+
+                    value = result[0][playerNumber]
+
+                    if value > values[playerNumber]:
+                        values[playerNumber] = value
+
+                        best = possibleActions[i]
+
+                        # print("N-turn: best! {0}".format(best))
+
+                        values = result[0]
+
+            '''
+            REFERENCE
+
+            if player_turn:
+                score = float('-inf')
+                for new_board, cell in self.next_move(board, self.me()):
+                    score = max(score, self.alphabeta(new_board, depth - 1, alpha, beta, player_turn=False))
+                    alpha = max(alpha, score)
+                    if beta <= alpha:
+                        break
+                return score
+            else:
+                score = float('inf')
+                for new_board, cell in self.next_move(board, self.opp()):
+                    score = min(score, self.alphabeta(new_board, depth - 1, alpha, beta, player_turn=True))
+                    beta = min(beta, score)
+                    if beta <= alpha:
+                        break
+                return score
+            '''
 
     # TODO -> turn this ugly algorithm from BADBADNOTGOOD to 'ok'
-    def Alphabeta(self, game, values, depth, maxDepth):
+    def Max_N(self, game, values, depth, maxDepth):
 
         if depth >= maxDepth:
 
@@ -285,7 +385,7 @@ class AgentAlphabeta(AgentRandom):
                             else:
                                 currentDepth = depth
 
-                            result = self.Alphabeta(copyGame, list(values), currentDepth, maxDepth)
+                            result = self.Max_N(copyGame, list(values), currentDepth, maxDepth)
 
                             value = result[0][playerNumber]
 
@@ -315,7 +415,7 @@ class AgentAlphabeta(AgentRandom):
                     else:
                         currentDepth = depth
 
-                    result = self.Alphabeta(copyGame, list(values), currentDepth, maxDepth)
+                    result = self.Max_N(copyGame, list(values), currentDepth, maxDepth)
 
                     value = result[0][playerNumber]
 
