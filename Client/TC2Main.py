@@ -84,9 +84,9 @@ if not args.noClient:
 os.chdir(mycwd)
 
 if args.logging == 'i':
-    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger(__name__).setLevel(logging.INFO)
 elif args.logging == 'd':
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger(__name__).setLevel(logging.DEBUG)
 
 #logging.getLogger().setLevel(logging.CRITICAL)
 

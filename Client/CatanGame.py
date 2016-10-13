@@ -140,6 +140,7 @@ class Game:
         if not setUpPhase and not freeRoad and\
                 not player.CanAfford(BuildRoadAction.cost) \
                 or not player.HavePiece(g_pieces.index('ROADS')):
+
             return None
 
         return [edge for edge in
@@ -271,6 +272,9 @@ class GameState:
                                      [4 for i in range(0, self.developmentCardsDeck[4])]
 
             index = random.choice(currDevCardsPopulation)
+
+            # print("{0} draw a card! He got this: {1}".format(self.players[playerNumber].name,
+            #                                                  g_developmentCards[index]))
 
             self.developmentCardsDeck[index] -= 1
             self.players[playerNumber].developmentCards[index] += 1

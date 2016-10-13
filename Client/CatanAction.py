@@ -102,7 +102,6 @@ class BuildRoadAction(BuildAction):
 
         super(BuildRoadAction, self).ApplyAction(gameState)
 
-        # TODO -> Verify...
         gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1B":
@@ -156,6 +155,8 @@ class BuildSettlementAction(BuildAction):
     def ApplyAction(self, gameState):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
+
+        gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
             gameState.currState = "START1B"
@@ -322,7 +323,7 @@ class UseMonopolyCardAction(UseDevelopmentCardAction):
     def GetMessage(self, gameName, currGameStateName = None):
 
         return [ PlayDevCardRequestMessage(gameName, self.index),
-                 MonopolyPickMessage(gameName, self.resource)            ]
+                 MonopolyPickMessage(gameName, self.resource)   ]
 
     def ApplyAction(self, gameState):
 
@@ -456,6 +457,8 @@ class EndTurnAction(Action):
             gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
             gameState.players[gameState.currPlayer].UpdateMayPlayDevCards(canUseAll=True)
+
+            gameState.players[gameState.currPlayer].playedDevCard = False
 
 class DiscardResourcesAction(Action):
 

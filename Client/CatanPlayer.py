@@ -133,6 +133,7 @@ class Player:
 
                         self.mayPlayDevCards[i] = self.developmentCards[i] > 0
 
+
     def CanAfford(self, price):
 
         for i in range(0, len(g_resources)):

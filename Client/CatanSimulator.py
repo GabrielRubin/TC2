@@ -30,14 +30,20 @@ def runGame():
 
         agentAction    = currPlayer.DoMove(game)
 
-        #print(game.gameState.currState)
+        if agentAction is None:
+            print(game.gameState.currState)
+
         agentAction.ApplyAction(game.gameState)
 
         if game.gameState.currState == "OVER":
 
+            #print("--------------GAME!---------------")
+
             # FIXME - NEVER ENDING WITH LARGEST ARMY!
-            if game.gameState.largestArmyPlayer != -1:
-                print("LARGEST ARMY! - {0}".format(game.gameState.largestArmyPlayer))
+            #if game.gameState.largestArmyPlayer != -1:
+            #    print("LARGEST ARMY! - {0}".format(game.gameState.largestArmyPlayer))
+
+            logging.critical("#########################################################")
 
             logging.critical("Game Over! Player {0} Wins!".format(game.gameState.players[game.gameState.winner].name))
 
@@ -47,6 +53,8 @@ def runGame():
                 game.gameState.largestArmyPlayer,
                 game.gameState.longestRoadPlayer
             ))
+
+            logging.critical("#########################################################")
 
             for i in range(0, 4):
 
@@ -83,11 +91,29 @@ def runGame():
                     [hex(city) for city in game.gameState.players[i].cities]
                 ))
 
+                logging.critical("---------------------------------------------------------")
+
             break
 
 if __name__ == '__main__':
 
-    logging.getLogger().disabled = True
+    import datetime
+
+    logger = logging.getLogger()
+
+    #logger.disabled = True
+
+    today = datetime.datetime.today()
+
+    logFile = logging.FileHandler('log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
+
+    #formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+    #hdlr.setFormatter(formatter)
+
+    logger.addHandler(logFile)
+
+    #logger.setLevel(logging.WARNING)
 
     #runGame()
 

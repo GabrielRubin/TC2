@@ -213,7 +213,7 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-            if possibleRoads is None:
+            if possibleRoads is None or len(possibleRoads) <= 0:
                 return [ ChangeGameStateAction("PLAY1") ]
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index,
@@ -224,7 +224,7 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
-            if possibleRoads is None:
+            if possibleRoads is None or len(possibleRoads) <= 0:
                 return [ ChangeGameStateAction("PLAY1") ]
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index,
