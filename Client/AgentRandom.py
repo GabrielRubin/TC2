@@ -154,13 +154,17 @@ class AgentRandom(Player):
 
             if not player.playedDevCard:
 
-                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
+                   player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
                     possibleCardsToUse += player.GetMonopolyResource(player)
 
-                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
+                   player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
                     possibleCardsToUse += player.GetYearOfPlentyResource(player)
 
-                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
+                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
+                   player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
+                   player.numberOfPieces[0] > 0:
                     possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
 
             if possibleRoads is not None and len(possibleRoads) > 0:
@@ -209,6 +213,9 @@ class AgentRandom(Player):
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
 
+            if possibleRoads is None or len(possibleRoads) <= 0:
+                return [ ChangeGameStateAction("PLAY1") ]
+
             return [BuildRoadAction(player.seatNumber, roadEdge.index,
                                     len(player.roads))
                     for roadEdge in possibleRoads]
@@ -216,6 +223,9 @@ class AgentRandom(Player):
         elif gameState.currState == "PLACING_FREE_ROAD2":
 
             possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
+
+            if possibleRoads is None or len(possibleRoads) <= 0:
+                return [ ChangeGameStateAction("PLAY1") ]
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index,
                                     len(player.roads))
@@ -395,7 +405,7 @@ class AgentRandom(Player):
 
         chosenResources = [0, 0, 0, 0, 0]
 
-        minResourceAmount = min(player.resources)
+        minResourceAmount = min(player.resources[:-1])
 
         for i in range(0, len(player.resources) - 1):
 

@@ -20,7 +20,8 @@ g_ActionType = \
     'DiscardResources',
     'ChoosePlayerToStealFrom',
     'TradeOffer',
-    'BankTradeOffer'
+    'BankTradeOffer',
+    'ChangeGameState'
 ]
 
 g_OfferType = [
@@ -101,8 +102,7 @@ class BuildRoadAction(BuildAction):
 
         super(BuildRoadAction, self).ApplyAction(gameState)
 
-        # TODO -> Check biggest road...
-        # gameState.CheckBiggestRoad()
+        gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1B":
 
@@ -155,6 +155,8 @@ class BuildSettlementAction(BuildAction):
     def ApplyAction(self, gameState):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
+
+        gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
             gameState.currState = "START1B"
@@ -275,8 +277,6 @@ class UseDevelopmentCardAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseDevelopmentCardAction.type))
-
         gameState.players[self.playerNumber].developmentCards[self.index] -= 1
 
         gameState.players[self.playerNumber].mayPlayDevCards[self.index] = False
@@ -308,6 +308,8 @@ class UseKnightsCardAction(UseDevelopmentCardAction):
 
         gameState.players[self.playerNumber].knights += 1
 
+        gameState.UpdateLargestArmy()
+
 class UseMonopolyCardAction(UseDevelopmentCardAction):
 
     type = 'UseMonopolyCard'
@@ -321,7 +323,7 @@ class UseMonopolyCardAction(UseDevelopmentCardAction):
     def GetMessage(self, gameName, currGameStateName = None):
 
         return [ PlayDevCardRequestMessage(gameName, self.index),
-                 MonopolyPickMessage(gameName, self.resource)            ]
+                 MonopolyPickMessage(gameName, self.resource)   ]
 
     def ApplyAction(self, gameState):
 
@@ -454,6 +456,10 @@ class EndTurnAction(Action):
 
             gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
+            gameState.players[gameState.currPlayer].UpdateMayPlayDevCards(canUseAll=True)
+
+            gameState.players[gameState.currPlayer].playedDevCard = False
+
 class DiscardResourcesAction(Action):
 
     type = 'DiscardResources'
@@ -571,3 +577,17 @@ class BankTradeOfferAction(Action):
         gameState.players[self.playerNumber].resources = \
             [x1 + x2 for (x1, x2) in
              zip(gameState.players[self.playerNumber].resources, get)]
+
+class ChangeGameStateAction(Action):
+
+    type = 'ChangeGameState'
+
+    def __init__(self, newGameState):
+        self.gameState = newGameState
+
+    def GetMessage(self, gameName, currGameStateName=None):
+        return None
+
+    def ApplyAction(self, gameState):
+
+        gameState.currState = self.gameState
