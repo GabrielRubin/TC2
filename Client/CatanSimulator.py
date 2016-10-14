@@ -1,12 +1,15 @@
 from Client import *
 import logging
+import pickle
+import datetime
+import GameStateViewer
 
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
 
-def runGame():
+def runGame(saveLog = False):
 
     game = Game(GameState())
 
@@ -39,9 +42,21 @@ def runGame():
 
             #print("--------------GAME!---------------")
 
-            # FIXME - NEVER ENDING WITH LARGEST ARMY!
-            #if game.gameState.largestArmyPlayer != -1:
-            #    print("LARGEST ARMY! - {0}".format(game.gameState.largestArmyPlayer))
+            if saveLog:
+
+                now = datetime.datetime.today()
+
+                currGameStateName = "board_" + now.strftime("%d-%m-%Y_%H-%M-%S-%f")
+
+                gameStateFile = logging.FileHandler('GameStates/{0}.txt'.format(currGameStateName))
+
+                logging.getLogger().addHandler(gameStateFile)
+
+                # Store the last GameState
+                with open('GameStates/{0}.pickle'.format(currGameStateName), 'wb') as handle:
+                    pickle.dump(game.gameState, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                GameStateViewer.SaveGameStateImage(game.gameState, 'GameStates/{0}.png'.format(currGameStateName))
 
             logging.critical("#########################################################")
 
@@ -63,7 +78,7 @@ def runGame():
                 logging.critical("his resources are: "
                               "\n POINTS       = {0} "
                               "\n LARGEST ARMY = {1} "
-                              "\n LONGEST ROAD = {2}"
+                              "\n LONGEST ROAD = {2} "
                               "\n RESOURCES    = {3} "
                               "\n PIECES       = {4} "
                               "\n KNIGHTS      = {5} ".format(
@@ -93,11 +108,15 @@ def runGame():
 
                 logging.critical("---------------------------------------------------------")
 
+
+            if saveLog:
+                logging.getLogger().removeHandler(gameStateFile)
+
             break
 
 if __name__ == '__main__':
 
-    import datetime
+    import timeit
 
     logger = logging.getLogger()
 
@@ -107,20 +126,18 @@ if __name__ == '__main__':
 
     logFile = logging.FileHandler('log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
 
+    logger.addHandler(logFile)
+
     #formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
     #hdlr.setFormatter(formatter)
-
-    logger.addHandler(logFile)
 
     #logger.setLevel(logging.WARNING)
 
     #runGame()
 
-    import timeit
+    timer = timeit.Timer("runGame(True)", setup="from __main__ import runGame")
 
-    timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
-
-    print(timer.timeit(300))
+    print(timer.timeit(5))
 
     #print(min(timer.repeat(10, 30)))
