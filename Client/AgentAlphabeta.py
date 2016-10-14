@@ -225,25 +225,41 @@ class AgentAlphabeta(AgentRandom):
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
-        return self.Max_N(game, [0, 0, 0, 0], -1, 2)[1]
-
-    def Utility(self):
-        pass
+        #return self.Max_N(game, [0, 0, 0, 0], -1, 2)[1]
+        return self.Alphabeta(game)[1]
 
     # TODO: ALPHABETA
     def Alphabeta(self, game, depth=5, alpha=float('-inf'), beta=float('inf'), player_turn=True):
 
-        score = self.Utility()
+        playerNumber = game.gameState.currPlayer
 
-        playerNumber    = game.gameState.currPlayer
+        score = self.GetGameStateReward(game.gameState, playerNumber)
+
         possibleActions = self.GetPossibleActions(game, game.gameState.players[playerNumber])
 
-        has_available_moves = len(possibleActions) > 0
-        someone_wins = score != 0
+        if depth == 5 and possibleActions is not None:
+
+            if len(possibleActions) == 1:
+
+                return (None, possibleActions[0])
+
+            elif game.gameState.currState == "PLAY1":
+
+                for i in range(0, len(possibleActions)):
+
+                    if possibleActions[i] is not None and len(possibleActions[i]) > 0:
+                        break
+                    if i == 6: # EndTurnAction
+                        return (None, possibleActions[i][0])
+
+        #has_available_moves = len(possibleActions) > 0
+        someone_wins = (game.gameState.currState == "OVER")
         max_depth_reached = depth == 0
 
-        if max_depth_reached or someone_wins or not has_available_moves:
-            return score
+        if max_depth_reached or someone_wins: #or not has_available_moves:
+            return (score, None)
+
+        best = None
 
         if game.gameState.currState == "PLAY1":
 
@@ -264,18 +280,23 @@ class AgentAlphabeta(AgentRandom):
                             else:
                                 currentDepth = depth
 
-                            result = self.Alphabeta(copyGame, currentDepth, alpha, beta, not player_turn)
+                            if player_turn:
 
-                            value = result[0][playerNumber]
-
-                            if value > values[playerNumber]:
-                                values[playerNumber] = value
-
+                                result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=False)
+                                value = result[0]
+                                alpha = max(alpha, value)
+                                if alpha >= beta:
+                                    break
                                 best = possibleActions[i][j]
 
-                                # print("Turn: best! {0}".format(best))
+                            else:
 
-                                values = result[0]
+                                result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=True)
+                                value = result[0]
+                                beta = min(beta, value)
+                                if beta <= alpha:
+                                    break
+                                best = possibleActions[i][j]
 
         # FOR SETUP TURNS AND OTHER EVENTS
         else:
@@ -293,39 +314,26 @@ class AgentAlphabeta(AgentRandom):
                     else:
                         currentDepth = depth
 
-                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, not player_turn)
+                    if player_turn:
 
-                    value = result[0][playerNumber]
-
-                    if value > values[playerNumber]:
-                        values[playerNumber] = value
-
+                        result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=False)
+                        value = result[0]
+                        alpha = max(alpha, value)
+                        if alpha >= beta:
+                            break
                         best = possibleActions[i]
 
-                        # print("N-turn: best! {0}".format(best))
+                    else:
 
-                        values = result[0]
+                        result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=True)
+                        value = result[0]
+                        beta = min(beta, value)
+                        if beta <= alpha:
+                            break
+                        best = possibleActions[i]
 
-            '''
-            REFERENCE
+        return (value, best)
 
-            if player_turn:
-                score = float('-inf')
-                for new_board, cell in self.next_move(board, self.me()):
-                    score = max(score, self.alphabeta(new_board, depth - 1, alpha, beta, player_turn=False))
-                    alpha = max(alpha, score)
-                    if beta <= alpha:
-                        break
-                return score
-            else:
-                score = float('inf')
-                for new_board, cell in self.next_move(board, self.opp()):
-                    score = min(score, self.alphabeta(new_board, depth - 1, alpha, beta, player_turn=True))
-                    beta = min(beta, score)
-                    if beta <= alpha:
-                        break
-                return score
-            '''
 
     # TODO -> turn this ugly algorithm from BADBADNOTGOOD to 'ok'
     def Max_N(self, game, values, depth, maxDepth):
