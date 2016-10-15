@@ -249,6 +249,8 @@ class Player:
 
             gameState.boardEdges[position].construction = newConstruction
 
+            gameState.constructableEdges.remove(gameState.boardEdges[position])
+
             self.roads.append(position)
 
             self.numberOfPieces[0] -= 1
@@ -259,6 +261,8 @@ class Player:
                                            self.seatNumber, len(self.settlements), position)
 
             gameState.boardNodes[position].construction = newConstruction
+
+            gameState.constructableNodes.remove(gameState.boardNodes[position])
 
             self.settlements.append(position)
 

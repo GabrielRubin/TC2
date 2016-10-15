@@ -204,6 +204,8 @@ class GameState:
 
         self.winner = -1
 
+        self.checkLongestRoad = False
+
     def GetPossiblePlayersToSteal(self, playerIndex):
 
         robberHex       = self.boardHexes[self.robberPos]

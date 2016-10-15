@@ -102,7 +102,8 @@ class BuildRoadAction(BuildAction):
 
         super(BuildRoadAction, self).ApplyAction(gameState)
 
-        gameState.UpdateLongestRoad()
+        if gameState.checkLongestRoad:
+            gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1B":
 
@@ -156,7 +157,8 @@ class BuildSettlementAction(BuildAction):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
 
-        gameState.UpdateLongestRoad()
+        if gameState.checkLongestRoad:
+            gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
             gameState.currState = "START1B"
@@ -444,6 +446,13 @@ class EndTurnAction(Action):
 
         gameState.players[self.playerNumber].rolledTheDices = False
         gameState.players[self.playerNumber].placedRobber   = False
+
+        if gameState.players[self.playerNumber].GetVictoryPoints() >= 8 and \
+            not gameState.checkLongestRoad:
+
+            gameState.UpdateLongestRoad()
+
+            gameState.checkLongestRoad = True
 
         if gameState.players[self.playerNumber].GetVictoryPoints() >= 10:
 

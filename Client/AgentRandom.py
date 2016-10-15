@@ -136,65 +136,93 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'PLAY1':
 
-            # TODO -> improve the agent performance in-game
+            actions             = ['buildRoad', 'buildSettlement', 'buildCity',
+                                   'buyDevCard', 'useDevCard']
 
-            possibleActions = []
+            possibleActions     = []
 
-            possibleRoads       = game.GetPossibleRoads(gameState, player)
+            if player.CanAfford(BuildRoadAction.cost) and \
+               player.HavePiece(g_pieces.index('ROADS')) > 0:
 
-            canBuyADevCard      = game.CanBuyADevCard(gameState, player)
+                possibleActions.append(actions[0])
 
-            possibleSettlements = game.GetPossibleSettlements(gameState, player)
+            if player.CanAfford(BuildSettlementAction.cost) and \
+               player.HavePiece(g_pieces.index('SETTLEMENTS')) > 0:
 
-            possibleCities      = game.GetPossibleCities(gameState, player)
+                possibleActions.append(actions[1])
 
-            possibleBankTrades  = player.GetPossibleBankTrades(game, player)
+            if player.CanAfford(BuildCityAction.cost) and \
+               player.HavePiece(g_pieces.index('CITIES')) > 0 and \
+               len(player.settlements) > 0:
 
-            possibleCardsToUse = []
+                possibleActions.append(actions[2])
 
-            if not player.playedDevCard:
+            if game.CanBuyADevCard(gameState, player) and not player.biggestArmy:
+                possibleActions.append(actions[3])
 
-                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
-                   player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-                    possibleCardsToUse += player.GetMonopolyResource(player)
-
-                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
-                   player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-                    possibleCardsToUse += player.GetYearOfPlentyResource(player)
-
-                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
-                   player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
-                   player.numberOfPieces[0] > 0:
-                    possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
-
-            if possibleRoads is not None and len(possibleRoads) > 0:
-                possibleActions.append([BuildRoadAction(player.seatNumber, roadEdge.index,
-                                                    len(player.roads))
-                                        for roadEdge in possibleRoads])
-
-            if len(possibleCardsToUse) > 0:
-                possibleActions.append(possibleCardsToUse)
-
-            if canBuyADevCard and not player.biggestArmy:
-                possibleActions.append([ BuyDevelopmentCardAction(player.seatNumber) ])
-
-            if possibleSettlements is not None and len(possibleSettlements) > 0:
-                possibleActions.append([BuildSettlementAction(player.seatNumber, setNode.index,
-                                                         len(player.settlements))
-                                        for setNode in possibleSettlements])
-
-            if possibleCities is not None and len(possibleCities) > 0:
-                possibleActions.append([ BuildCityAction(player.seatNumber, setNode.index,
-                                                    len(player.cities))
-                                        for setNode in possibleCities])
+            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
+                possibleActions.append(actions[4])
 
             if len(possibleActions) == 0:
-                chosenPossibilities = possibleBankTrades
 
-            else:
-                chosenPossibilities = random.choice(possibleActions)
+                if random.random() >= 0.5:
+                    return player.GetPossibleBankTrades(game, player)
+                else:
+                    return None
 
-            return chosenPossibilities
+            chosenAction = random.choice(possibleActions)
+
+            if chosenAction == 'buildRoad':
+
+                possibleRoads = game.GetPossibleRoads(gameState, player)
+
+                if possibleRoads is not None and len(possibleRoads) > 0:
+
+                    return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
+                            for roadEdge in possibleRoads]
+
+            elif chosenAction == 'buildSettlement':
+
+                possibleSettlements = game.GetPossibleSettlements(gameState, player)
+
+                if possibleSettlements is not None and len(possibleSettlements) > 0:
+
+                    return [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
+                            for setNode in possibleSettlements]
+
+            elif chosenAction == 'buildCity':
+
+                possibleCities      = game.GetPossibleCities(gameState, player)
+
+                if possibleCities is not None and len(possibleCities) > 0:
+
+                    return [BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
+                            for setNode in possibleCities]
+
+            elif chosenAction == 'buyDevCard':
+
+                return [BuyDevelopmentCardAction(player.seatNumber)]
+
+            elif chosenAction == 'useDevCard':
+
+                possibleCardsToUse = []
+
+                if not player.playedDevCard:
+
+                    if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
+                            player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                        possibleCardsToUse += player.GetMonopolyResource(player)
+
+                    if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
+                            player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                        possibleCardsToUse += player.GetYearOfPlentyResource(player)
+
+                    if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
+                            player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
+                                    player.numberOfPieces[0] > 0:
+                        possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
+
+                return possibleCardsToUse
 
         elif gameState.currState == 'PLACING_ROBBER':
 
@@ -331,25 +359,29 @@ class AgentRandom(Player):
             if player.resources[i] == minResourceAmount:
                 candidateForTrade.append(i)
 
-        possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
-                                  [1 for j in range(0, possibleTradeAmount[1])] + \
-                                  [2 for k in range(0, possibleTradeAmount[2])] + \
-                                  [3 for l in range(0, possibleTradeAmount[3])] + \
-                                  [4 for m in range(0, possibleTradeAmount[4])]
+        tradeAmount = random.randint(0, sum(possibleTradeAmount))
 
-        logging.debug("Player {0} is checking if he can trade...\n"
-                      " He have this resources: {1}\n"
-                      " And he thinks he can trade these: {2}".format(player.name, player.resources, possibleTradeAmount))
+        if tradeAmount > 0 and len(candidateForTrade) > 0:
 
-        if sum(possibleTradeAmount) > 0:
+            possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
+                                      [1 for j in range(0, possibleTradeAmount[1])] + \
+                                      [2 for k in range(0, possibleTradeAmount[2])] + \
+                                      [3 for l in range(0, possibleTradeAmount[3])] + \
+                                      [4 for m in range(0, possibleTradeAmount[4])]
 
-            maxTrades = min(sum(possibleTradeAmount), len(candidateForTrade))
+            logging.debug("Player {0} is checking if he can trade...\n"
+                          " He have this resources: {1}\n"
+                          " And he thinks he can trade these: {2}".format(player.name, player.resources,
+                                                                          possibleTradeAmount))
 
-            chosenResources   = random.sample(possibleTradePopulation, maxTrades)
-            expectedResources = random.sample(candidateForTrade, maxTrades)
+            chosenResources   = random.sample(possibleTradePopulation, tradeAmount)
+
+            expectedResources = []
+            for i in range(0, tradeAmount):
+                expectedResources.append(random.choice(candidateForTrade))
 
             logging.debug("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
-                chosenResources, expectedResources, maxTrades
+                chosenResources, expectedResources, tradeAmount
             ))
 
             give = [chosenResources.count(0) * tradeRates[0], chosenResources.count(1) * tradeRates[1],
@@ -375,7 +407,7 @@ class AgentRandom(Player):
 
         candidateResource = []
 
-        minResourceAmount = min(player.resources)
+        minResourceAmount = min(player.resources[:-1])
 
         for i in range(0, len(player.resources) - 1):
 

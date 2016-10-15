@@ -117,27 +117,38 @@ def runGame(saveLog = False):
 if __name__ == '__main__':
 
     import timeit
+    import os.path
 
     logger = logging.getLogger()
 
-    #logger.disabled = True
+    logger.disabled = True
 
     today = datetime.datetime.today()
 
-    logFile = logging.FileHandler('log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
+    timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
 
-    logger.addHandler(logFile)
+    #print(timer.timeit(300))
 
-    #formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    if not logger.disabled:
 
-    #hdlr.setFormatter(formatter)
+        logFile = logging.FileHandler('SimulatorLogs/log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
 
-    #logger.setLevel(logging.WARNING)
+        logger.addHandler(logFile)
 
-    #runGame()
+    numberOfRepetitions = 300
 
-    timer = timeit.Timer("runGame(True)", setup="from __main__ import runGame")
+    #print(timer.timeit(1))
+    speedResults = timer.repeat(numberOfRepetitions, 1)
 
-    print(timer.timeit(5))
+    if os.path.isfile("SimulatorLogs/SpeedResults.txt"):
 
-    #print(min(timer.repeat(10, 30)))
+        with open("SimulatorLogs/SpeedResults.txt", "a") as text_file:
+            text_file.write("\n{0} >> Best Case: {1}s, Worst Case: {2}s, Average: {3}s".format(
+                today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
+                round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
+    else:
+
+        with open("SimulatorLogs/SpeedResults.txt", "w") as text_file:
+            text_file.write("{0} >> Best Case: {1}s, Worst Case: {2}s, Average: {3}s".format(
+                today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
+                round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
