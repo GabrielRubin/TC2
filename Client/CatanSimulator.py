@@ -118,6 +118,7 @@ if __name__ == '__main__':
 
     import timeit
     import os.path
+    import socket
 
     logger = logging.getLogger()
 
@@ -143,12 +144,14 @@ if __name__ == '__main__':
     if os.path.isfile("SimulatorLogs/SpeedResults.txt"):
 
         with open("SimulatorLogs/SpeedResults.txt", "a") as text_file:
-            text_file.write("\n{0} >> Best Case: {1}s, Worst Case: {2}s, Average: {3}s".format(
+            text_file.write("\n{0} - {1} >> Best Case: {2}s, Worst Case: {3}s, Average: {4}s".format(
+                socket.gethostname(),
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
     else:
 
         with open("SimulatorLogs/SpeedResults.txt", "w") as text_file:
-            text_file.write("{0} >> Best Case: {1}s, Worst Case: {2}s, Average: {3}s".format(
+            text_file.write("{0} {1} >> Best Case: {2}s, Worst Case: {3}s, Average: {4}s".format(
+                socket.gethostname(),
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
