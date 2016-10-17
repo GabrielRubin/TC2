@@ -3,24 +3,25 @@ import random
 import logging
 import math
 import copy
-import time
+import datetime
 
 class AgentAlphabeta(AgentRandom):
 
-    def GetPossibleActions(self, game, player = None, gameState = None):
+    def __init__(self, name, seatNumber):
 
-        if player is None:
-            player = self
+        super(AgentAlphabeta, self).__init__(name, seatNumber)
 
-        if gameState is None:
-            gameState = game.gameState
+        self.agentName = "ALPHA-BETA"
 
-        if   gameState.currState == 'START1A':
+    @staticmethod
+    def GetPossibleActions(gameState, player):
+
+        if gameState.currState == 'START1A':
 
             if player.firstSettlementBuild:
                 return None
 
-            possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
+            possibleSettlements = gameState.GetPossibleSettlements(player, True)
 
             def RateNode(node, uniqueness):
 
@@ -30,7 +31,7 @@ class AgentAlphabeta(AgentRandom):
                 if len(possibleResources) < 2:
                     return False
 
-                seen   = []
+                seen = []
                 unique = 0
 
                 for i in range(0, len(possibleResources)):
@@ -46,7 +47,7 @@ class AgentAlphabeta(AgentRandom):
 
             for i in range(0, 3):
 
-                goodNodes = [ setNode for setNode in possibleSettlements if RateNode(setNode, 3 - i) ]
+                goodNodes = [setNode for setNode in possibleSettlements if RateNode(setNode, 3 - i)]
 
                 if len(goodNodes) > 0:
                     break
@@ -59,7 +60,7 @@ class AgentAlphabeta(AgentRandom):
             if player.firstRoadBuild:
                 return None
 
-            possibleRoads = game.GetPossibleRoads(gameState, player, True)
+            possibleRoads = gameState.GetPossibleRoads(player, True)
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
@@ -68,7 +69,7 @@ class AgentAlphabeta(AgentRandom):
             if player.secondSettlementBuild:
                 return None
 
-            possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
+            possibleSettlements = gameState.GetPossibleSettlements(player, True)
 
             def RateNode(node, ownedResources, uniqueness):
 
@@ -95,7 +96,7 @@ class AgentAlphabeta(AgentRandom):
 
             for i in range(0, 3):
 
-                goodNodes = [ setNode for setNode in possibleSettlements if RateNode(setNode, player.resources, 3 - i) ]
+                goodNodes = [setNode for setNode in possibleSettlements if RateNode(setNode, player.resources, 3 - i)]
 
                 if len(goodNodes) > 0:
                     break
@@ -108,92 +109,135 @@ class AgentAlphabeta(AgentRandom):
             if player.secondRoadBuild:
                 return None
 
-            possibleRoads = game.GetPossibleRoads(gameState, player, True)
+            possibleRoads = gameState.GetPossibleRoads(player, True)
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
                     for roadEdge in possibleRoads]
 
         elif gameState.currState == 'PLAY':
 
-            # FIXME: TRYING TO USE KNIGHT 2 TIMES!!! WHAT??? (fixed?)
-
             if not player.rolledTheDices and \
-               not player.playedDevCard and \
+                    not player.playedDevCard and \
                     player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
                             player.developmentCards[KNIGHT_CARD_INDEX] > 0:
-
-                return [ UseKnightsCardAction( player.seatNumber, None, None ) ]
+                return [UseKnightsCardAction(player.seatNumber, None, None)]
 
             if not player.rolledTheDices:
-
-                return [ RollDicesAction( player.seatNumber ) ]
+                return [RollDicesAction(player.seatNumber)]
 
         elif gameState.currState == 'PLAY1':
 
-            possibleActions     = [[], [], [], [], [], [], []]
+            actions = ['buildRoad', 'buildSettlement', 'buildCity',
+                       'buyDevCard', 'useDevCard']
 
-            possibleRoads       = game.GetPossibleRoads(gameState, player)        # 0 - possibleRoads
+            possibleActions = []
 
-            possibleSettlements = game.GetPossibleSettlements(gameState, player)  # 1 - possibleSettlements
+            if player.CanAfford(BuildRoadAction.cost) and \
+                            player.HavePiece(g_pieces.index('ROADS')) > 0:
+                possibleActions.append(actions[0])
 
-            possibleCities      = game.GetPossibleCities(gameState, player)       # 2 - possibleCities
+            if player.CanAfford(BuildSettlementAction.cost) and \
+                            player.HavePiece(g_pieces.index('SETTLEMENTS')) > 0:
+                possibleActions.append(actions[1])
 
-            canBuyADevCard      = game.CanBuyADevCard(gameState, player)          # 3 - buyDevCard
+            if player.CanAfford(BuildCityAction.cost) and \
+                            player.HavePiece(g_pieces.index('CITIES')) > 0 and \
+                            len(player.settlements) > 0:
+                possibleActions.append(actions[2])
 
-            possibleCardsToUse  = []                                              # 4 - useDevCard
+            if gameState.CanBuyADevCard(player) and not player.biggestArmy:
+                possibleActions.append(actions[3])
 
-            bankTrade           = player.GetPossibleBankTrades(game, player)      # 5 - bankTrade
+            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
+                possibleActions.append(actions[4])
 
-            if not player.playedDevCard:
+            if len(possibleActions) == 0:
 
-                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-                    possibleCardsToUse += player.GetMonopolyResource(player)
+                possibleBankTrades = []
 
-                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-                    possibleCardsToUse += player.GetYearOfPlentyResource(player)
+                if random.random() >= 0.5:
+                    possibleBankTrades = player.GetPossibleBankTrades(gameState, player)
 
-                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX]:
-                    possibleCardsToUse += [ UseFreeRoadsCardAction(player.seatNumber, None, None) ]
+                if possibleBankTrades is None or len(possibleBankTrades) > 0:
+                    return [EndTurnAction(player.seatNumber)]
 
-            if len(possibleCardsToUse) > 0:
-                possibleActions.append(possibleCardsToUse)
+            result = []
 
-            if possibleRoads:
-                possibleActions[0] = [BuildRoadAction(player.seatNumber, roadEdge.index,
-                                                        len(player.roads))
-                                            for roadEdge in possibleRoads]
-            if possibleSettlements:
-                possibleActions[1] = [BuildSettlementAction(player.seatNumber, setNode.index,
-                                                             len(player.settlements))
-                                        for setNode in possibleSettlements]
-            if possibleCities:
-                possibleActions[2] = [ BuildCityAction(player.seatNumber, setNode.index,
-                                                        len(player.cities))
-                                            for setNode in possibleCities]
-            if canBuyADevCard:
-                possibleActions[3] = [ BuyDevelopmentCardAction(player.seatNumber) ]
-            possibleActions[4] = possibleCardsToUse
-            possibleActions[5] = bankTrade
-            possibleActions[6] = [ EndTurnAction(player.seatNumber) ]
+            for a in possibleActions:
 
-            return possibleActions
+                if a == 'buildRoad':
+
+                    possibleRoads = gameState.GetPossibleRoads(player)
+
+                    if possibleRoads is not None and len(possibleRoads) > 0:
+                        result += [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
+                                   for roadEdge in possibleRoads]
+
+                elif a == 'buildSettlement':
+
+                    possibleSettlements = gameState.GetPossibleSettlements(player)
+
+                    if possibleSettlements is not None and len(possibleSettlements) > 0:
+                        result += [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
+                                   for setNode in possibleSettlements]
+
+                elif a == 'buildCity':
+
+                    possibleCities = gameState.GetPossibleCities(player)
+
+                    if possibleCities is not None and len(possibleCities) > 0:
+                        result += [BuildCityAction(player.seatNumber, setNode.index, len(player.cities))
+                                   for setNode in possibleCities]
+
+                elif a == 'buyDevCard':
+
+                    result += [BuyDevelopmentCardAction(player.seatNumber)]
+
+                elif a == 'useDevCard':
+
+                    possibleCardsToUse = []
+
+                    if not player.playedDevCard:
+
+                        if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
+                                player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                            possibleCardsToUse += player.GetMonopolyResource(player)
+
+                        if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
+                                player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                            possibleCardsToUse += player.GetYearOfPlentyResource(player)
+
+                        if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
+                                player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
+                                        player.numberOfPieces[0] > 0:
+                            possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
+
+                    result += possibleCardsToUse
+
+            if len(result) == 0:
+                result += [EndTurnAction(player.seatNumber)]
+
+            return result
 
         elif gameState.currState == 'PLACING_ROBBER':
 
             # Rolled out 7  * or *  Used a knight card
-            return player.ChooseRobberPosition(game, player)
+            return player.ChooseRobberPosition(gameState, player)
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            return [player.ChooseCardsToDiscard(game, player)]
+            return [player.ChooseCardsToDiscard(player)]
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
-            return [player.ChoosePlayerToStealFrom(game)]
+            return [player.ChoosePlayerToStealFrom(gameState)]
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
 
-            possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
+            possibleRoads = gameState.GetPossibleRoads(player, freeRoad=True)
+
+            if possibleRoads is None or len(possibleRoads) <= 0:
+                return [ChangeGameStateAction("PLAY1")]
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index,
                                     len(player.roads))
@@ -201,7 +245,10 @@ class AgentAlphabeta(AgentRandom):
 
         elif gameState.currState == "PLACING_FREE_ROAD2":
 
-            possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
+            possibleRoads = gameState.GetPossibleRoads(player, freeRoad=True)
+
+            if possibleRoads is None or len(possibleRoads) <= 0:
+                return [ChangeGameStateAction("PLAY1")]
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index,
                                     len(player.roads))
@@ -211,225 +258,176 @@ class AgentAlphabeta(AgentRandom):
 
     def DoMove(self, game):
 
-        print("do move! {0}".format(time.clock()))
-
         if game.gameState.currPlayer != self.seatNumber and \
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
         #return self.Max_N(game, [0, 0, 0, 0], -1, 2)[1]
-        return self.Alphabeta(game)[1]
+
+        chosenMove = self.Alphabeta(game)[1]
+
+        print("{0} he chose this> {1}".format(datetime.datetime.utcnow(),
+                                              chosenMove))
+
+        return [chosenMove, EndTurnAction(self.seatNumber)]
 
     # TODO: ALPHABETA
-    def Alphabeta(self, game, depth=5, alpha=float('-inf'), beta=float('inf'), player_turn=True):
+    def Alphabeta(self, game, depth=2, alpha=float('-inf'), beta=float('inf'), player_turn=True):
 
         playerNumber = game.gameState.currPlayer
 
         score = self.GetGameStateReward(game.gameState, playerNumber)
 
-        possibleActions = self.GetPossibleActions(game, game.gameState.players[playerNumber])
+        possibleActions = self.GetPossibleActions(game.gameState, game.gameState.players[playerNumber])
 
-        if depth == 5 and possibleActions is not None:
-
+        if depth == 2 and possibleActions is not None:
             if len(possibleActions) == 1:
-
                 return (None, possibleActions[0])
-
-            elif game.gameState.currState == "PLAY1":
-
-                for i in range(0, len(possibleActions)):
-
-                    if possibleActions[i] is not None and len(possibleActions[i]) > 0:
-                        break
-                    if i == 6: # EndTurnAction
-                        return (None, possibleActions[i][0])
 
         #has_available_moves = len(possibleActions) > 0
         someone_wins = (game.gameState.currState == "OVER")
-        max_depth_reached = depth == 0
+        max_depth_reached = depth <= 0
 
         if max_depth_reached or someone_wins: #or not has_available_moves:
             return (score, None)
 
         best = None
 
-        if game.gameState.currState == "PLAY1":
+        if possibleActions is not None and len(possibleActions) > 0:
 
-            if possibleActions is not None and len(possibleActions) > 0:
+            for i in range(0, len(possibleActions)):
 
-                for i in range(0, len(possibleActions)):
+                copyGame = copy.deepcopy(game)
 
-                    if possibleActions[i] is not None:
+                possibleActions[i].ApplyAction(copyGame.gameState)
 
-                        for j in range(0, len(possibleActions[i])):
+                if copyGame.gameState.currPlayer != playerNumber:
+                    currentDepth = depth - 1
+                else:
+                    currentDepth = depth
 
-                            copyGame = copy.deepcopy(game)
+                if player_turn:
 
-                            possibleActions[i][j].ApplyAction(copyGame.gameState)
+                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=False)
+                    value = result[0]
+                    alpha = max(alpha, value)
+                    if alpha >= beta:
+                        break
+                    best = possibleActions[i]
 
-                            if copyGame.gameState.currPlayer != playerNumber:
-                                currentDepth = depth - 1
-                            else:
-                                currentDepth = depth
+                else:
 
-                            if player_turn:
-
-                                result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=False)
-                                value = result[0]
-                                alpha = max(alpha, value)
-                                if alpha >= beta:
-                                    break
-                                best = possibleActions[i][j]
-
-                            else:
-
-                                result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=True)
-                                value = result[0]
-                                beta = min(beta, value)
-                                if beta <= alpha:
-                                    break
-                                best = possibleActions[i][j]
-
-        # FOR SETUP TURNS AND OTHER EVENTS
-        else:
-
-            if possibleActions is not None and len(possibleActions) > 0:
-
-                for i in range(0, len(possibleActions)):
-
-                    copyGame = copy.deepcopy(game)
-
-                    possibleActions[i].ApplyAction(copyGame.gameState)
-
-                    if copyGame.gameState.currPlayer != playerNumber:
-                        currentDepth = depth - 1
-                    else:
-                        currentDepth = depth
-
-                    if player_turn:
-
-                        result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=False)
-                        value = result[0]
-                        alpha = max(alpha, value)
-                        if alpha >= beta:
-                            break
-                        best = possibleActions[i]
-
-                    else:
-
-                        result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=True)
-                        value = result[0]
-                        beta = min(beta, value)
-                        if beta <= alpha:
-                            break
-                        best = possibleActions[i]
+                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=True)
+                    value = result[0]
+                    beta = min(beta, value)
+                    if beta <= alpha:
+                        break
+                    best = possibleActions[i]
 
         return (value, best)
 
-
-    # TODO -> turn this ugly algorithm from BADBADNOTGOOD to 'ok'
-    def Max_N(self, game, values, depth, maxDepth):
-
-        if depth >= maxDepth:
-
-            return ([
-                        self.GetGameStateReward(game.gameState, 0),
-                        self.GetGameStateReward(game.gameState, 1),
-                        self.GetGameStateReward(game.gameState, 2),
-                        self.GetGameStateReward(game.gameState, 3)
-                    ],
-                    None)
-
-        playerNumber = game.gameState.currPlayer
-
-        possibleActions = self.GetPossibleActions(game, game.gameState.players[playerNumber])
-
-        if depth == -1 and possibleActions is not None:
-
-            if len(possibleActions) == 1:
-
-                return (values, possibleActions[0])
-
-            elif game.gameState.currState == "PLAY1":
-
-                for i in range(0, len(possibleActions)):
-
-                    if possibleActions[i] is not None and len(possibleActions[i]) > 0:
-                        break
-                    if i == 6: # EndTurnAction
-                        return (values, possibleActions[i][0])
-
-            depth = 0
-
-        logging.debug("possible actions = {0}".format(possibleActions))
-
-        best = None
-
-        # FOR "PROPER" TURNS
-        if game.gameState.currState == "PLAY1":
-
-            if possibleActions is not None and len(possibleActions) > 0:
-
-                for i in range(0, len(possibleActions)):
-
-                    if possibleActions[i] is not None:
-
-                        for j in range(0, len(possibleActions[i])):
-
-                            copyGame = copy.deepcopy(game)
-
-                            possibleActions[i][j].ApplyAction(copyGame.gameState)
-
-                            if copyGame.gameState.currPlayer != playerNumber:
-                                currentDepth = depth + 1
-                            else:
-                                currentDepth = depth
-
-                            result = self.Max_N(copyGame, list(values), currentDepth, maxDepth)
-
-                            value = result[0][playerNumber]
-
-                            if value > values[playerNumber]:
-
-                                values[playerNumber] = value
-
-                                best = possibleActions[i][j]
-
-                                #print("Turn: best! {0}".format(best))
-
-                                values = result[0]
-
-        # FOR SETUP TURNS AND OTHER EVENTS
-        else:
-
-            if possibleActions is not None and len(possibleActions) > 0:
-
-                for i in range(0, len(possibleActions)):
-
-                    copyGame = copy.deepcopy(game)
-
-                    possibleActions[i].ApplyAction(copyGame.gameState)
-
-                    if copyGame.gameState.currPlayer != playerNumber:
-                        currentDepth = depth + 1
-                    else:
-                        currentDepth = depth
-
-                    result = self.Max_N(copyGame, list(values), currentDepth, maxDepth)
-
-                    value = result[0][playerNumber]
-
-                    if value > values[playerNumber]:
-
-                        values[playerNumber] = value
-
-                        best = possibleActions[i]
-
-                        #print("N-turn: best! {0}".format(best))
-
-                        values = result[0]
-
-        return (values, best)
+    # def Max_N(self, game, values, depth, maxDepth):
+    #
+    #     if depth >= maxDepth:
+    #
+    #         return ([
+    #                     self.GetGameStateReward(game.gameState, 0),
+    #                     self.GetGameStateReward(game.gameState, 1),
+    #                     self.GetGameStateReward(game.gameState, 2),
+    #                     self.GetGameStateReward(game.gameState, 3)
+    #                 ],
+    #                 None)
+    #
+    #     playerNumber = game.gameState.currPlayer
+    #
+    #     possibleActions = self.GetPossibleActions(game, game.gameState.players[playerNumber])
+    #
+    #     if depth == -1 and possibleActions is not None:
+    #
+    #         if len(possibleActions) == 1:
+    #
+    #             return (values, possibleActions[0])
+    #
+    #         elif game.gameState.currState == "PLAY1":
+    #
+    #             for i in range(0, len(possibleActions)):
+    #
+    #                 if possibleActions[i] is not None and len(possibleActions[i]) > 0:
+    #                     break
+    #                 if i == 6: # EndTurnAction
+    #                     return (values, possibleActions[i][0])
+    #
+    #         depth = 0
+    #
+    #     logging.debug("possible actions = {0}".format(possibleActions))
+    #
+    #     best = None
+    #
+    #     # FOR "PROPER" TURNS
+    #     if game.gameState.currState == "PLAY1":
+    #
+    #         if possibleActions is not None and len(possibleActions) > 0:
+    #
+    #             for i in range(0, len(possibleActions)):
+    #
+    #                 if possibleActions[i] is not None:
+    #
+    #                     for j in range(0, len(possibleActions[i])):
+    #
+    #                         copyGame = copy.deepcopy(game)
+    #
+    #                         possibleActions[i][j].ApplyAction(copyGame.gameState)
+    #
+    #                         if copyGame.gameState.currPlayer != playerNumber:
+    #                             currentDepth = depth + 1
+    #                         else:
+    #                             currentDepth = depth
+    #
+    #                         result = self.Max_N(copyGame, list(values), currentDepth, maxDepth)
+    #
+    #                         value = result[0][playerNumber]
+    #
+    #                         if value > values[playerNumber]:
+    #
+    #                             values[playerNumber] = value
+    #
+    #                             best = possibleActions[i][j]
+    #
+    #                             #print("Turn: best! {0}".format(best))
+    #
+    #                             values = result[0]
+    #
+    #     # FOR SETUP TURNS AND OTHER EVENTS
+    #     else:
+    #
+    #         if possibleActions is not None and len(possibleActions) > 0:
+    #
+    #             for i in range(0, len(possibleActions)):
+    #
+    #                 copyGame = copy.deepcopy(game)
+    #
+    #                 possibleActions[i].ApplyAction(copyGame.gameState)
+    #
+    #                 if copyGame.gameState.currPlayer != playerNumber:
+    #                     currentDepth = depth + 1
+    #                 else:
+    #                     currentDepth = depth
+    #
+    #                 result = self.Max_N(copyGame, list(values), currentDepth, maxDepth)
+    #
+    #                 value = result[0][playerNumber]
+    #
+    #                 if value > values[playerNumber]:
+    #
+    #                     values[playerNumber] = value
+    #
+    #                     best = possibleActions[i]
+    #
+    #                     #print("N-turn: best! {0}".format(best))
+    #
+    #                     values = result[0]
+    #
+    #     return (values, best)
 
     def GetGameStateReward(self, gameState, playerNumber):
 

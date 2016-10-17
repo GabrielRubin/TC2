@@ -10,16 +10,22 @@ boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
 
+players = [AgentRandom("P1", 0),
+           AgentRandom("P2", 1),
+           AgentRandom("P3", 2),
+           AgentRandom("P4", 3)]
+
 def runGame(saveLog = False):
 
     game = Game(GameState())
 
-    game.AddPlayer(AgentRandom("P1", 0), 0)
-    game.AddPlayer(AgentRandom("P2", 1), 1)
-    game.AddPlayer(AgentRandom("P3", 2), 2)
-    game.AddPlayer(AgentRandom("P4", 3), 3)
+    for player in players:
 
-    startingPlayer = random.randint(0, 3)
+        game.AddPlayer(player, player.seatNumber)
+
+    game.gameState.players = game.gameState.players[:len(players)]
+
+    startingPlayer = random.randint(0, len(players)-1)
 
     game.gameState.startingPlayer = startingPlayer
     game.gameState.currPlayer     = startingPlayer
@@ -36,6 +42,12 @@ def runGame(saveLog = False):
 
         if agentAction is None:
             print(game.gameState.currState)
+
+        if isinstance(agentAction, list):
+            for action in agentAction:
+                action.ApplyAction(game.gameState)
+
+            continue
 
         agentAction.ApplyAction(game.gameState)
 
@@ -72,9 +84,12 @@ def runGame(saveLog = False):
 
             logging.critical("#########################################################")
 
-            for i in range(0, 4):
+            for i in range(0, len(game.gameState.players)):
 
                 logging.critical("Player {0} stats:".format(game.gameState.players[i].name))
+
+                logging.critical("Player {0} is a {1} agent".format(game.gameState.players[i].name,
+                                                                    game.gameState.players[i].agentName))
 
                 logging.critical("his resources are: "
                               "\n POINTS       = {0} "

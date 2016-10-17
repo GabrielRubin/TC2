@@ -3,7 +3,7 @@ from CatanAction import *
 import logging
 import math
 
-class Player:
+class Player(object):
 
     def __init__(self, name, seatNumber):
 
@@ -29,6 +29,8 @@ class Player:
 
         self.rolledTheDices        = False
         self.placedRobber          = False
+
+        self.agentName = "RANDOM"
 
     def GetVictoryPoints(self):
 

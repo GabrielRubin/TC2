@@ -25,6 +25,12 @@ class MCTSNode:
 
 class AgentMCTS(AgentRandom):
 
+    def __init__(self, name, seatNumber):
+
+        super(AgentMCTS, self).__init__(name, seatNumber)
+
+        self.agentName = "MONTE CARLO TREE SEARCH"
+
     def DoMove(self, game):
 
         return self.MonteCarloTreeSearch(copy.deepcopy(game.gameState),

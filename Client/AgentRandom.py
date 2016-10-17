@@ -5,6 +5,12 @@ import math
 
 class AgentRandom(Player):
 
+    def __init__(self, name, seatNumber):
+
+        super(AgentRandom, self).__init__(name, seatNumber)
+
+        self.agentName = "RANDOM"
+
     def GetPossibleActions(self, gameState, player = None):
 
         if player is None:
