@@ -21,7 +21,9 @@ def runGame(saveLog = False):
 
     for player in players:
 
-        game.AddPlayer(player, player.seatNumber)
+        copyPlayer = copy.deepcopy(player)
+
+        game.AddPlayer(copyPlayer, copyPlayer.seatNumber)
 
     game.gameState.players = game.gameState.players[:len(players)]
 
