@@ -5,22 +5,17 @@ import math
 
 class AgentRandom(Player):
 
-    def GetPossibleActions(self, game, player = None, gameState = None):
+    def GetPossibleActions(self, gameState, player = None):
 
         if player is None:
             player = self
-
-        if gameState is None:
-            gameState = game.gameState
 
         if   gameState.currState == 'START1A':
 
             if player.firstSettlementBuild:
                 return None
 
-            player.firstSettlementBuild = True
-
-            possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
+            possibleSettlements = gameState.GetPossibleSettlements(player, True)
 
             def RateNode(node, uniqueness):
 
@@ -59,9 +54,7 @@ class AgentRandom(Player):
             if player.firstRoadBuild:
                 return None
 
-            player.firstRoadBuild = True
-
-            possibleRoads = game.GetPossibleRoads(gameState, player, True)
+            possibleRoads = gameState.GetPossibleRoads(player, True)
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
@@ -70,9 +63,7 @@ class AgentRandom(Player):
             if player.secondSettlementBuild:
                 return None
 
-            player.secondSettlementBuild = True
-
-            possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
+            possibleSettlements = gameState.GetPossibleSettlements(player, True)
 
             def RateNode(node, ownedResources, uniqueness):
 
@@ -112,9 +103,7 @@ class AgentRandom(Player):
             if player.secondRoadBuild:
                 return None
 
-            player.secondRoadBuild = True
-
-            possibleRoads = game.GetPossibleRoads(gameState, player, True)
+            possibleRoads = gameState.GetPossibleRoads(player, True)
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
                     for roadEdge in possibleRoads]
@@ -157,7 +146,7 @@ class AgentRandom(Player):
 
                 possibleActions.append(actions[2])
 
-            if game.CanBuyADevCard(gameState, player) and not player.biggestArmy:
+            if gameState.CanBuyADevCard(player) and not player.biggestArmy:
                 possibleActions.append(actions[3])
 
             if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
@@ -166,7 +155,7 @@ class AgentRandom(Player):
             if len(possibleActions) == 0:
 
                 if random.random() >= 0.5:
-                    return player.GetPossibleBankTrades(game, player)
+                    return player.GetPossibleBankTrades(gameState, player)
                 else:
                     return None
 
@@ -174,7 +163,7 @@ class AgentRandom(Player):
 
             if chosenAction == 'buildRoad':
 
-                possibleRoads = game.GetPossibleRoads(gameState, player)
+                possibleRoads = gameState.GetPossibleRoads(player)
 
                 if possibleRoads is not None and len(possibleRoads) > 0:
 
@@ -183,7 +172,7 @@ class AgentRandom(Player):
 
             elif chosenAction == 'buildSettlement':
 
-                possibleSettlements = game.GetPossibleSettlements(gameState, player)
+                possibleSettlements = gameState.GetPossibleSettlements(player)
 
                 if possibleSettlements is not None and len(possibleSettlements) > 0:
 
@@ -192,7 +181,7 @@ class AgentRandom(Player):
 
             elif chosenAction == 'buildCity':
 
-                possibleCities      = game.GetPossibleCities(gameState, player)
+                possibleCities = gameState.GetPossibleCities(player)
 
                 if possibleCities is not None and len(possibleCities) > 0:
 
@@ -227,19 +216,19 @@ class AgentRandom(Player):
         elif gameState.currState == 'PLACING_ROBBER':
 
             # Rolled out 7  * or *  Used a knight card
-            return player.ChooseRobberPosition(game, player)
+            return player.ChooseRobberPosition(gameState, player)
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            return [player.ChooseCardsToDiscard(game, player)]
+            return [player.ChooseCardsToDiscard(player)]
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
-            return [player.ChoosePlayerToStealFrom(game)]
+            return [player.ChoosePlayerToStealFrom(gameState)]
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
 
-            possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
+            possibleRoads = gameState.GetPossibleRoads(player, freeRoad=True)
 
             if possibleRoads is None or len(possibleRoads) <= 0:
                 return [ ChangeGameStateAction("PLAY1") ]
@@ -250,7 +239,7 @@ class AgentRandom(Player):
 
         elif gameState.currState == "PLACING_FREE_ROAD2":
 
-            possibleRoads = game.GetPossibleRoads(gameState, player, freeRoad=True)
+            possibleRoads = gameState.GetPossibleRoads(player, freeRoad=True)
 
             if possibleRoads is None or len(possibleRoads) <= 0:
                 return [ ChangeGameStateAction("PLAY1") ]
@@ -267,7 +256,7 @@ class AgentRandom(Player):
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
-        possibleActions = self.GetPossibleActions(game)
+        possibleActions = self.GetPossibleActions(game.gameState)
 
         logging.debug("possible actions = {0}".format(possibleActions))
 
@@ -280,10 +269,12 @@ class AgentRandom(Player):
 
         if possibleActions is not None and len(possibleActions) > 0:
             return random.choice(possibleActions)
+        elif possibleActions is None:
+            print("NONE!!!")
 
         return None
 
-    def ChooseCardsToDiscard(self, game, player = None):
+    def ChooseCardsToDiscard(self, player = None):
 
         if player is None:
             player = self
@@ -313,31 +304,31 @@ class AgentRandom(Player):
                                                           selectedResources.count(4),
                                                           selectedResources.count(5)])
 
-    def ChooseRobberPosition(self, game, player = None):
+    def ChooseRobberPosition(self, gameState, player = None):
 
-        possiblePositions = game.gameState.possibleRobberPos + [game.gameState.robberPos]
+        possiblePositions = gameState.possibleRobberPos + [gameState.robberPos]
 
         return [PlaceRobberAction(player.seatNumber, position)
                 for position in possiblePositions]
 
-    def ChoosePlayerToStealFrom(self, game, player = None):
+    def ChoosePlayerToStealFrom(self, gameState, player = None):
 
         if player is None:
             player = self
 
-        possiblePlayers = game.gameState.GetPossiblePlayersToSteal(self.seatNumber)
+        possiblePlayers = gameState.GetPossiblePlayersToSteal(player.seatNumber)
 
         if len(possiblePlayers) > 0:
             return ChoosePlayerToStealFromAction(player.seatNumber, random.choice(possiblePlayers))
 
         return None
 
-    def GetPossibleBankTrades(self, game, player = None):
+    def GetPossibleBankTrades(self, gameState, player = None):
 
         if player is None:
             player = self
 
-        availablePorts = self.GetPorts(game)
+        availablePorts = self.GetPorts(gameState)
 
         if availablePorts[-1]:
             minTradeRate = 3

@@ -3,6 +3,7 @@ import logging
 import pickle
 import datetime
 import GameStateViewer
+from AgentMCTS import AgentMCTS
 
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
@@ -122,7 +123,7 @@ if __name__ == '__main__':
 
     logger = logging.getLogger()
 
-    logger.disabled = True
+    #logger.disabled = True
 
     today = datetime.datetime.today()
 

@@ -149,19 +149,19 @@ class Player:
 
         return False
 
-    def GetPorts(self, game):
+    def GetPorts(self, gameState):
 
         availablePorts = [ False for i in g_portType ]
 
         for settlementIndex in self.settlements:
 
-            portType = game.gameState.boardNodes[settlementIndex].portType
+            portType = gameState.boardNodes[settlementIndex].portType
             if portType is not None:
                 availablePorts[g_portType.index(portType)] = True
 
         for cityIndex in self.cities:
 
-            portType = game.gameState.boardNodes[cityIndex].portType
+            portType = gameState.boardNodes[cityIndex].portType
             if portType is not None:
                 availablePorts[g_portType.index(portType)] = True
 

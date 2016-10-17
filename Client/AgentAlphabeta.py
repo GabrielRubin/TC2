@@ -20,8 +20,6 @@ class AgentAlphabeta(AgentRandom):
             if player.firstSettlementBuild:
                 return None
 
-            player.firstSettlementBuild = True
-
             possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
 
             def RateNode(node, uniqueness):
@@ -61,8 +59,6 @@ class AgentAlphabeta(AgentRandom):
             if player.firstRoadBuild:
                 return None
 
-            player.firstRoadBuild = True
-
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
@@ -71,8 +67,6 @@ class AgentAlphabeta(AgentRandom):
 
             if player.secondSettlementBuild:
                 return None
-
-            player.secondSettlementBuild = True
 
             possibleSettlements = game.GetPossibleSettlements(gameState, player, True)
 
@@ -113,8 +107,6 @@ class AgentAlphabeta(AgentRandom):
 
             if player.secondRoadBuild:
                 return None
-
-            player.secondRoadBuild = True
 
             possibleRoads = game.GetPossibleRoads(gameState, player, True)
 

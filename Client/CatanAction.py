@@ -107,6 +107,8 @@ class BuildRoadAction(BuildAction):
 
         if gameState.currState == "START1B":
 
+            gameState.players[gameState.currPlayer].firstRoadBuild = True
+
             nextPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
             if nextPlayer == gameState.startingPlayer:
@@ -117,6 +119,8 @@ class BuildRoadAction(BuildAction):
                 gameState.currState = "START1A"
 
         elif gameState.currState == "START2B":
+
+            gameState.players[gameState.currPlayer].secondRoadBuild = True
 
             if gameState.currPlayer == gameState.startingPlayer:
 
@@ -161,9 +165,14 @@ class BuildSettlementAction(BuildAction):
             gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
+
+            gameState.players[gameState.currPlayer].firstSettlementBuild = True
+
             gameState.currState = "START1B"
 
         elif gameState.currState == "START2A":
+
+            gameState.players[gameState.currPlayer].secondSettlementBuild = True
 
             gameState.players[self.playerNumber].GetStartingResources(gameState)
 

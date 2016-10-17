@@ -48,124 +48,6 @@ class Game:
         #for nodeIndex, node in self.gameState.boardNodes.items():
         #    logging.debug("Node id = {0}, Port Type = {1}".format(hex(nodeIndex), node.portType))
 
-    def CanBuildRoad(self, gameState, player, edge, roadIndex, setUpPhase = False):
-
-        # check if there is a road in this edge
-
-        if edge.construction is not None:
-
-            return False
-
-        # check for near settlements
-
-        for nodeIndex in edge.adjacentNodes:
-
-            if setUpPhase:
-                # when the game is on setUpPhase, we can only build roads near our recently built settlement:
-                if gameState.boardNodes[nodeIndex].construction is not None:
-
-                    if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber and \
-                       gameState.boardNodes[nodeIndex].construction.index == roadIndex:
-                        return True
-                    else:
-                        return False
-
-                return False
-
-            else:
-                # normal rules apply otherwise: our roads can be constructed near our settlements
-                if gameState.boardNodes[nodeIndex].construction is not None:
-                    if gameState.boardNodes[nodeIndex].construction.owner == player.seatNumber:
-                        return True
-                    else:
-                        return False
-
-        # if there are no settlements or cities that we own near here, check for other roads...
-        for edgeIndex in edge.adjacentEdges:
-
-            edge = gameState.boardEdges[edgeIndex]
-
-            if edge.construction is not None:
-
-                if edge.construction.owner == player.seatNumber:
-                    return True
-                else:
-                    return False
-
-        return False
-
-    def CanBuildSettlement(self, gameState, player, node, setUpPhase = False):
-
-        #step 1: check if someone already build a settlement or city in this node
-
-        if node.construction is not None:
-
-            return False
-
-        #step 2: check if node respects piece connectivity, if not in setUpPhase
-        if not setUpPhase:
-
-            foundConnection = False
-
-            for edgeIndex in node.adjacentEdges:
-
-                edge = gameState.boardEdges[edgeIndex]
-
-                if edge.construction is not None and edge.construction.owner == player.seatNumber:
-                    foundConnection = True
-                    break
-
-            if not foundConnection:
-                return False
-
-        #step 3: check if node respects the distance rule
-        for nodeIndex in node.adjacentNodes:
-
-            if gameState.boardNodes[nodeIndex].construction is not None:
-                return False
-
-        return True
-
-    def CanBuyADevCard(self, gameState, player):
-
-        #return gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost)
-
-        if sum(gameState.developmentCardsDeck) > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
-            return True
-        else:
-            return False
-
-    def GetPossibleRoads(self, gameState, player, setUpPhase = False, freeRoad = False):
-
-        if not setUpPhase and not freeRoad and\
-                not player.CanAfford(BuildRoadAction.cost) \
-                or not player.HavePiece(g_pieces.index('ROADS')):
-
-            return None
-
-        return [edge for edge in
-                gameState.constructableEdges if
-                self.CanBuildRoad(gameState, player, edge, len(player.roads), setUpPhase)]
-
-    def GetPossibleSettlements(self, gameState, player, setUpPhase = False):
-
-        if not setUpPhase and \
-                not player.CanAfford(BuildSettlementAction.cost) \
-                or not player.HavePiece(g_pieces.index('SETTLEMENTS')):
-            return None
-
-        return [node for node in
-                gameState.constructableNodes if
-                self.CanBuildSettlement(gameState, player, node, setUpPhase)]
-
-    def GetPossibleCities(self, gameState, player):
-
-        if not player.CanAfford(BuildCityAction.cost) \
-                or not player.HavePiece(g_pieces.index('CITIES')):
-            return None
-
-        return [gameState.boardNodes[settlement] for settlement in player.settlements]
-
     def GetNextGameState(self, action):
 
         gameState = copy.deepcopy(self.gameState)
@@ -205,6 +87,128 @@ class GameState:
         self.winner = -1
 
         self.checkLongestRoad = False
+
+    def CanBuildRoad(self, player, edge, roadIndex, setUpPhase = False):
+
+        # check if there is a road in this edge
+
+        if edge.construction is not None:
+
+            return False
+
+        # check for near settlements
+
+        for nodeIndex in edge.adjacentNodes:
+
+            if setUpPhase:
+                # when the game is on setUpPhase, we can only build roads near our recently built settlement:
+                if self.boardNodes[nodeIndex].construction is not None:
+
+                    if self.boardNodes[nodeIndex].construction.owner == player.seatNumber and \
+                                    self.boardNodes[nodeIndex].construction.index == roadIndex:
+                        return True
+                    else:
+                        return False
+
+                return False
+
+            else:
+                # normal rules apply otherwise: our roads can be constructed near our settlements
+                if self.boardNodes[nodeIndex].construction is not None:
+                    if self.boardNodes[nodeIndex].construction.owner == player.seatNumber:
+                        return True
+                    else:
+                        return False
+
+        # if there are no settlements or cities that we own near here, check for other roads...
+        for edgeIndex in edge.adjacentEdges:
+
+            edge = self.boardEdges[edgeIndex]
+
+            if edge.construction is not None:
+
+                if edge.construction.owner == player.seatNumber:
+                    return True
+                else:
+                    return False
+
+        return False
+
+    def CanBuildSettlement(self, player, node, setUpPhase = False):
+
+        #step 1: check if someone already build a settlement or city in this node
+
+        if node.construction is not None:
+
+            return False
+
+        #step 2: check if node respects piece connectivity, if not in setUpPhase
+        if not setUpPhase:
+
+            foundConnection = False
+
+            for edgeIndex in node.adjacentEdges:
+
+                edge = self.boardEdges[edgeIndex]
+
+                if edge.construction is not None and edge.construction.owner == player.seatNumber:
+                    foundConnection = True
+                    break
+
+            if not foundConnection:
+                return False
+
+        #step 3: check if node respects the distance rule
+        for nodeIndex in node.adjacentNodes:
+
+            if self.boardNodes[nodeIndex].construction is not None:
+                return False
+
+        return True
+
+    def CanBuyADevCard(self, player):
+
+        #return gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost)
+
+        if sum(self.developmentCardsDeck) > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
+            return True
+        else:
+            return False
+
+    def GetPossibleRoads(self, player, setUpPhase = False, freeRoad = False):
+
+        if not setUpPhase and not freeRoad and\
+                not player.CanAfford(BuildRoadAction.cost) \
+                or not player.HavePiece(g_pieces.index('ROADS')):
+
+            return None
+
+        return [edge for edge in
+                self.constructableEdges if
+                self.CanBuildRoad(player, edge, len(player.roads), setUpPhase)]
+
+    def GetPossibleSettlements(self, player, setUpPhase = False):
+
+        if not setUpPhase and \
+                not player.CanAfford(BuildSettlementAction.cost) \
+                or not player.HavePiece(g_pieces.index('SETTLEMENTS')):
+            return None
+
+        return [node for node in
+                self.constructableNodes if
+                self.CanBuildSettlement(player, node, setUpPhase)]
+
+    def GetPossibleCities(self, player):
+
+        if not player.CanAfford(BuildCityAction.cost) \
+                or not player.HavePiece(g_pieces.index('CITIES')):
+            return None
+
+        return [self.boardNodes[settlement] for settlement in player.settlements]
+
+    def IsTerminal(self):
+
+        return self.currState == "OVER"
 
     def GetPossiblePlayersToSteal(self, playerIndex):
 

@@ -26,3 +26,7 @@
 15/10/2016 19:43 >> Best Case: 0.0134s, Worst Case: 0.1325s, Average: 0.0434s
 15/10/2016 20:17 >> Best Case: 0.0169s, Worst Case: 0.1296s, Average: 0.0429s
 Slint - 15/10/2016 20:32 >> Best Case: 0.0113s, Worst Case: 0.1127s, Average: 0.043s
+Slint - 16/10/2016 19:50 >> Best Case: 0.0144s, Worst Case: 0.107s, Average: 0.0414s
+Slint - 16/10/2016 21:47 >> Best Case: 0.0175s, Worst Case: 0.1151s, Average: 0.0438s
+Slint - 16/10/2016 23:15 >> Best Case: 0.1221s, Worst Case: 0.4039s, Average: 0.1586s
+Slint - 16/10/2016 23:19 >> Best Case: 0.0186s, Worst Case: 0.1795s, Average: 0.0432s
