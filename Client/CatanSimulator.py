@@ -3,6 +3,8 @@ import logging
 import pickle
 import datetime
 import GameStateViewer
+import cProfile
+import pstats
 from AgentMCTS import AgentMCTS
 
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
@@ -48,10 +50,8 @@ def runGame(saveLog = False):
         if isinstance(agentAction, list):
             for action in agentAction:
                 action.ApplyAction(game.gameState)
-
-            continue
-
-        agentAction.ApplyAction(game.gameState)
+        else:
+            agentAction.ApplyAction(game.gameState)
 
         if game.gameState.currState == "OVER":
 
@@ -140,13 +140,21 @@ if __name__ == '__main__':
 
     logger = logging.getLogger()
 
-    #logger.disabled = True
+    logger.disabled = True
 
     today = datetime.datetime.today()
 
     timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
 
     #print(timer.timeit(300))
+
+    # cProfile.run('runGame()', 'simulatorStats')
+    #
+    # p = pstats.Stats('simulatorStats')
+    #
+    # p.sort_stats('cumulative').print_stats(10)
+    #
+    # p.sort_stats('time').print_stats(10)
 
     if not logger.disabled:
 
@@ -156,7 +164,7 @@ if __name__ == '__main__':
 
     numberOfRepetitions = 300
 
-    #print(timer.timeit(1))
+    #print(timer.timeit(300))
     speedResults = timer.repeat(numberOfRepetitions, 1)
 
     if os.path.isfile("SimulatorLogs/SpeedResults.txt"):

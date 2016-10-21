@@ -351,6 +351,7 @@ class AgentRandom(Player):
         candidateForTrade   = []
 
         minResourceAmount = min(player.resources[:-1]) #Don't count the 'UNKNOWN' resource
+
         for i in range(len(possibleTradeAmount)):
             possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
             if player.resources[i] == minResourceAmount:

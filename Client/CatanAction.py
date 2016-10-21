@@ -422,7 +422,12 @@ class PlaceRobberAction(Action):
 
         logging.debug("APPLYING ACTION! \n TYPE = {0}".format(PlaceRobberAction.type))
 
+        pastRobberPos = gameState.robberPos
+
         gameState.players[self.playerNumber].PlaceRobber(gameState, self.robberPos)
+
+        for player in gameState.players:
+            player.UpdateRobDiceProduction(gameState, pastRobberPos=pastRobberPos, newRobberPos=gameState.robberPos)
 
         possiblePlayers = gameState.GetPossiblePlayersToSteal(self.playerNumber)
 

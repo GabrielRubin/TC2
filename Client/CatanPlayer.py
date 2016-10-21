@@ -22,6 +22,19 @@ class Player(object):
         self.playedDevCard    = False
         self.discardCardCount = 0
 
+        self.diceProduction = {
+            2  : [0, 0, 0, 0, 0, 0],
+            3  : [0, 0, 0, 0, 0, 0],
+            4  : [0, 0, 0, 0, 0, 0],
+            5  : [0, 0, 0, 0, 0, 0],
+            6  : [0, 0, 0, 0, 0, 0],
+            8  : [0, 0, 0, 0, 0, 0],
+            9  : [0, 0, 0, 0, 0, 0],
+            10 : [0, 0, 0, 0, 0, 0],
+            11 : [0, 0, 0, 0, 0, 0],
+            12 : [0, 0, 0, 0, 0, 0]
+        }
+
         self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
         self.firstRoadBuild        = False
@@ -76,41 +89,51 @@ class Player(object):
 
     def UpdatePlayerResources(self, gameState, diceNumber = None):
 
-        logging.info("UPDATING PLAYER {0} RESOURCES...".format(self.seatNumber))
+        #logging.info("UPDATING PLAYER {0} RESOURCES...".format(self.seatNumber))
 
         if diceNumber is not None:
 
-            for s in range(0, len(self.settlements)):
+            diceProduction = self.diceProduction[diceNumber]
 
-                adjacentHexes = gameState.boardNodes[self.settlements[s]].adjacentHexes
+            if sum(diceProduction) > 0:
 
-                for h in range(0, len(adjacentHexes)):
+                currResources = self.resources
 
-                    if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
+                self.resources = [x1 + x2 for (x1, x2) in zip(currResources, diceProduction)]
 
-                        if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
-
-                            if gameState.boardHexes[adjacentHexes[h]].production is not None:
-
-                                logging.info("  >> GAIN 1 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
-
-                                self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
-
-            for c in range(0, len(self.cities)):
-
-                adjacentHexes = gameState.boardNodes[self.cities[c]].adjacentHexes
-
-                for h in range(0, len(adjacentHexes)):
-
-                    if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
-
-                        if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
-
-                            if gameState.boardHexes[adjacentHexes[h]].production is not None:
-
-                                logging.info("  >> GAIN 2 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
-
-                                self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 2
+        # if diceNumber is not None:
+        #
+        #     for s in range(0, len(self.settlements)):
+        #
+        #         adjacentHexes = gameState.boardNodes[self.settlements[s]].adjacentHexes
+        #
+        #         for h in range(0, len(adjacentHexes)):
+        #
+        #             if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
+        #
+        #                 if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
+        #
+        #                     if gameState.boardHexes[adjacentHexes[h]].production is not None:
+        #
+        #                         logging.info("  >> GAIN 1 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
+        #
+        #                         self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
+        #
+        #     for c in range(0, len(self.cities)):
+        #
+        #         adjacentHexes = gameState.boardNodes[self.cities[c]].adjacentHexes
+        #
+        #         for h in range(0, len(adjacentHexes)):
+        #
+        #             if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
+        #
+        #                 if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
+        #
+        #                     if gameState.boardHexes[adjacentHexes[h]].production is not None:
+        #
+        #                         logging.info("  >> GAIN 2 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
+        #
+        #                         self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 2
 
 
     def UpdateMayPlayDevCards(self, recentlyCardIndex = None, canUseAll = False):
@@ -266,6 +289,8 @@ class Player(object):
 
             gameState.constructableNodes.remove(gameState.boardNodes[position])
 
+            self.AddToDiceProduction(gameState, position)
+
             self.settlements.append(position)
 
             self.numberOfPieces[1] -= 1
@@ -276,6 +301,8 @@ class Player(object):
                                            self.seatNumber, len(self.cities), position)
 
             gameState.boardNodes[position].construction = newConstruction
+
+            self.AddToDiceProduction(gameState, position)
 
             self.settlements.remove(position)
 
@@ -296,6 +323,51 @@ class Player(object):
         self.placedRobber   = False
 
         self.rolledTheDices = False
+
+    def AddToDiceProduction(self, gameState, position):
+
+        adjacentHexes = gameState.boardNodes[position].adjacentHexes
+
+        for adjacentPos in adjacentHexes:
+
+            if adjacentPos is None or gameState.robberPos == adjacentPos:
+                continue
+
+            production = gameState.boardHexes[adjacentPos].production
+
+            if production is not None:
+
+                number = gameState.boardHexes[adjacentPos].number
+
+                if number is not None and number > 1:
+                    self.diceProduction[number][g_resources.index(production)] += 1
+
+
+
+    def UpdateRobDiceProduction(self, gameState, pastRobberPos, newRobberPos):
+
+        def UpdateDiceProduction(position):
+            production = gameState.boardHexes[position].production
+
+            if production is not None:
+
+                for nodePos in gameState.boardHexes[position].adjacentNodes:
+
+                    construction = gameState.boardNodes[nodePos].construction
+
+                    if construction is not None and construction.owner == self.seatNumber:
+
+                        diceNumber = gameState.boardHexes[position].number
+
+                        if construction.type == 'SETTLEMENT':
+                            self.diceProduction[diceNumber][g_resources.index(production)] += 1
+                        else:
+                            self.diceProduction[diceNumber][g_resources.index(production)] += 2
+
+        if pastRobberPos is not None:
+            UpdateDiceProduction(pastRobberPos)
+        if newRobberPos is not None:
+            UpdateDiceProduction(newRobberPos)
 
     def CountRoads(self, gameState):
 
