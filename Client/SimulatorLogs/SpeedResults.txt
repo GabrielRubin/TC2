@@ -50,3 +50,17 @@ Slint - 20/10/2016 23:57 >> Best Case: 0.0127s, Worst Case: 0.0935s, Average: 0.
 Slint - 20/10/2016 23:58 >> Best Case: 0.0134s, Worst Case: 0.1121s, Average: 0.0316s
 Slint - 20/10/2016 23:58 >> Best Case: 0.0142s, Worst Case: 0.0977s, Average: 0.0355s
 Slint - 21/10/2016 00:27 >> Best Case: 0.0142s, Worst Case: 0.1078s, Average: 0.035s
+Slint - 21/10/2016 00:52 >> Best Case: 0.0139s, Worst Case: 0.1059s, Average: 0.0324s
+Slint - 21/10/2016 00:53 >> Best Case: 0.0143s, Worst Case: 0.106s, Average: 0.0324s
+Slint - 21/10/2016 01:01 >> Best Case: 0.0123s, Worst Case: 0.0562s, Average: 0.0264s
+Slint - 21/10/2016 01:02 >> Best Case: 0.0128s, Worst Case: 0.0465s, Average: 0.025s
+Slint - 21/10/2016 01:15 >> Best Case: 0.0116s, Worst Case: 0.0275s, Average: 0.0194s
+Slint - 21/10/2016 01:16 >> Best Case: 0.0129s, Worst Case: 0.03s, Average: 0.0194s
+Slint - 21/10/2016 01:59 >> Best Case: 0.0127s, Worst Case: 0.0298s, Average: 0.0199s
+Slint - 21/10/2016 01:59 >> Best Case: 0.0129s, Worst Case: 0.0287s, Average: 0.02s
+Slint - 21/10/2016 02:33 >> Best Case: 0.013s, Worst Case: 0.0321s, Average: 0.0194s
+Slint - 21/10/2016 22:25 >> Best Case: 0.0123s, Worst Case: 0.0334s, Average: 0.0196s
+Slint - 22/10/2016 20:30 >> Best Case: 0.0238s, Worst Case: 0.0567s, Average: 0.0372s
+Slint - 22/10/2016 20:33 >> Best Case: 0.0236s, Worst Case: 0.0565s, Average: 0.0377s
+Slint - 22/10/2016 21:51 >> Best Case: 0.0245s, Worst Case: 0.1187s, Average: 0.0471s
+Slint - 22/10/2016 21:51 >> Best Case: 0.0195s, Worst Case: 0.1112s, Average: 0.0483s

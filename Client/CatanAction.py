@@ -76,6 +76,10 @@ class BuildAction(Action):
 
         gameState.players[self.playerNumber].Build(gameState, g_constructionTypes[self.pieceId][0], self.position)
 
+        gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+
+        gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+
         if gameState.currState not in freeBuildStates:
             currResources = gameState.players[self.playerNumber].resources
 
@@ -162,7 +166,7 @@ class BuildSettlementAction(BuildAction):
         super(BuildSettlementAction, self).ApplyAction(gameState)
 
         if gameState.checkLongestRoad:
-            gameState.UpdateLongestRoad()
+          gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
 

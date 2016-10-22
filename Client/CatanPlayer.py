@@ -35,6 +35,9 @@ class Player(object):
             12 : [0, 0, 0, 0, 0, 0]
         }
 
+        self.possibleRoads       = [ ]
+        self.possibleSettlements = [ ]
+
         self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
         self.firstRoadBuild        = False
@@ -286,6 +289,12 @@ class Player(object):
                                            self.seatNumber, len(self.settlements), position)
 
             gameState.boardNodes[position].construction = newConstruction
+
+            # print("{0}: remove {1}".format(self.name, hex(position)))
+            #
+            # possible = [hex(i) for i in self.possibleSettlements]
+            #
+            # print("{0}: possibleSettlements = {1}".format(self.name, possible))
 
             gameState.constructableNodes.remove(gameState.boardNodes[position])
 

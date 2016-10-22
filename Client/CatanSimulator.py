@@ -5,6 +5,9 @@ import datetime
 import GameStateViewer
 import cProfile
 import pstats
+import timeit
+import os.path
+import socket
 from AgentMCTS import AgentMCTS
 
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
@@ -17,7 +20,7 @@ players = [AgentRandom("P1", 0),
            AgentRandom("P3", 2),
            AgentRandom("P4", 3)]
 
-def runGame(saveLog = False):
+def RunGame(saveLog = False):
 
     game = Game(GameState())
 
@@ -132,11 +135,21 @@ def runGame(saveLog = False):
 
             break
 
-if __name__ == '__main__':
+def RunProfiler():
 
-    import timeit
-    import os.path
-    import socket
+    logger = logging.getLogger()
+
+    logger.disabled = True
+
+    cProfile.run('RunGame()', 'simulatorStats')
+
+    p = pstats.Stats('simulatorStats')
+
+    p.sort_stats('cumulative').print_stats(10)
+
+    p.sort_stats('time').print_stats(10)
+
+def RunSpeedTest(numberOfRepetitions):
 
     logger = logging.getLogger()
 
@@ -144,27 +157,8 @@ if __name__ == '__main__':
 
     today = datetime.datetime.today()
 
-    timer = timeit.Timer("runGame()", setup="from __main__ import runGame")
+    timer = timeit.Timer("RunGame()", setup="from __main__ import RunGame")
 
-    #print(timer.timeit(300))
-
-    # cProfile.run('runGame()', 'simulatorStats')
-    #
-    # p = pstats.Stats('simulatorStats')
-    #
-    # p.sort_stats('cumulative').print_stats(10)
-    #
-    # p.sort_stats('time').print_stats(10)
-
-    if not logger.disabled:
-
-        logFile = logging.FileHandler('SimulatorLogs/log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
-
-        logger.addHandler(logFile)
-
-    numberOfRepetitions = 300
-
-    #print(timer.timeit(300))
     speedResults = timer.repeat(numberOfRepetitions, 1)
 
     if os.path.isfile("SimulatorLogs/SpeedResults.txt"):
@@ -181,3 +175,33 @@ if __name__ == '__main__':
                 socket.gethostname(),
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
+
+def RunWithLogging(numberOfRepetitions, saveGameStateLogs = False):
+
+    logger = logging.getLogger()
+
+    today = datetime.datetime.today()
+
+    if saveGameStateLogs:
+        timer = timeit.Timer("RunGame(True)", setup="from __main__ import RunGame")
+    else:
+        timer = timeit.Timer("RunGame()", setup="from __main__ import RunGame")
+
+    logFile = logging.FileHandler('SimulatorLogs/log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
+
+    logger.addHandler(logFile)
+
+    print(timer.timeit(numberOfRepetitions))
+
+if __name__ == '__main__':
+
+    RunGame()
+
+    # RUN WITH LOGGING
+    #RunWithLogging(10, saveGameStateLogs=True)
+
+    # SPEED TEST
+    #RunSpeedTest(300)
+
+    # SIMULATOR PROFILER
+    #RunProfiler()

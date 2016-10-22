@@ -295,7 +295,7 @@ def GetGameStateImage(gameState):
         draw.text((0, 2), "Largest Road: {0}".format(gameState.longestRoadPlayer), (0, 0, 0), font=font)
         draw.text((1, 2), "Largest Road: {0}".format(gameState.longestRoadPlayer), (0, 0, 0), font=font)
         draw.text((1, 2), "Largest Road: {0}".format(gameState.longestRoadPlayer), (0, 0, 0), font=font)
-        draw.text((2, 2), "Largest Road: {0}".format(gameState.longestRoadPlayer), (255,255,255), font=font)
+        draw.text((2, 2), "Largest Road: {0}".format(gameState.longestRoadPlayer), playerColor[gameState.longestRoadPlayer], font=font)
 
         mainImg.convert('RGB')
 
