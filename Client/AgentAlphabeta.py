@@ -7,6 +7,8 @@ import datetime
 
 class AgentAlphabeta(AgentRandom):
 
+    numberActions = 1
+
     def __init__(self, name, seatNumber):
 
         super(AgentAlphabeta, self).__init__(name, seatNumber)
@@ -28,7 +30,7 @@ class AgentAlphabeta(AgentRandom):
                 possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.adjacentHexes
                                      if boardHex is not None]
 
-                if len(possibleResources) < 2:
+                if len(possibleResources) < 3:
                     return False
 
                 seen = []
@@ -170,8 +172,13 @@ class AgentAlphabeta(AgentRandom):
                     possibleRoads = gameState.GetPossibleRoads(player)
 
                     if possibleRoads is not None and len(possibleRoads) > 0:
-                        result += [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
-                                   for roadEdge in possibleRoads]
+
+                        pRoads = [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
+                                          for roadEdge in possibleRoads]
+
+                        #result += random.sample(pRoads, len(pRoads)/2)
+
+                        result += pRoads
 
                 elif a == 'buildSettlement':
 
@@ -262,6 +269,8 @@ class AgentAlphabeta(AgentRandom):
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
+        AgentAlphabeta.numberActions = 1
+
         #return self.Max_N(game, [0, 0, 0, 0], -1, 2)[1]
 
         chosenMove = self.Alphabeta(game)[1]
@@ -269,7 +278,7 @@ class AgentAlphabeta(AgentRandom):
         print("{0} he chose this> {1}".format(datetime.datetime.utcnow(),
                                               chosenMove))
 
-        return [chosenMove, EndTurnAction(self.seatNumber)]
+        return chosenMove
 
     # TODO: ALPHABETA
     def Alphabeta(self, game, depth=2, alpha=float('-inf'), beta=float('inf'), player_turn=True):
@@ -295,9 +304,16 @@ class AgentAlphabeta(AgentRandom):
 
         if possibleActions is not None and len(possibleActions) > 0:
 
+            if depth == 2:
+                AgentAlphabeta.numberActions = AgentAlphabeta.numberActions * len(possibleActions)
+                print(AgentAlphabeta.numberActions)
+
             for i in range(0, len(possibleActions)):
 
                 copyGame = copy.deepcopy(game)
+
+                if isinstance(possibleActions[i], RollDicesAction):
+                    print("{0} : EndTurn".format(copyGame.gameState.currPlayer))
 
                 possibleActions[i].ApplyAction(copyGame.gameState)
 
@@ -306,9 +322,15 @@ class AgentAlphabeta(AgentRandom):
                 else:
                     currentDepth = depth
 
+                if isinstance(possibleActions[i], EndTurnAction):
+                    print("EndTurn applied. Depth = {0}, CurrPlayer = {1}".format(depth, copyGame.gameState.currPlayer))
+
                 if player_turn:
 
-                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=False)
+                    if copyGame.gameState.currPlayer != playerNumber:
+                        player_turn = False
+
+                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn)
                     value = result[0]
                     alpha = max(alpha, value)
                     if alpha >= beta:
@@ -317,7 +339,10 @@ class AgentAlphabeta(AgentRandom):
 
                 else:
 
-                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn=True)
+                    if copyGame.gameState.currPlayer != playerNumber:
+                        player_turn = True
+
+                    result = self.Alphabeta(copyGame, currentDepth, alpha, beta, player_turn)
                     value = result[0]
                     beta = min(beta, value)
                     if beta <= alpha:
