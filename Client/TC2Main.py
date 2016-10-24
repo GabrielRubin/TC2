@@ -5,6 +5,7 @@ import argparse
 
 from Client import *
 from AgentRandom import *
+from AgentMCTS import AgentMCTS
 
 AgentTypes = { 'rand' : 'random', 'min' : 'minimax', 'exp' : 'expectimax', 'mcts' : 'monte carlo tree search'}
 
@@ -19,7 +20,7 @@ clientProcess = None
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                    default = 'rand')
+                    default = 'mcts')
 
 parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                     default='TC2_agent')
@@ -45,6 +46,9 @@ args = parser.parse_args()
 
 if args.agentType == 'rand':
     player = AgentRandom(args.nickname, 0)
+
+if args.agentType == 'mcts':
+    player = AgentMCTS(args.nickname, 0)
 
 
 # Change the current directory...
@@ -84,9 +88,9 @@ if not args.noClient:
 os.chdir(mycwd)
 
 if args.logging == 'i':
-    logging.getLogger(__name__).setLevel(logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
 elif args.logging == 'd':
-    logging.getLogger(__name__).setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
 
 #logging.getLogger().setLevel(logging.CRITICAL)
 

@@ -33,12 +33,39 @@ class AgentMCTS(AgentRandom):
 
     def DoMove(self, game):
 
-        return self.MonteCarloTreeSearch(copy.deepcopy(game.gameState),
-                                         timedelta(seconds=5))
+        if game.gameState.currPlayer != self.seatNumber and \
+            game.gameState.currState != "WAITING_FOR_DISCARDS":
+            return None
+
+        if game.gameState.currState == "WAITING_FOR_DISCARDS":
+            return AgentMCTS.ChooseCardsToDiscard(self)
+
+        if (game.gameState.currState == "START1A" and self.firstSettlementBuild) or \
+           (game.gameState.currState == "START1B" and self.firstRoadBuild) or \
+           (game.gameState.currState == "START2A" and self.secondSettlementBuild) or \
+           (game.gameState.currState == "START2B" and self.secondRoadBuild):
+            return None
+
+        state = copy.deepcopy(game.gameState)
+
+        self.PrepareGameStateForSimulation(state)
+
+        return self.MonteCarloTreeSearch(state, timedelta(seconds=5))
 
     def MonteCarloTreeSearch(self, gameState, maxDuration):
 
         rootNode = MCTSNode(gameState, None, [0 for i in range(len(gameState.players))], 0, None, [])
+
+        if rootNode.possibleActions is None:
+            print("MCTS ERROR! POSSIBLE ACTIONS FROM ROOT NODE ARE NONE!!!!")
+            return None
+
+        elif len(rootNode.possibleActions) == 1:
+            return rootNode.possibleActions[0]
+
+        elif len(rootNode.possibleActions) <= 0:
+            print("MCTS ERROR! NO POSSIBLE ACTIONS FROM ROOT NODE!")
+            return None
 
         startTime = datetime.utcnow()
 
@@ -49,6 +76,8 @@ class AgentMCTS(AgentRandom):
             reward      = self.SimulationPolicy(copy.deepcopy(nextNode.gameState))
 
             self.BackUp(nextNode, reward)
+
+            #print("think'n : {0}".format(datetime.utcnow()))
 
         return self.BestChild(rootNode).action
 
@@ -101,6 +130,10 @@ class AgentMCTS(AgentRandom):
             if len(possibleActions) > 1:
                 action = random.choice(possibleActions)
             else:
+
+                if len(possibleActions) == 0:
+                    print(gameState.currState)
+
                 action = possibleActions[0]
 
             action.ApplyAction(gameState)
@@ -121,6 +154,26 @@ class AgentMCTS(AgentRandom):
 
         # TEMP...
         return gameState.players[playerNumber].GetVictoryPoints()
+
+    def PrepareGameStateForSimulation(self, gameState):
+
+        for player in gameState.players:
+
+            if player is None:
+                continue
+
+            quantity = player.resources[g_resources.index('UNKNOWN')]
+
+            if quantity > 0:
+
+                player.resources[g_resources.index('UNKNOWN')] = 0
+
+                resources = [0, 0, 0, 0, 0, 0]
+
+                for i in range(0, quantity):
+                    resources[random.randint(0, 4)] += 1
+
+                player.resources = [x1 + x2 for (x1, x2) in zip(player.resources, resources)]
 
     @staticmethod
     def GetPossibleActions(gameState, player):
@@ -156,13 +209,15 @@ class AgentMCTS(AgentRandom):
 
             for i in range(0, 3):
 
-                goodNodes = [ setNode for setNode in possibleSettlements if RateNode(setNode, 3 - i) ]
+                goodNodes = [ setNode for setNode in possibleSettlements if RateNode(setNode, 2 - i) ]
 
                 if len(goodNodes) > 0:
                     break
 
-            return [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                    for setNode in goodNodes]
+            possible = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
+                        for setNode in goodNodes if setNode is not None]
+
+            return possible
 
         elif gameState.currState == 'START1B':
 
@@ -170,6 +225,8 @@ class AgentMCTS(AgentRandom):
                 return None
 
             possibleRoads = gameState.GetPossibleRoads(player, True)
+
+            #possibleRoads = [gameState.boardEdges[edge] for edge in self.possibleRoads]
 
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
 
@@ -211,7 +268,7 @@ class AgentMCTS(AgentRandom):
                     break
 
             return [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                    for setNode in goodNodes]
+                    for setNode in goodNodes if setNode is not None]
 
         elif gameState.currState == 'START2B':
 
@@ -220,8 +277,14 @@ class AgentMCTS(AgentRandom):
 
             possibleRoads = gameState.GetPossibleRoads(player, True)
 
+            #possibleRoads = self.possibleRoads
+
+            filterRoads = filter(lambda x: x.index in gameState.boardNodes[player.settlements[1]].adjacentEdges, possibleRoads)
+
+            #possibleRoadsFiltered = [gameState.boardEdges[edge] for edge in filterRoads]
+
             return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
-                    for roadEdge in possibleRoads]
+                    for roadEdge in filterRoads]
 
         elif gameState.currState == 'PLAY':
 
@@ -271,7 +334,7 @@ class AgentMCTS(AgentRandom):
 
                 if random.random() >= 0.5:
 
-                    possibleBankTrades = player.GetPossibleBankTrades(gameState, player)
+                    possibleBankTrades = AgentMCTS.GetPossibleBankTrades(gameState, player)
 
                 if possibleBankTrades is None or len(possibleBankTrades) > 0:
                     return [EndTurnAction(player.seatNumber)]
@@ -319,11 +382,11 @@ class AgentMCTS(AgentRandom):
 
                         if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
                                 player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-                            possibleCardsToUse += player.GetMonopolyResource(player)
+                            possibleCardsToUse += AgentMCTS.GetMonopolyResource(gameState, player)
 
                         if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
                                 player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-                            possibleCardsToUse += player.GetYearOfPlentyResource(player)
+                            possibleCardsToUse += AgentMCTS.GetYearOfPlentyResource(player)
 
                         if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
                                 player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
@@ -340,15 +403,15 @@ class AgentMCTS(AgentRandom):
         elif gameState.currState == 'PLACING_ROBBER':
 
             # Rolled out 7  * or *  Used a knight card
-            return player.ChooseRobberPosition(gameState, player)
+            return AgentMCTS.ChooseRobberPosition(gameState, player)
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            return [player.ChooseCardsToDiscard(player)]
+            return [AgentMCTS.ChooseCardsToDiscard(player)]
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
-            return [player.ChoosePlayerToStealFrom(gameState)]
+            return [AgentMCTS.ChoosePlayerToStealFrom(gameState, player)]
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
 
@@ -373,3 +436,170 @@ class AgentMCTS(AgentRandom):
                     for roadEdge in possibleRoads]
 
         return None
+
+    @staticmethod
+    def ChooseCardsToDiscard(player):
+
+        if sum(player.resources) <= 7:
+            return DiscardResourcesAction(player.seatNumber, [0, 0, 0, 0, 0, 0])
+
+        resourcesPopulation = [0 for i in range(0, player.resources[0])] + \
+                              [1 for j in range(0, player.resources[1])] + \
+                              [2 for k in range(0, player.resources[2])] + \
+                              [3 for l in range(0, player.resources[3])] + \
+                              [4 for m in range(0, player.resources[4])] + \
+                              [5 for n in range(0, player.resources[5])]
+
+        discardCardCount = int(math.floor(len(resourcesPopulation) / 2.0))
+
+        if discardCardCount > 0:
+            # assert(player.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
+            player.discardCardCount = 0
+
+        selectedResources = random.sample(resourcesPopulation, discardCardCount)
+
+        return DiscardResourcesAction(player.seatNumber, [selectedResources.count(0),
+                                                          selectedResources.count(1),
+                                                          selectedResources.count(2),
+                                                          selectedResources.count(3),
+                                                          selectedResources.count(4),
+                                                          selectedResources.count(5)])
+
+    @staticmethod
+    def ChooseRobberPosition(gameState, player):
+
+        possiblePositions = gameState.possibleRobberPos + [gameState.robberPos]
+
+        return [PlaceRobberAction(player.seatNumber, position)
+                for position in possiblePositions]
+
+    @staticmethod
+    def ChoosePlayerToStealFrom(gameState, player):
+
+        possiblePlayers = gameState.GetPossiblePlayersToSteal(player.seatNumber)
+
+        if len(possiblePlayers) > 0:
+            return ChoosePlayerToStealFromAction(player.seatNumber, random.choice(possiblePlayers))
+
+        return None
+
+    @staticmethod
+    def GetPossibleBankTrades(gameState, player):
+
+        availablePorts = player.GetPorts(gameState)
+
+        if availablePorts[-1]:
+            minTradeRate = 3
+        else:
+            minTradeRate = 4
+
+        tradeRates = [minTradeRate, minTradeRate, minTradeRate, minTradeRate, minTradeRate]
+
+        for i in range(0, len(tradeRates)):
+            if availablePorts[i]:
+                tradeRates[i] = 2
+
+        possibleTradeAmount = [0, 0, 0, 0, 0]
+        candidateForTrade = []
+
+        minResourceAmount = min(player.resources[:-1])  # Don't count the 'UNKNOWN' resource
+
+        for i in range(len(possibleTradeAmount)):
+            possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
+            if player.resources[i] == minResourceAmount:
+                candidateForTrade.append(i)
+
+        tradeAmount = random.randint(0, sum(possibleTradeAmount))
+
+        if tradeAmount > 0 and len(candidateForTrade) > 0:
+
+            possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
+                                      [1 for j in range(0, possibleTradeAmount[1])] + \
+                                      [2 for k in range(0, possibleTradeAmount[2])] + \
+                                      [3 for l in range(0, possibleTradeAmount[3])] + \
+                                      [4 for m in range(0, possibleTradeAmount[4])]
+
+            # logging.debug("Player {0} is checking if he can trade...\n"
+            #               " He have this resources: {1}\n"
+            #               " And he thinks he can trade these: {2}".format(player.name, player.resources,
+            #                                                               possibleTradeAmount))
+
+            chosenResources = random.sample(possibleTradePopulation, tradeAmount)
+
+            expectedResources = []
+            for i in range(0, tradeAmount):
+                expectedResources.append(random.choice(candidateForTrade))
+
+            # logging.debug("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
+            #     chosenResources, expectedResources, tradeAmount
+            # ))
+
+            give = [chosenResources.count(0) * tradeRates[0], chosenResources.count(1) * tradeRates[1],
+                    chosenResources.count(2) * tradeRates[2], chosenResources.count(3) * tradeRates[3],
+                    chosenResources.count(4) * tradeRates[4]]
+
+            get = [expectedResources.count(0), expectedResources.count(1),
+                   expectedResources.count(2), expectedResources.count(3),
+                   expectedResources.count(4)]
+
+            # logging.debug("Player {0} will trade with the bank!\n"
+            #               " GIVE = {1}\n"
+            #               " GET  = {2}".format(player.name, give, get))
+
+            return [BankTradeOfferAction(player.seatNumber, give, get)]
+
+        return None
+
+    @staticmethod
+    def GetMonopolyResource(game, player):
+
+        candidateResource = []
+
+        minResourceAmount = min(player.resources[:-1])
+
+        for i in range(0, len(player.resources) - 1):
+
+            if player.resources[i] == minResourceAmount:
+                candidateResource.append(i + 1)
+
+        if len(candidateResource) <= 0:
+
+            randomPick = random.choice([1, 2, 3, 4, 5])
+
+            logging.critical("Monopoly pick FAILED!!!! Picking at random: {0}".format(randomPick))
+
+            chosenResource = randomPick
+
+        else:
+
+            chosenResource = random.choice(candidateResource)
+
+        return [UseMonopolyCardAction(player.seatNumber, chosenResource)]
+
+    @staticmethod
+    def GetYearOfPlentyResource(player):
+
+        candidateResource = []
+
+        chosenResources = [0, 0, 0, 0, 0]
+
+        minResourceAmount = min(player.resources[:-1])
+
+        for i in range(0, len(player.resources) - 1):
+
+            if player.resources[i] == minResourceAmount:
+                candidateResource.append(i)
+
+        if len(candidateResource) == 1:
+
+            chosenResources[i] = 2
+
+        else:
+
+            pick1 = random.choice(candidateResource)
+            pick2 = random.choice(candidateResource)
+
+            chosenResources[pick1] += 1
+            chosenResources[pick2] += 1
+
+        return [UseYearOfPlentyCardAction(player.seatNumber, chosenResources)]

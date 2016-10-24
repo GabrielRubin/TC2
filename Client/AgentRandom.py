@@ -53,7 +53,7 @@ class AgentRandom(Player):
                     break
 
             possible = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                        for setNode in possibleSettlements if setNode is not None]
+                        for setNode in goodNodes if setNode is not None]
 
             return possible
 
@@ -106,7 +106,7 @@ class AgentRandom(Player):
                     break
 
             return [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                    for setNode in possibleSettlements if setNode is not None]
+                    for setNode in goodNodes if setNode is not None]
 
         elif gameState.currState == 'START2B':
 

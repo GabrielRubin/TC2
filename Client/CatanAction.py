@@ -68,7 +68,7 @@ class BuildAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = BuildAction")
+        #logging.debug("APPLYING ACTION! \n TYPE = BuildAction")
 
         freeBuildStates = ["START1A", "START1B", "START2A", "START2B",
                            "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
@@ -76,9 +76,9 @@ class BuildAction(Action):
 
         gameState.players[self.playerNumber].Build(gameState, g_constructionTypes[self.pieceId][0], self.position)
 
-        gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+        #gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
 
-        gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+        #gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
 
         if gameState.currState not in freeBuildStates:
             currResources = gameState.players[self.playerNumber].resources
@@ -224,7 +224,7 @@ class RollDicesAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(RollDicesAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(RollDicesAction.type))
 
         gameState.players[self.playerNumber].rolledTheDices = True
 
@@ -273,7 +273,7 @@ class BuyDevelopmentCardAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(BuyDevelopmentCardAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(BuyDevelopmentCardAction.type))
 
         currResources = gameState.players[self.playerNumber].resources
 
@@ -315,7 +315,7 @@ class UseKnightsCardAction(UseDevelopmentCardAction):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseKnightsCardAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseKnightsCardAction.type))
 
         super(UseKnightsCardAction, self).ApplyAction(gameState)
 
@@ -342,7 +342,7 @@ class UseMonopolyCardAction(UseDevelopmentCardAction):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseMonopolyCardAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseMonopolyCardAction.type))
 
         super(UseMonopolyCardAction, self).ApplyAction(gameState)
 
@@ -378,7 +378,7 @@ class UseYearOfPlentyCardAction(UseDevelopmentCardAction):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseYearOfPlentyCardAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseYearOfPlentyCardAction.type))
 
         super(UseYearOfPlentyCardAction, self).ApplyAction(gameState)
 
@@ -403,7 +403,7 @@ class UseFreeRoadsCardAction(UseDevelopmentCardAction):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseFreeRoadsCardAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(UseFreeRoadsCardAction.type))
 
         super(UseFreeRoadsCardAction, self).ApplyAction(gameState)
 
@@ -424,7 +424,7 @@ class PlaceRobberAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(PlaceRobberAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(PlaceRobberAction.type))
 
         pastRobberPos = gameState.robberPos
 
@@ -460,7 +460,7 @@ class EndTurnAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(EndTurnAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(EndTurnAction.type))
 
         gameState.players[self.playerNumber].rolledTheDices = False
         gameState.players[self.playerNumber].placedRobber   = False
@@ -504,7 +504,7 @@ class DiscardResourcesAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(DiscardResourcesAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(DiscardResourcesAction.type))
 
         currResources = gameState.players[self.playerNumber].resources
 
@@ -534,7 +534,7 @@ class ChoosePlayerToStealFromAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(ChoosePlayerToStealFromAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(ChoosePlayerToStealFromAction.type))
 
         targetPlayer = gameState.players[self.targetPlayerNumber]
 
@@ -591,7 +591,7 @@ class BankTradeOfferAction(Action):
 
     def ApplyAction(self, gameState):
 
-        logging.debug("APPLYING ACTION! \n TYPE = {0}".format(BankTradeOfferAction.type))
+        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(BankTradeOfferAction.type))
 
         # ADD THE 'UNKNOWN' RESOURCE TYPE (not present in trade transaction)
         give = self.giveResources + [0]

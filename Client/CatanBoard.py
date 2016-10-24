@@ -1,3 +1,5 @@
+from CatanBoard2 import *
+
 g_boardHexes = \
                     [0x17, 0x39, 0x5b, 0x7d,
 
@@ -132,9 +134,9 @@ class BoardHex:
         self.production = None
         self.number     = 0
 
-        self.adjacentHexes = self.GetAdjacentHexes()
-        self.adjacentNodes = self.GetAdjacentNodes()
-        self.adjacentEdges = self.GetAdjacentEdges()
+        self.adjacentHexes = g_boardHexes2[index][0]
+        self.adjacentNodes = g_boardHexes2[index][1]
+        self.adjacentEdges = g_boardHexes2[index][2]
 
     def SetTerrain(self, terrainId):
 
@@ -185,9 +187,9 @@ class BoardNode:
         self.construction = None
         self.portType     = None
 
-        self.adjacentHexes = self.GetAdjacentHexes()
-        self.adjacentNodes = self.GetAdjacentNodes()
-        self.adjacentEdges = self.GetAdjacentEdges()
+        self.adjacentHexes = g_boardNodes2[index][0]
+        self.adjacentNodes = g_boardNodes2[index][1]
+        self.adjacentEdges = g_boardNodes2[index][2]
 
     def GetAdjacentHexes(self):
 
@@ -254,9 +256,9 @@ class BoardEdge:
         self.index        = index
         self.construction = None
 
-        self.adjacentHexes = self.GetAdjacentHexes()
-        self.adjacentNodes = self.GetAdjacentNodes()
-        self.adjacentEdges = self.GetAdjacentEdges()
+        self.adjacentHexes = g_boardEdges2[index][0]
+        self.adjacentNodes = g_boardEdges2[index][1]
+        self.adjacentEdges = g_boardEdges2[index][2]
 
     def GetAdjacentHexes(self):
 

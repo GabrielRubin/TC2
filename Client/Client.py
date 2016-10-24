@@ -510,7 +510,7 @@ class Client:
 
         elif name == "ChoosePlayerRequestMessage":
 
-            choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game)
+            choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game.gameState, self.player)
 
             self.SendMessage(choosePlayerAction.GetMessage(self.gameName))
 
@@ -518,7 +518,12 @@ class Client:
 
                 choosePlayerAction.ApplyAction(self.debugGame.gameState)
 
+    preGameStates = ['NEW', 'READY']
+
     def RespondToServer(self):
+
+        if self.game.gameState.currState in Client.preGameStates:
+            return
 
         #localActionUpdates = ['BankTradeOffer','DiscardResources',
         #                      'UseKnightsCard','UseMonopolyCard','UseYearOfPlentyCard',

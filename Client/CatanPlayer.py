@@ -85,8 +85,8 @@ class Player(object):
 
                         if gameState.boardHexes[adjacentHexes[h]].production is not None:
 
-                            logging.info("{0} : STARTING RESOURCE >> GAIN 1 {1}".format(
-                                self.name, gameState.boardHexes[adjacentHexes[h]].production))
+                            # logging.info("{0} : STARTING RESOURCE >> GAIN 1 {1}".format(
+                            #     self.name, gameState.boardHexes[adjacentHexes[h]].production))
 
                             self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
 
@@ -272,12 +272,17 @@ class Player(object):
 
         if pieceType == 'ROAD':
 
+            if gameState.currState == "START1B":
+                self.firstRoadBuild  = True
+            elif gameState.currState == "START2B":
+                self.secondRoadBuild = True
+
             newConstruction = Construction(g_constructionTypes[0],
                                            self.seatNumber, len(self.roads), position)
 
             gameState.boardEdges[position].construction = newConstruction
 
-            gameState.constructableEdges.remove(gameState.boardEdges[position])
+            #gameState.constructableEdges.remove(gameState.boardEdges[position])
 
             self.roads.append(position)
 
@@ -285,18 +290,17 @@ class Player(object):
 
         elif pieceType == 'SETTLEMENT':
 
+            if gameState.currState == "START1A":
+                self.firstSettlementBuild  = True
+            elif gameState.currState == "START2A":
+                self.secondSettlementBuild = True
+
             newConstruction = Construction(g_constructionTypes[1],
                                            self.seatNumber, len(self.settlements), position)
 
             gameState.boardNodes[position].construction = newConstruction
 
-            # print("{0}: remove {1}".format(self.name, hex(position)))
-            #
-            # possible = [hex(i) for i in self.possibleSettlements]
-            #
-            # print("{0}: possibleSettlements = {1}".format(self.name, possible))
-
-            gameState.constructableNodes.remove(gameState.boardNodes[position])
+            #gameState.constructableNodes.remove(gameState.boardNodes[position])
 
             self.AddToDiceProduction(gameState, position)
 

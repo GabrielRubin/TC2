@@ -1,5 +1,6 @@
 import random
 from CatanBoard import *
+from CatanBoard2 import *
 from JSettlersMessages import *
 from CatanAction import *
 import copy
@@ -66,7 +67,7 @@ class GameState:
 
         self.constructableNodes = self.GetConstructableNodes()
         self.constructableEdges = self.GetConstructableEdges()
-        self.possibleRobberPos  = self.GetPossibleRobberPositions()
+        self.possibleRobberPos  = g_possibleRobberPos
 
         self.currState        = None
         self.currPlayer       = -1
@@ -93,11 +94,9 @@ class GameState:
         # check if there is a road in this edge
 
         if edge.construction is not None:
-
             return False
 
         # check for near settlements
-
         for nodeIndex in edge.adjacentNodes:
 
             if setUpPhase:
@@ -173,6 +172,69 @@ class GameState:
         else:
             return False
 
+    # ANOTHER METHOD FOR DISCOVERING POSSIBLE ROADS
+    # def UpdatePossibleRoads(self, playerNumber, constructionType, position):
+    #
+    #     if constructionType == 'ROAD':
+    #
+    #         for player in self.players:
+    #
+    #             if position in player.possibleRoads:
+    #                 player.possibleRoads.remove(position)
+    #
+    #             if player.seatNumber == playerNumber:
+    #                 player.possibleRoads += [edge for edge in self.boardEdges[position].adjacentEdges if
+    #                                          self.boardEdges[edge] in self.constructableEdges and edge not in player.possibleRoads ]
+    #
+    #     elif constructionType == 'SETTLEMENT':
+    #
+    #         adjacent = [edge for edge in self.boardNodes[position].adjacentEdges if
+    #                     self.boardEdges[edge] in self.constructableEdges]
+    #
+    #         for player in self.players:
+    #
+    #             if player.seatNumber == playerNumber:
+    #                 player.possibleRoads += filter(lambda x: x not in player.possibleRoads, adjacent)
+    #
+    #             else:
+    #                 for edge in filter(lambda x: x in player.possibleRoads, adjacent):
+    #                     player.possibleRoads.remove(edge)
+
+    # ANOTHER METHOD FOR DISCOVERING POSSIBLE SETTLEMENTS
+    # def UpdatePossibleSettlements(self, playerNumber, constructionType, position):
+    #
+    #     if constructionType == 'ROAD':
+    #
+    #         def isNodeAvailable(tgtNode):
+    #
+    #             if tgtNode.index in self.players[playerNumber].possibleSettlements or \
+    #                 tgtNode not in self.constructableNodes or \
+    #                 tgtNode.construction is not None:
+    #                 return False
+    #
+    #             for adjNode in tgtNode.adjacentNodes:
+    #                 if self.boardNodes[adjNode].construction is not None:
+    #                     return False
+    #
+    #             return True
+    #
+    #         availableAdjacentNodes = [adjacentNode for adjacentNode in self.boardEdges[position].adjacentNodes
+    #                                   if isNodeAvailable(self.boardNodes[adjacentNode])]
+    #
+    #         self.players[playerNumber].possibleSettlements += availableAdjacentNodes
+    #
+    #     elif constructionType == 'SETTLEMENT':
+    #
+    #         adjNodes = self.boardNodes[position].adjacentNodes
+    #
+    #         for player in self.players:
+    #
+    #             if position in player.possibleSettlements:
+    #                 player.possibleSettlements.remove(position)
+    #
+    #             for node in filter(lambda x: x in player.possibleSettlements, adjNodes):
+    #                 player.possibleSettlements.remove(node)
+
     def GetPossibleRoads(self, player, setUpPhase = False, freeRoad = False):
 
         if not setUpPhase and not freeRoad and\
@@ -184,69 +246,6 @@ class GameState:
         return [edge for edge in
                 self.constructableEdges if
                 self.CanBuildRoad(player, edge, len(player.roads), setUpPhase)]
-
-    # ANOTHER METHOD FOR DISCOVERING POSSIBLE ROADS
-    def UpdatePossibleRoads(self, playerNumber, constructionType, position):
-
-        if constructionType == 'ROAD':
-
-            for player in self.players:
-
-                if position in player.possibleRoads:
-                    player.possibleRoads.remove(position)
-
-                if player.seatNumber == playerNumber:
-                    player.possibleRoads += [edge for edge in self.boardEdges[position].adjacentEdges if
-                                             self.boardEdges[edge] in self.constructableEdges and edge not in player.possibleRoads ]
-
-        elif constructionType == 'SETTLEMENT':
-
-            adjacent = [edge for edge in self.boardNodes[position].adjacentEdges if
-                        self.boardEdges[edge] in self.constructableEdges]
-
-            for player in self.players:
-
-                if player.seatNumber == playerNumber:
-                    player.possibleRoads += filter(lambda x: x not in player.possibleRoads, adjacent)
-
-                else:
-                    for edge in filter(lambda x: x in player.possibleRoads, adjacent):
-                        player.possibleRoads.remove(edge)
-
-    # ANOTHER METHOD FOR DISCOVERING POSSIBLE SETTLEMENTS
-    def UpdatePossibleSettlements(self, playerNumber, constructionType, position):
-
-        if constructionType == 'ROAD':
-
-            def isNodeAvailable(tgtNode):
-
-                if tgtNode.index in self.players[playerNumber].possibleSettlements or \
-                    tgtNode not in self.constructableNodes or \
-                    tgtNode.construction is not None:
-                    return False
-
-                for adjNode in tgtNode.adjacentNodes:
-                    if self.boardNodes[adjNode].construction is not None:
-                        return False
-
-                return True
-
-            availableAdjacentNodes = [adjacentNode for adjacentNode in self.boardEdges[position].adjacentNodes
-                                      if isNodeAvailable(self.boardNodes[adjacentNode])]
-
-            self.players[playerNumber].possibleSettlements += availableAdjacentNodes
-
-        elif constructionType == 'SETTLEMENT':
-
-            adjNodes = self.boardNodes[position].adjacentNodes
-
-            for player in self.players:
-
-                if position in player.possibleSettlements:
-                    player.possibleSettlements.remove(position)
-
-                for node in filter(lambda x: x in player.possibleSettlements, adjNodes):
-                    player.possibleSettlements.remove(node)
 
     def GetPossibleSettlements(self, player, setUpPhase = False):
 

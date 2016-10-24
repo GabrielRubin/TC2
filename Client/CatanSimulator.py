@@ -1,8 +1,8 @@
 from Client import *
+import GameStateViewer
 import logging
 import pickle
 import datetime
-import GameStateViewer
 import cProfile
 import pstats
 import timeit
@@ -43,9 +43,9 @@ def RunGame(saveLog = False):
 
     while True:
 
-        currPlayer     = game.gameState.players[game.gameState.currPlayer]
+        currPlayer  = game.gameState.players[game.gameState.currPlayer]
 
-        agentAction    = currPlayer.DoMove(game)
+        agentAction = currPlayer.DoMove(game)
 
         if agentAction is None:
             print(game.gameState.currState)
@@ -195,13 +195,13 @@ def RunWithLogging(numberOfRepetitions, saveGameStateLogs = False):
 
 if __name__ == '__main__':
 
-    RunGame()
+    #RunGame()
 
     # RUN WITH LOGGING
     #RunWithLogging(10, saveGameStateLogs=True)
 
     # SPEED TEST
-    #RunSpeedTest(300)
+    RunSpeedTest(300)
 
     # SIMULATOR PROFILER
     #RunProfiler()
