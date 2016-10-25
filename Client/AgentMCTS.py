@@ -3,7 +3,6 @@ from datetime import datetime
 from datetime import timedelta
 import copy
 
-
 # * OPTION (for performance)*
 #    implement nodes as a tuple (worse to read/understand)
 # MCTS TREE NODE STRUCTURE:
@@ -25,10 +24,13 @@ class MCTSNode:
 
 class AgentMCTS(AgentRandom):
 
-    def __init__(self, name, seatNumber):
+    explorationConstant = 0.5
+
+    def __init__(self, name, seatNumber, choiceTime):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
+        self.choiceTime = choiceTime
         self.agentName = "MONTE CARLO TREE SEARCH"
 
     def DoMove(self, game):
@@ -50,7 +52,7 @@ class AgentMCTS(AgentRandom):
 
         self.PrepareGameStateForSimulation(state)
 
-        return self.MonteCarloTreeSearch(state, timedelta(seconds=5))
+        return self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime))
 
     def MonteCarloTreeSearch(self, gameState, maxDuration):
 
@@ -79,7 +81,7 @@ class AgentMCTS(AgentRandom):
 
             #print("think'n : {0}".format(datetime.utcnow()))
 
-        return self.BestChild(rootNode).action
+        return self.BestChild(rootNode, 0).action
 
     def TreePolicy(self, node):
 
@@ -88,7 +90,7 @@ class AgentMCTS(AgentRandom):
             if len(node.possibleActions) > 0:
                 return self.Expand(node)
             else:
-                node = self.BestChild(node)
+                node = self.BestChild(node, AgentMCTS.explorationConstant)
 
         return node
 
@@ -113,12 +115,20 @@ class AgentMCTS(AgentRandom):
 
         return childNode
 
-    def BestChild(self, node):
+    def BestChild(self, node, explorationValue):
 
         currPlayerNumber = node.gameState.currPlayer
 
         # Returns the Child Node with the max 'Q-Value'
-        return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
+        #return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
+
+        def UCTClassifier(childNode):
+
+            evaluationPart  = childNode.QValue[currPlayerNumber] / childNode.NValue
+            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / childNode.NValue )
+            return evaluationPart + explorationPart
+
+        return max(node.children, key=lambda child : UCTClassifier(child))
 
     def SimulationPolicy(self, gameState):
 

@@ -92,3 +92,5 @@ Slint - 24/10/2016 02:10 >> Best Case: 0.0046s, Worst Case: 0.0123s, Average: 0.
 Slint - 24/10/2016 02:11 >> Best Case: 0.0089s, Worst Case: 0.0853s, Average: 0.0255s
 Slint - 24/10/2016 02:11 >> Best Case: 0.0081s, Worst Case: 0.0725s, Average: 0.0235s
 Slint - 24/10/2016 02:11 >> Best Case: 0.0086s, Worst Case: 0.099s, Average: 0.0251s
+METAL_GEAR - 25/10/2016 15:14 >> Best Case: 0.012s, Worst Case: 0.1128s, Average: 0.036s
+METAL_GEAR - 25/10/2016 15:14 >> Best Case: 0.0123s, Worst Case: 0.1558s, Average: 0.0355s

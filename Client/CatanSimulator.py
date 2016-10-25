@@ -1,5 +1,5 @@
 from Client import *
-import GameStateViewer
+# import GameStateViewer
 import logging
 import pickle
 import datetime
@@ -15,7 +15,7 @@ boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
 
-players = [AgentRandom("P1", 0),
+players = [AgentMCTS("P1", 0, 120),
            AgentRandom("P2", 1),
            AgentRandom("P3", 2),
            AgentRandom("P4", 3)]
@@ -195,13 +195,13 @@ def RunWithLogging(numberOfRepetitions, saveGameStateLogs = False):
 
 if __name__ == '__main__':
 
-    #RunGame()
+    RunGame()
 
     # RUN WITH LOGGING
     #RunWithLogging(10, saveGameStateLogs=True)
 
     # SPEED TEST
-    RunSpeedTest(300)
+    #RunSpeedTest(300)
 
     # SIMULATOR PROFILER
     #RunProfiler()
