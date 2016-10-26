@@ -2,6 +2,7 @@ from AgentRandom import *
 from datetime import datetime
 from datetime import timedelta
 import copy
+import cPickle
 
 # * OPTION (for performance)*
 #    implement nodes as a tuple (worse to read/understand)
@@ -31,7 +32,10 @@ class AgentMCTS(AgentRandom):
         super(AgentMCTS, self).__init__(name, seatNumber)
 
         self.choiceTime = choiceTime
-        self.agentName = "MONTE CARLO TREE SEARCH"
+
+        self.agentName = "MONTE CARLO TREE SEARCH : {0} sec".format(choiceTime)
+
+        self.numberOfSimulations = 0
 
     def DoMove(self, game):
 
@@ -48,7 +52,9 @@ class AgentMCTS(AgentRandom):
            (game.gameState.currState == "START2B" and self.secondRoadBuild):
             return None
 
-        state = copy.deepcopy(game.gameState)
+        self.numberOfSimulations = 0
+
+        state = cPickle.loads(cPickle.dumps(game.gameState, -1))
 
         self.PrepareGameStateForSimulation(state)
 
@@ -75,11 +81,13 @@ class AgentMCTS(AgentRandom):
 
             nextNode    = self.TreePolicy(rootNode)
 
-            reward      = self.SimulationPolicy(copy.deepcopy(nextNode.gameState))
+            reward      = self.SimulationPolicy(cPickle.loads(cPickle.dumps(nextNode.gameState, -1)))
 
             self.BackUp(nextNode, reward)
 
-            #print("think'n : {0}".format(datetime.utcnow()))
+            self.numberOfSimulations += 1
+
+        print("TOTAL SIMULATIONS = {0}".format(self.numberOfSimulations))
 
         return self.BestChild(rootNode, 0).action
 
@@ -100,7 +108,7 @@ class AgentMCTS(AgentRandom):
 
         node.possibleActions.remove(chosenAction)
 
-        nextGameState = copy.deepcopy(node.gameState)
+        nextGameState = cPickle.loads(cPickle.dumps(node.gameState, -1))
 
         chosenAction.ApplyAction(nextGameState)
 
@@ -132,6 +140,9 @@ class AgentMCTS(AgentRandom):
 
     def SimulationPolicy(self, gameState):
 
+        #startTime = datetime.utcnow()
+        #print("starting simulation {0}".format(startTime))
+
         while not gameState.IsTerminal():
 
             possibleActions = AgentMCTS.GetPossibleActions(gameState,
@@ -147,6 +158,9 @@ class AgentMCTS(AgentRandom):
                 action = possibleActions[0]
 
             action.ApplyAction(gameState)
+
+        #endTime = datetime.utcnow()
+        #print("simulation ENDED {0} - deltaTime = {1}".format(endTime, (endTime - startTime).total_seconds()))
 
         return self.Utility(gameState, self.seatNumber)
 

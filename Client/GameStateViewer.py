@@ -1,6 +1,6 @@
 from CatanGame import *
 
-import pickle
+import cPickle
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from Tkinter import Tk
 from tkFileDialog import askopenfilename
@@ -244,6 +244,27 @@ def GetGameStateImage(gameState):
                          hexPositions[boardHexIndex][1] - hexImg.size[1] / 2)
             mainImg.paste(coloredHex, hexImgPos, hexImg)
 
+            if boardHex.number is not None and boardHex.number > 0:
+
+                draw = ImageDraw.Draw(mainImg)
+                font = ImageFont.truetype("./arial.ttf", 25)
+
+                x = hexPositions[boardHexIndex][0]
+                y = hexPositions[boardHexIndex][1] - 15
+
+                if boardHex.number == 11:
+                    x -= 16
+                elif boardHex.number >= 10:
+                    x -= 15
+                else:
+                    x -= 9
+
+                draw.text((x + 2, y),     "{0}".format(boardHex.number), (255, 255, 255), font=font)
+                draw.text((x, y + 2),     "{0}".format(boardHex.number), (255, 255, 255), font=font)
+                draw.text((x + 1, y + 2), "{0}".format(boardHex.number), (255, 255, 255), font=font)
+                draw.text((x + 1, y + 1), "{0}".format(boardHex.number), (255, 255, 255), font=font)
+                draw.text((x + 2, y + 1), "{0}".format(boardHex.number), (0, 0, 0), font=font)
+
         for playerIndex in range(0, len(gameState.players)):
 
             player = gameState.players[playerIndex]
@@ -322,7 +343,7 @@ if __name__ == '__main__':
     savedGameState = None
 
     with open('{0}'.format(filename), 'rb') as handle:
-        savedGameState = pickle.load(handle)
+        savedGameState = cPickle.load(handle)
 
     if savedGameState is not None:
 

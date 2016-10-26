@@ -359,7 +359,7 @@ class Player(object):
 
     def UpdateRobDiceProduction(self, gameState, pastRobberPos, newRobberPos):
 
-        def UpdateDiceProduction(position):
+        def UpdateDiceProduction(position, multiplier):
             production = gameState.boardHexes[position].production
 
             if production is not None:
@@ -373,14 +373,14 @@ class Player(object):
                         diceNumber = gameState.boardHexes[position].number
 
                         if construction.type == 'SETTLEMENT':
-                            self.diceProduction[diceNumber][g_resources.index(production)] += 1
+                            self.diceProduction[diceNumber][g_resources.index(production)] += 1 * multiplier
                         else:
-                            self.diceProduction[diceNumber][g_resources.index(production)] += 2
+                            self.diceProduction[diceNumber][g_resources.index(production)] += 2 * multiplier
 
         if pastRobberPos is not None:
-            UpdateDiceProduction(pastRobberPos)
+            UpdateDiceProduction(pastRobberPos, 1)
         if newRobberPos is not None:
-            UpdateDiceProduction(newRobberPos)
+            UpdateDiceProduction(newRobberPos, -1)
 
     def CountRoads(self, gameState):
 

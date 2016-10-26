@@ -130,6 +130,8 @@ class BuildRoadAction(BuildAction):
 
                 gameState.currState = "PLAY"
 
+                gameState.setupDone = True
+
             else:
 
                 nextPlayer = (gameState.currPlayer - 1) % len(gameState.players)
