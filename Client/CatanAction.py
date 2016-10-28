@@ -67,12 +67,12 @@ class BuildAction(Action):
 class BuildRoadAction(BuildAction):
 
     type = 'BuildRoad'
-    cost = [ 1,  # brick
+    cost = ( 1,  # brick
              0,  # ore
              0,  # wool
              0,  # grain
              1,  # lumber
-             0 ] # unknown
+             0 ) # unknown
 
     pieceId = 0
 
@@ -122,12 +122,12 @@ class BuildRoadAction(BuildAction):
 class BuildSettlementAction(BuildAction):
 
     type = 'BuildSettlement'
-    cost = [ 1,  # brick
+    cost = ( 1,  # brick
              0,  # ore
              1,  # wool
              1,  # grain
              1,  # lumber
-             0 ] # unknown
+             0 ) # unknown
 
     pieceId = 1
 
@@ -160,12 +160,12 @@ class BuildSettlementAction(BuildAction):
 class BuildCityAction(BuildAction):
 
     type = 'BuildCity'
-    cost = [ 0,  # brick
+    cost = ( 0,  # brick
              3,  # ore
              0,  # wool
              2,  # grain
              0,  # lumber
-             0 ] # unknown
+             0 ) # unknown
 
     pieceId = 2
 
@@ -222,20 +222,20 @@ class RollDicesAction(Action):
                 gameState.currState = "PLACING_ROBBER"
 
         else:
-            for playerIndex in range(0, len(gameState.players)):
-                gameState.players[playerIndex].UpdatePlayerResources(gameState, self.result)
+            for player in gameState.players:
+                player.UpdatePlayerResources(gameState, self.result)
 
             gameState.currState = "PLAY1"
 
 class BuyDevelopmentCardAction(Action):
 
     type = 'BuyDevelopmentCard'
-    cost = [ 0,  # brick
+    cost = ( 0,  # brick
              1,  # ore
              1,  # wool
              1,  # grain
              0,  # lumber
-             0 ] # unknown
+             0 ) # unknown
 
     def __init__(self, playerNumber):
 
@@ -404,8 +404,7 @@ class PlaceRobberAction(Action):
 
         gameState.players[self.playerNumber].PlaceRobber(gameState, self.robberPos)
 
-        for player in gameState.players:
-            player.UpdateRobDiceProduction(gameState, pastRobberPos=pastRobberPos, newRobberPos=gameState.robberPos)
+        gameState.UpdateRobDiceProduction(gameState, pastRobberPos=pastRobberPos, newRobberPos=gameState.robberPos)
 
         possiblePlayers = gameState.GetPossiblePlayersToSteal(self.playerNumber)
 

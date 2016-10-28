@@ -94,19 +94,19 @@ class AgentRandom(Player):
 
             possibleActions     = []
 
-            if player.CanAfford(BuildRoadAction.cost) and \
-               player.HavePiece(g_pieces.index('ROADS')):
+            if player.HavePiece(g_pieces.index('ROADS')) and \
+                player.CanAfford(BuildRoadAction.cost):
 
                 possibleActions.append(actions[0])
 
-            if player.CanAfford(BuildSettlementAction.cost) and \
-               player.HavePiece(g_pieces.index('SETTLEMENTS')):
+            if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
+                player.CanAfford(BuildSettlementAction.cost):
 
                 possibleActions.append(actions[1])
 
-            if player.CanAfford(BuildCityAction.cost) and \
-               player.HavePiece(g_pieces.index('CITIES')) and \
-               len(player.settlements) > 0:
+            if len(player.settlements) > 0 and\
+                player.HavePiece(g_pieces.index('CITIES')) and\
+                player.CanAfford(BuildCityAction.cost):
 
                 possibleActions.append(actions[2])
 
@@ -229,7 +229,8 @@ class AgentRandom(Player):
 
             if possibleActions is not None and len(possibleActions) > 0:
 
-                choice = random.choice(possibleActions)
+                #choice = random.choice(possibleActions)
+                choice = possibleActions[int(random.random() * len(possibleActions))]
 
                 if isinstance(choice, tuple):
                     if   choice[0] == 'buildRoad':
@@ -244,7 +245,8 @@ class AgentRandom(Player):
             return EndTurnAction(self.seatNumber)
 
         if possibleActions is not None and len(possibleActions) > 0:
-            return random.choice(possibleActions)
+            #return random.choice(possibleActions)
+            return possibleActions[int(random.random() * len(possibleActions))]
         elif possibleActions is None:
             print("NONE!!!")
 
@@ -282,10 +284,16 @@ class AgentRandom(Player):
 
     def ChooseRobberPosition(self, gameState, player = None):
 
-        possiblePositions = gameState.possibleRobberPos + [gameState.robberPos]
+        #possiblePositions = gameState.possibleRobberPos.append(gameState.robberPos)
 
-        return [PlaceRobberAction(player.seatNumber, position)
-                for position in possiblePositions]
+        possiblePositions = gameState.possibleRobberPos
+
+        choice = gameState.robberPos
+
+        while choice == gameState.robberPos:
+            choice = possiblePositions[int(random.random() * len(possiblePositions))]
+
+        return [PlaceRobberAction(player.seatNumber, choice)]
 
     def ChoosePlayerToStealFrom(self, gameState, player = None):
 
@@ -295,7 +303,7 @@ class AgentRandom(Player):
         possiblePlayers = gameState.GetPossiblePlayersToSteal(player.seatNumber)
 
         if len(possiblePlayers) > 0:
-            return ChoosePlayerToStealFromAction(player.seatNumber, random.choice(possiblePlayers))
+            return ChoosePlayerToStealFromAction(player.seatNumber, possiblePlayers[int(random.random() * len(possiblePlayers))])
 
         return None
 
@@ -327,7 +335,8 @@ class AgentRandom(Player):
             if player.resources[i] == minResourceAmount:
                 candidateForTrade.append(i)
 
-        tradeAmount = random.randint(0, sum(possibleTradeAmount))
+        #tradeAmount = random.randint(0, sum(possibleTradeAmount))
+        tradeAmount = int(random.random() * sum(possibleTradeAmount))
 
         if tradeAmount > 0 and len(candidateForTrade) > 0:
 
@@ -346,7 +355,7 @@ class AgentRandom(Player):
 
             expectedResources = []
             for i in range(0, tradeAmount):
-                expectedResources.append(random.choice(candidateForTrade))
+                expectedResources.append(candidateForTrade[int(random.random() * len(candidateForTrade))])
 
             # logging.critical("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
             #     chosenResources, expectedResources, tradeAmount
@@ -384,15 +393,16 @@ class AgentRandom(Player):
 
         if len(candidateResource) <= 0:
 
-            randomPick = random.choice([1,2,3,4,5])
+            possible = [1,2,3,4,5]
+
+            randomPick = possible[int(random.random() * 5)]
 
             logging.critical("Monopoly pick FAILED!!!! Picking at random: {0}".format(randomPick))
 
             chosenResource = randomPick
 
         else:
-
-            chosenResource = random.choice(candidateResource)
+            chosenResource = candidateResource[int(random.random() * len(candidateResource))]
 
         return [ UseMonopolyCardAction(player.seatNumber, chosenResource) ]
 
@@ -418,8 +428,11 @@ class AgentRandom(Player):
 
         else:
 
-            pick1 = random.choice(candidateResource)
-            pick2 = random.choice(candidateResource)
+            # pick1 = random.choice(candidateResource)
+            # pick2 = random.choice(candidateResource)
+
+            pick1 = candidateResource[int(random.random() * len(candidateResource))]
+            pick2 = candidateResource[int(random.random() * len(candidateResource))]
 
             chosenResources[pick1] += 1
             chosenResources[pick2] += 1

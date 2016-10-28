@@ -3,6 +3,7 @@ from CatanAction import *
 import logging
 import math
 import sys
+import numpy as np
 
 class PlayerStats(object):
 
@@ -41,7 +42,8 @@ class Player(object):
         self.playedDevCard    = False
         self.discardCardCount = 0
 
-        self.diceProduction = {
+        self.diceProduction = \
+        {
             2  : [0, 0, 0, 0, 0, 0],
             3  : [0, 0, 0, 0, 0, 0],
             4  : [0, 0, 0, 0, 0, 0],
@@ -186,13 +188,12 @@ class Player(object):
                                                   else self.developmentCards[i] > 0
 
     def CanAfford(self, price):
-        for i in range(0, len(g_resources)):
+        for i in range(5):
             if price[i] > self.resources[i]:
                 return False
         return True
 
     def HavePiece(self, pieceIndex):
-
         if self.numberOfPieces[pieceIndex] > 0:
             return True
 
@@ -361,31 +362,6 @@ class Player(object):
 
                 if number is not None and number > 1:
                     self.diceProduction[number][g_resources.index(production)] += 1
-
-    def UpdateRobDiceProduction(self, gameState, pastRobberPos, newRobberPos):
-
-        def UpdateDiceProduction(position, multiplier):
-            production = gameState.boardHexes[position].production
-
-            if production is not None:
-
-                for nodePos in gameState.boardHexes[position].adjacentNodes:
-
-                    construction = gameState.boardNodes[nodePos].construction
-
-                    if construction is not None and construction.owner == self.seatNumber:
-
-                        diceNumber = gameState.boardHexes[position].number
-
-                        if construction.type == 'SETTLEMENT':
-                            self.diceProduction[diceNumber][g_resources.index(production)] += 1 * multiplier
-                        else:
-                            self.diceProduction[diceNumber][g_resources.index(production)] += 2 * multiplier
-
-        if pastRobberPos is not None:
-            UpdateDiceProduction(pastRobberPos, 1)
-        if newRobberPos is not None:
-            UpdateDiceProduction(newRobberPos, -1)
 
     def CountRoads(self, gameState):
 

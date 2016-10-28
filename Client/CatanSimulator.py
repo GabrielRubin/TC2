@@ -219,10 +219,10 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(10, saveGameStateLogs=True)
+    #RunWithLogging(10, saveGameStateLogs=True)
 
     # SPEED TEST
-    #RunSpeedTest(300)
+    RunSpeedTest(300)
 
     # SIMULATOR PROFILER
     #RunProfiler()

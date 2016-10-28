@@ -116,6 +116,31 @@ class GameState:
             self.UpdatePossibleSettlements(player.seatNumber, 'ROAD', player.roads[0])
             self.UpdatePossibleSettlements(player.seatNumber, 'ROAD', player.roads[0])
 
+    def UpdateRobDiceProduction(self, gameState, pastRobberPos, newRobberPos):
+
+        def UpdateDiceProduction(position, multiplier):
+            production = gameState.boardHexes[position].production
+
+            if production is not None:
+
+                for nodePos in gameState.boardHexes[position].adjacentNodes:
+
+                    construction = gameState.boardNodes[nodePos].construction
+
+                    if construction is not None:
+
+                        diceNumber = gameState.boardHexes[position].number
+
+                        if construction.type == 'SETTLEMENT':
+                            self.players[construction.owner].diceProduction[diceNumber][g_resources.index(production)] += 1 * multiplier
+                        else:
+                            self.players[construction.owner].diceProduction[diceNumber][g_resources.index(production)] += 2 * multiplier
+
+        if pastRobberPos is not None:
+            UpdateDiceProduction(pastRobberPos, 1)
+        if newRobberPos is not None:
+            UpdateDiceProduction(newRobberPos, -1)
+
     def CanBuildRoad(self, player, edge, roadIndex, setUpPhase = False):
 
         # check if there is a road in this edge
