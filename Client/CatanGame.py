@@ -65,8 +65,8 @@ class GameState:
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
-        self.constructableNodes = self.GetConstructableNodes()
-        self.constructableEdges = self.GetConstructableEdges()
+        self.constructableNodes = g_constructableNodes
+        self.constructableEdges = g_constructableEdges
         self.possibleRobberPos  = g_possibleRobberPos
 
         self.currState        = None
@@ -82,12 +82,39 @@ class GameState:
         self.largestArmyPlayer  = -1
 
         self.startingPlayer = -1
-
         self.setupDone = False
-
         self.winner = -1
 
         self.checkLongestRoad = False
+
+        # self.logStats = False
+
+    # def UpdateStats(self):
+    #
+    #     if self.logStats:
+    #         for player in self.players:
+    #             player.UpdateLogStats()
+
+    def FinishSetup(self):
+
+        def UpdateNode(node):
+            self.constructableNodes[node][0] = False
+            self.constructableNodes[node][1] = False
+            self.constructableNodes[node][2] = False
+            self.constructableNodes[node][3] = False
+            for adjNode in self.boardNodes[node].adjacentNodes:
+                if adjNode is not None and adjNode in self.constructableNodes:
+                    self.constructableNodes[adjNode][0] = False
+                    self.constructableNodes[adjNode][1] = False
+                    self.constructableNodes[adjNode][2] = False
+                    self.constructableNodes[adjNode][3] = False
+
+        self.setupDone = True
+        for player in self.players:
+            UpdateNode(player.settlements[0])
+            UpdateNode(player.settlements[1])
+            self.UpdatePossibleSettlements(player.seatNumber, 'ROAD', player.roads[0])
+            self.UpdatePossibleSettlements(player.seatNumber, 'ROAD', player.roads[0])
 
     def CanBuildRoad(self, player, edge, roadIndex, setUpPhase = False):
 
@@ -172,99 +199,96 @@ class GameState:
         else:
             return False
 
-    # ANOTHER METHOD FOR DISCOVERING POSSIBLE ROADS
-    # def UpdatePossibleRoads(self, playerNumber, constructionType, position):
-    #
-    #     if constructionType == 'ROAD':
-    #
-    #         for player in self.players:
-    #
-    #             if position in player.possibleRoads:
-    #                 player.possibleRoads.remove(position)
-    #
-    #             if player.seatNumber == playerNumber:
-    #                 player.possibleRoads += [edge for edge in self.boardEdges[position].adjacentEdges if
-    #                                          self.boardEdges[edge] in self.constructableEdges and edge not in player.possibleRoads ]
-    #
-    #     elif constructionType == 'SETTLEMENT':
-    #
-    #         adjacent = [edge for edge in self.boardNodes[position].adjacentEdges if
-    #                     self.boardEdges[edge] in self.constructableEdges]
-    #
-    #         for player in self.players:
-    #
-    #             if player.seatNumber == playerNumber:
-    #                 player.possibleRoads += filter(lambda x: x not in player.possibleRoads, adjacent)
-    #
-    #             else:
-    #                 for edge in filter(lambda x: x in player.possibleRoads, adjacent):
-    #                     player.possibleRoads.remove(edge)
+    #ANOTHER METHOD FOR DISCOVERING POSSIBLE ROADS
+    def UpdatePossibleRoads(self, playerNumber, constructionType, position):
 
-    # ANOTHER METHOD FOR DISCOVERING POSSIBLE SETTLEMENTS
-    # def UpdatePossibleSettlements(self, playerNumber, constructionType, position):
-    #
-    #     if constructionType == 'ROAD':
-    #
-    #         def isNodeAvailable(tgtNode):
-    #
-    #             if tgtNode.index in self.players[playerNumber].possibleSettlements or \
-    #                 tgtNode not in self.constructableNodes or \
-    #                 tgtNode.construction is not None:
-    #                 return False
-    #
-    #             for adjNode in tgtNode.adjacentNodes:
-    #                 if self.boardNodes[adjNode].construction is not None:
-    #                     return False
-    #
-    #             return True
-    #
-    #         availableAdjacentNodes = [adjacentNode for adjacentNode in self.boardEdges[position].adjacentNodes
-    #                                   if isNodeAvailable(self.boardNodes[adjacentNode])]
-    #
-    #         self.players[playerNumber].possibleSettlements += availableAdjacentNodes
-    #
-    #     elif constructionType == 'SETTLEMENT':
-    #
-    #         adjNodes = self.boardNodes[position].adjacentNodes
-    #
-    #         for player in self.players:
-    #
-    #             if position in player.possibleSettlements:
-    #                 player.possibleSettlements.remove(position)
-    #
-    #             for node in filter(lambda x: x in player.possibleSettlements, adjNodes):
-    #                 player.possibleSettlements.remove(node)
+        if constructionType == 'ROAD':
+
+            self.constructableEdges[position][0] = False
+            self.constructableEdges[position][1] = False
+            self.constructableEdges[position][2] = False
+            self.constructableEdges[position][3] = False
+
+            for edge in self.boardEdges[position].adjacentEdges:
+                if edge in self.constructableEdges and self.boardEdges[edge].construction is None:
+                    self.constructableEdges[edge][playerNumber] = True
+
+        elif constructionType == 'SETTLEMENT':
+
+            def haveConnection(edgeIndex, playerIndex):
+                for adjEdge in self.boardEdges[edgeIndex].adjacentEdges:
+                    if self.boardEdges[adjEdge].construction is not None \
+                            and self.boardEdges[adjEdge].construction.owner == playerIndex:
+                        return True
+                return False
+
+            for i in range(0, len(self.players)):
+                if i == playerNumber:
+                    continue
+                for edge in self.boardNodes[position].adjacentEdges:
+                    if edge in self.constructableEdges and self.boardEdges[edge].construction is None:
+                        self.constructableEdges[edge][playerNumber] = haveConnection(edge, i)
+
+
+    #ANOTHER METHOD FOR DISCOVERING POSSIBLE SETTLEMENTS
+    def UpdatePossibleSettlements(self, playerNumber, constructionType, position, isSetup=False):
+
+        if constructionType == 'ROAD':
+
+            def isNodeAvailable(nodeIndex):
+                if nodeIndex in self.constructableNodes and self.boardNodes[nodeIndex].construction is not None:
+                    return False
+                for adjNode in self.boardNodes[nodeIndex].adjacentNodes:
+                    if adjNode in self.constructableNodes and self.boardNodes[adjNode].construction is not None:
+                        return False
+                return True
+
+            for node in self.boardEdges[position].adjacentNodes:
+                self.constructableNodes[node][playerNumber] = isNodeAvailable(node)
+
+        elif constructionType == 'SETTLEMENT':
+
+            self.constructableNodes[position][0] = isSetup
+            self.constructableNodes[position][1] = isSetup
+            self.constructableNodes[position][2] = isSetup
+            self.constructableNodes[position][3] = isSetup
+
+            for node in self.boardNodes[position].adjacentNodes:
+                if node in self.constructableNodes:
+                    self.constructableNodes[node][0] = isSetup
+                    self.constructableNodes[node][1] = isSetup
+                    self.constructableNodes[node][2] = isSetup
+                    self.constructableNodes[node][3] = isSetup
 
     def GetPossibleRoads(self, player, setUpPhase = False, freeRoad = False):
 
-        if not setUpPhase and not freeRoad and\
-                not player.CanAfford(BuildRoadAction.cost) \
-                or not player.HavePiece(g_pieces.index('ROADS')):
-
-            return None
+        if setUpPhase:
+            if self.currState == "START1B":
+                return [edge for edge in
+                        self.boardNodes[player.settlements[0]].adjacentEdges if
+                        edge in self.constructableEdges]
+            else:
+                return [edge for edge in
+                        self.boardNodes[player.settlements[1]].adjacentEdges if
+                        edge in self.constructableEdges]
 
         return [edge for edge in
-                self.constructableEdges if
-                self.CanBuildRoad(player, edge, len(player.roads), setUpPhase)]
+                self.constructableEdges if self.constructableEdges[edge][player.seatNumber]]
 
     def GetPossibleSettlements(self, player, setUpPhase = False):
 
-        if not setUpPhase and \
-                not player.CanAfford(BuildSettlementAction.cost) \
-                or not player.HavePiece(g_pieces.index('SETTLEMENTS')):
-            return None
+        if setUpPhase:
+            return [node for node in
+                    self.constructableNodes if
+                    not self.constructableNodes[node][player.seatNumber]]
 
         return [node for node in
                 self.constructableNodes if
-                self.CanBuildSettlement(player, node, setUpPhase)]
+                self.constructableNodes[node][player.seatNumber]]
 
     def GetPossibleCities(self, player):
 
-        if not player.CanAfford(BuildCityAction.cost) \
-                or not player.HavePiece(g_pieces.index('CITIES')):
-            return None
-
-        return [self.boardNodes[settlement] for settlement in player.settlements]
+        return [settlement for settlement in player.settlements]
 
     def IsTerminal(self):
 
@@ -308,12 +332,11 @@ class GameState:
             return
 
         if self.largestArmyPlayer != -1:
-
-            self.players[self.largestArmyPlayer].biggestArmy = False
+            self.players[self.largestArmyPlayer].UpdateLargestArmy(False)
 
         self.largestArmyPlayer = playerNumber
 
-        self.players[self.largestArmyPlayer].biggestArmy = True
+        self.players[self.largestArmyPlayer].UpdateLargestArmy(True)
 
     def SetLongestRoad(self, playerNumber):
 

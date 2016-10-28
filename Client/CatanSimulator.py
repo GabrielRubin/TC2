@@ -67,7 +67,10 @@ def RunSingleGame(game):
         #if game.gameState.setupDone:
             return game
 
-def RunGame(players, saveLog = False):
+def RunGame(players = None, saveLog = False):
+
+    if players is None:
+        players = copy.deepcopy(defaultPlayers)
 
     game = RunSingleGame(CreateGame(players))
 
@@ -111,12 +114,12 @@ def RunGame(players, saveLog = False):
                                                             game.gameState.players[i].agentName))
 
         logging.critical("his resources are: "
-                      "\n POINTS       = {0} "
-                      "\n LARGEST ARMY = {1} "
-                      "\n LONGEST ROAD = {2} "
-                      "\n RESOURCES    = {3} "
-                      "\n PIECES       = {4} "
-                      "\n KNIGHTS      = {5} "
+                      "\n POINTS          = {0} "
+                      "\n LARGEST ARMY    = {1} "
+                      "\n LONGEST ROAD    = {2} "
+                      "\n RESOURCES       = {3} "
+                      "\n PIECES          = {4} "
+                      "\n KNIGHTS         = {5} "
                       "\n DICE PRODUCTION = {6}".format(
             game.gameState.players[i].GetVictoryPoints(),
             game.gameState.players[i].biggestArmy,
@@ -159,9 +162,9 @@ def RunProfiler():
 
     p = pstats.Stats('simulatorStats')
 
-    p.sort_stats('cumulative').print_stats(10)
+    p.sort_stats('cumulative').print_stats(30)
 
-    p.sort_stats('time').print_stats(10)
+    p.sort_stats('time').print_stats(30)
 
 def RunSpeedTest(numberOfRepetitions):
 
@@ -210,16 +213,16 @@ if __name__ == '__main__':
 
     #RunGame(defaultPlayers)
 
-    # for i in range(0, 10):
+    # for i in range(0, 100):
     #     RunGame(defaultPlayers)
     #
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    #RunWithLogging(10, saveGameStateLogs=True)
+    RunWithLogging(10, saveGameStateLogs=True)
 
     # SPEED TEST
     #RunSpeedTest(300)
 
     # SIMULATOR PROFILER
-    RunProfiler()
+    #RunProfiler()

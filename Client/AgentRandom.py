@@ -21,39 +21,17 @@ class AgentRandom(Player):
             if player.firstSettlementBuild:
                 return None
 
-            possibleSettlements = gameState.GetPossibleSettlements(player, True)
+            def IsNodeGood(node):
+                total = 0
+                for hexIndex in gameState.boardNodes[node].adjacentHexes:
+                    if gameState.boardHexes[hexIndex].production is not None:
+                        total += 1
+                return total > 1
 
-            def RateNode(node, uniqueness):
+            bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
 
-                possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.adjacentHexes
-                                     if boardHex is not None]
-
-                if len(possibleResources) < 2:
-                    return False
-
-                seen   = []
-                unique = 0
-
-                for i in range(0, len(possibleResources)):
-                    if possibleResources[i] is not None:
-                        if possibleResources[i] not in seen:
-                            unique += 1
-                        seen.append(possibleResources[i])
-
-                if unique < uniqueness:
-                    return False
-
-                return True
-
-            for i in range(0, 3):
-
-                goodNodes = [ setNode for setNode in possibleSettlements if RateNode(setNode, 2 - i) ]
-
-                if len(goodNodes) > 0:
-                    break
-
-            possible = [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                        for setNode in goodNodes if setNode is not None]
+            possible = [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements))
+                        for setNode in bestSettlements]
 
             return possible
 
@@ -66,47 +44,24 @@ class AgentRandom(Player):
 
             #possibleRoads = [gameState.boardEdges[edge] for edge in self.possibleRoads]
 
-            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == 'START2A':
 
             if player.secondSettlementBuild:
                 return None
 
-            possibleSettlements = gameState.GetPossibleSettlements(player, True)
+            def IsNodeGood(node):
+                total = 0
+                for hexIndex in gameState.boardNodes[node].adjacentHexes:
+                    if gameState.boardHexes[hexIndex].production is not None:
+                        total += 1
+                return total > 1
 
-            def RateNode(node, ownedResources, uniqueness):
+            bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
 
-                possibleResources = [gameState.boardHexes[boardHex].production for boardHex in node.adjacentHexes
-                                     if boardHex is not None]
-
-                if len(possibleResources) < 2:
-                    return False
-
-                seen = []
-                unique = 0
-
-                for i in range(0, len(possibleResources)):
-                    if possibleResources[i] is not None:
-                        if possibleResources[i] not in seen \
-                                and possibleResources[i] not in ownedResources:
-                            unique += 1
-                        seen.append(possibleResources[i])
-
-                if unique < uniqueness:
-                    return False
-
-                return True
-
-            for i in range(0, 3):
-
-                goodNodes = [ setNode for setNode in possibleSettlements if RateNode(setNode, player.resources, 3 - i) ]
-
-                if len(goodNodes) > 0:
-                    break
-
-            return [BuildSettlementAction(player.seatNumber, setNode.index, len(player.settlements))
-                    for setNode in goodNodes if setNode is not None]
+            return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements))
+                    for setNode in bestSettlements]
 
         elif gameState.currState == 'START2B':
 
@@ -115,14 +70,7 @@ class AgentRandom(Player):
 
             possibleRoads = gameState.GetPossibleRoads(player, True)
 
-            #possibleRoads = self.possibleRoads
-
-            filterRoads = filter(lambda x: x.index in gameState.boardNodes[self.settlements[1]].adjacentEdges, possibleRoads)
-
-            #possibleRoadsFiltered = [gameState.boardEdges[edge] for edge in filterRoads]
-
-            return [BuildRoadAction(player.seatNumber, roadEdge.index, len(player.roads))
-                    for roadEdge in filterRoads]
+            return [BuildRoadAction(player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
 
         elif gameState.currState == 'PLAY':
 
@@ -147,17 +95,17 @@ class AgentRandom(Player):
             possibleActions     = []
 
             if player.CanAfford(BuildRoadAction.cost) and \
-               player.HavePiece(g_pieces.index('ROADS')) > 0:
+               player.HavePiece(g_pieces.index('ROADS')):
 
                 possibleActions.append(actions[0])
 
             if player.CanAfford(BuildSettlementAction.cost) and \
-               player.HavePiece(g_pieces.index('SETTLEMENTS')) > 0:
+               player.HavePiece(g_pieces.index('SETTLEMENTS')):
 
                 possibleActions.append(actions[1])
 
             if player.CanAfford(BuildCityAction.cost) and \
-               player.HavePiece(g_pieces.index('CITIES')) > 0 and \
+               player.HavePiece(g_pieces.index('CITIES')) and \
                len(player.settlements) > 0:
 
                 possibleActions.append(actions[2])
@@ -185,7 +133,7 @@ class AgentRandom(Player):
 
                 if possibleRoads is not None and len(possibleRoads) > 0:
 
-                    return [('buildRoad', player.seatNumber, roadEdge.index, len(player.roads)) for roadEdge in possibleRoads]
+                    return [('buildRoad', player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
 
             elif chosenAction == 'buildSettlement':
 
@@ -195,7 +143,7 @@ class AgentRandom(Player):
 
                 if possibleSettlements is not None and len(possibleSettlements) > 0:
 
-                    return [('buildSettlement', player.seatNumber, setNode.index, len(player.settlements)) for setNode in possibleSettlements]
+                    return [('buildSettlement', player.seatNumber, setNode, len(player.settlements)) for setNode in possibleSettlements]
 
             elif chosenAction == 'buildCity':
 
@@ -203,7 +151,7 @@ class AgentRandom(Player):
 
                 if possibleCities is not None and len(possibleCities) > 0:
 
-                    return [('buildCity', player.seatNumber, setNode.index, len(player.cities)) for setNode in possibleCities]
+                    return [('buildCity', player.seatNumber, setNode, len(player.cities)) for setNode in possibleCities]
 
             elif chosenAction == 'buyDevCard':
 
@@ -250,7 +198,7 @@ class AgentRandom(Player):
             if possibleRoads is None or len(possibleRoads) <= 0:
                 return [ ChangeGameStateAction("PLAY1") ]
 
-            return [BuildRoadAction(player.seatNumber, roadEdge.index,
+            return [BuildRoadAction(player.seatNumber, roadEdge,
                                     len(player.roads))
                     for roadEdge in possibleRoads]
 
@@ -261,7 +209,7 @@ class AgentRandom(Player):
             if possibleRoads is None or len(possibleRoads) <= 0:
                 return [ ChangeGameStateAction("PLAY1") ]
 
-            return [BuildRoadAction(player.seatNumber, roadEdge.index,
+            return [BuildRoadAction(player.seatNumber, roadEdge,
                                     len(player.roads))
                     for roadEdge in possibleRoads]
 
@@ -389,7 +337,7 @@ class AgentRandom(Player):
                                       [3 for l in range(0, possibleTradeAmount[3])] + \
                                       [4 for m in range(0, possibleTradeAmount[4])]
 
-            # logging.debug("Player {0} is checking if he can trade...\n"
+            # logging.critical("Player {0} is checking if he can trade...\n"
             #               " He have this resources: {1}\n"
             #               " And he thinks he can trade these: {2}".format(player.name, player.resources,
             #                                                               possibleTradeAmount))
@@ -400,7 +348,7 @@ class AgentRandom(Player):
             for i in range(0, tradeAmount):
                 expectedResources.append(random.choice(candidateForTrade))
 
-            # logging.debug("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
+            # logging.critical("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
             #     chosenResources, expectedResources, tradeAmount
             # ))
 
@@ -412,7 +360,7 @@ class AgentRandom(Player):
                     expectedResources.count(2), expectedResources.count(3),
                     expectedResources.count(4)]
 
-            # logging.debug("Player {0} will trade with the bank!\n"
+            # logging.critical("Player {0} will trade with the bank!\n"
             #               " GIVE = {1}\n"
             #               " GET  = {2}".format(player.name, give, get))
 

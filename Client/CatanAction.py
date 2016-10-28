@@ -2,34 +2,6 @@ from JSettlersMessages import *
 from CatanBoard import *
 
 import random
-import logging
-
-g_ActionType = \
-[
-    'BuildRoad',
-    'BuildSettlement',
-    'BuildCity',
-    'RollDices',
-    'BuyDevelopmentCard',
-    'UseKnightsCard',
-    'UseMonopolyCard',
-    'UseYearOfPlentyCard',
-    'UseFreeRoadsCard',
-    'PlaceRobber',
-    'EndTurn',
-    'DiscardResources',
-    'ChoosePlayerToStealFrom',
-    'TradeOffer',
-    'BankTradeOffer',
-    'ChangeGameState'
-]
-
-g_OfferType = [
-
-    'Request',
-    'Accept',
-    'Decline'
-]
 
 class Action(object):
 
@@ -44,6 +16,14 @@ class Action(object):
 
 class BuildAction(Action):
 
+    freeBuildStates = ["START1A", "START1B", "START2A", "START2B",
+                       "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
+                       "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
+
+    putPieceStates = ["START1A", "START1B", "START2A", "START2B",
+                      "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
+                      "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
+
     def __init__(self, playerNumber, position, index, pieceId, cost):
 
         self.playerNumber = playerNumber
@@ -54,12 +34,8 @@ class BuildAction(Action):
 
     def GetMessage(self, gameName, currGameStateName = None):
 
-        putPieceStates = ["START1A", "START1B", "START2A", "START2B",
-                          "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
-                          "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
-
         if currGameStateName is not None and \
-            currGameStateName in putPieceStates:
+            currGameStateName in BuildAction.putPieceStates:
 
             return PutPieceMessage(gameName, self.playerNumber, self.pieceId, self.position)
 
@@ -70,17 +46,19 @@ class BuildAction(Action):
 
         #logging.debug("APPLYING ACTION! \n TYPE = BuildAction")
 
-        freeBuildStates = ["START1A", "START1B", "START2A", "START2B",
-                           "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
-                           "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
-
         gameState.players[self.playerNumber].Build(gameState, g_constructionTypes[self.pieceId][0], self.position)
 
-        #gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+        if not gameState.setupDone:
+            if self.pieceId == 0: # ROAD
+                gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+            else:
+                gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+                gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position, True)
+        else:
+            gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
+            gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
 
-        #gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
-
-        if gameState.currState not in freeBuildStates:
+        if gameState.currState not in BuildAction.freeBuildStates:
             currResources = gameState.players[self.playerNumber].resources
 
             gameState.players[self.playerNumber].resources = \
@@ -106,8 +84,8 @@ class BuildRoadAction(BuildAction):
 
         super(BuildRoadAction, self).ApplyAction(gameState)
 
-        if gameState.checkLongestRoad:
-            gameState.UpdateLongestRoad()
+        # if gameState.checkLongestRoad:
+        #     gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1B":
 
@@ -127,17 +105,11 @@ class BuildRoadAction(BuildAction):
             gameState.players[gameState.currPlayer].secondRoadBuild = True
 
             if gameState.currPlayer == gameState.startingPlayer:
-
+                gameState.FinishSetup()
                 gameState.currState = "PLAY"
-
-                gameState.setupDone = True
-
             else:
-
                 nextPlayer = (gameState.currPlayer - 1) % len(gameState.players)
-
                 gameState.currPlayer = nextPlayer
-
                 gameState.currState = "START2A"
 
         elif gameState.currState == "PLACING_FREE_ROAD1":
@@ -167,8 +139,8 @@ class BuildSettlementAction(BuildAction):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
 
-        if gameState.checkLongestRoad:
-          gameState.UpdateLongestRoad()
+        # if gameState.checkLongestRoad:
+        #   gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
 
@@ -462,31 +434,30 @@ class EndTurnAction(Action):
 
     def ApplyAction(self, gameState):
 
-        #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(EndTurnAction.type))
-
         gameState.players[self.playerNumber].rolledTheDices = False
         gameState.players[self.playerNumber].placedRobber   = False
 
-        if gameState.players[self.playerNumber].GetVictoryPoints() >= 8 and \
-            not gameState.checkLongestRoad:
+        playerPoints = gameState.players[self.playerNumber].GetVictoryPoints()
 
-            gameState.UpdateLongestRoad()
+        # if playerPoints >= 8 and not gameState.checkLongestRoad:
+        #     #gameState.UpdateLongestRoad()
+        #     gameState.checkLongestRoad = True
 
-            gameState.checkLongestRoad = True
-
-        if gameState.players[self.playerNumber].GetVictoryPoints() >= 10:
-
+        if playerPoints >= 10:
             gameState.currState = "OVER"
-
             gameState.winner    = self.playerNumber
 
         else:
             gameState.currState = "PLAY"
 
-            gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
+            #no way! - modulo is really expensive!
+            #gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
+
+            gameState.currPlayer += 1
+            if gameState.currPlayer >= len(gameState.players):
+                gameState.currPlayer = 0
 
             gameState.players[gameState.currPlayer].UpdateMayPlayDevCards(canUseAll=True)
-
             gameState.players[gameState.currPlayer].playedDevCard = False
 
 class DiscardResourcesAction(Action):

@@ -2,6 +2,25 @@ from CatanBoard import *
 from CatanAction import *
 import logging
 import math
+import sys
+
+class PlayerStats(object):
+
+    def __init__(self):
+
+        self.numberOfTurns         = 0
+        self.roadsBuilt            = 0
+        self.settlementsBuilt      = 0
+        self.citiesBuilt           = 0
+        self.cardsBought           = 0
+        self.cardsUsed             = [0, 0, 0, 0, 0]
+        self.numberOfTurnsInPlace  = [0, 0, 0, 0] #first, second, third, last
+        self.numberOfTurnsWasted   = 0 #Wasted turns are those without possible actions (just endTurn)
+        self.totalResourceReceived = [0, 0, 0, 0, 0]
+        self.resourceProduction    = [0, 0, 0, 0, 0]
+        self.totalCardsDiscarded   = [0, 0, 0, 0, 0]
+        self.numberOfTurnsWithArmy = 0
+        self.numberOfTurnsWithRoad = 0
 
 class Player(object):
 
@@ -35,9 +54,6 @@ class Player(object):
             12 : [0, 0, 0, 0, 0, 0]
         }
 
-        self.possibleRoads       = [ ]
-        self.possibleSettlements = [ ]
-
         self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
         self.firstRoadBuild        = False
@@ -45,28 +61,33 @@ class Player(object):
 
         self.rolledTheDices        = False
         self.placedRobber          = False
+        self.victoryPoints         = 0
+        self.updateVictoryPoints   = False
 
         self.agentName = "RANDOM"
 
+        self.logStats  = False
+        self.logData   = None
+
     def GetVictoryPoints(self):
 
-        devCardPoints = self.developmentCards[VICTORY_POINT_CARD_INDEX]
+        if self.updateVictoryPoints:
 
-        constructionPoints = 0
+            devCardPoints = self.developmentCards[VICTORY_POINT_CARD_INDEX]
 
-        for i in range(0, len(self.settlements)):
-            constructionPoints += 1
+            constructionPoints = len(self.settlements) + len(self.cities) * 2
 
-        for i in range(0, len(self.cities)):
-            constructionPoints += 2
+            achievementPoints = 0
+            if self.biggestRoad:
+                achievementPoints += 2
+            if self.biggestArmy:
+                achievementPoints += 2
 
-        achievementPoints = 0
-        if self.biggestRoad:
-            achievementPoints += 2
-        if self.biggestArmy:
-            achievementPoints += 2
+            self.victoryPoints = devCardPoints + constructionPoints + achievementPoints
 
-        return devCardPoints + constructionPoints + achievementPoints
+            self.updateVictoryPoints = False
+
+        return self.victoryPoints
 
     def GetStartingResources(self, gameState):
 
@@ -138,36 +159,36 @@ class Player(object):
         #
         #                         self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 2
 
+    def UpdateLargestArmy(self, option):
+
+        self.biggestArmy = option
+        self.updateVictoryPoints = True
 
     def UpdateMayPlayDevCards(self, recentlyCardIndex = None, canUseAll = False):
 
         if canUseAll:
-
             for i in range(0, len(self.developmentCards)):
-
                 self.mayPlayDevCards[i] = self.developmentCards[i] > 0
 
         else:
-
             if recentlyCardIndex is not None:
+                # IF ITS A VICTORY POINT - WE NEED TO UPDATE THE PLAYERS VICTORY POINT COUNT
+                if recentlyCardIndex == 4:
+                    self.updateVictoryPoints = True
 
-                for i in range(0, len(self.developmentCards)):
-
-                    if int(recentlyCardIndex) == int(i):
-
-                        self.mayPlayDevCards[i] = self.developmentCards[i] > 1
-
-                    else:
-
+                if recentlyCardIndex is None:
+                    for i in range(0, len(self.developmentCards)):
                         self.mayPlayDevCards[i] = self.developmentCards[i] > 0
 
+                else:
+                    for i in range(0, len(self.developmentCards)):
+                        self.mayPlayDevCards[i] = self.developmentCards[i] > 1 if i == recentlyCardIndex \
+                                                  else self.developmentCards[i] > 0
 
     def CanAfford(self, price):
-
         for i in range(0, len(g_resources)):
             if price[i] > self.resources[i]:
                 return False
-
         return True
 
     def HavePiece(self, pieceIndex):
@@ -194,30 +215,6 @@ class Player(object):
                 availablePorts[g_portType.index(portType)] = True
 
         return availablePorts
-
-    def GetPossibleActions(self, game, player = None, gameState = None, ignoreTurn = False):
-        pass
-
-    def DoMove(self, game):
-        pass
-
-    def ChooseCardsToDiscard(self, game, player = None):
-        pass
-
-    def ChooseRobberPosition(self, game, player = None):
-        pass
-
-    def ChoosePlayerToStealFrom(self, game, player = None):
-        pass
-
-    def GetPossibleBankTrades(self, game, player = None):
-        pass
-
-    def GetMonopolyResource(self, game, player = None):
-        pass
-
-    def GetYearOfPlentyResource(self, game, player = None):
-        pass
 
     def UpdateResourcesFromServer(self, action, element, value):
 
@@ -270,6 +267,8 @@ class Player(object):
 
     def Build(self, gameState, pieceType, position):
 
+        self.updateVictoryPoints = True
+
         if pieceType == 'ROAD':
 
             if gameState.currState == "START1B":
@@ -279,6 +278,10 @@ class Player(object):
 
             newConstruction = Construction(g_constructionTypes[0],
                                            self.seatNumber, len(self.roads), position)
+
+            if gameState.boardEdges[position].construction is not None:
+                print("BOARD EDGE ALREADY CONSTRUCTED!!!!!")
+                sys.exit("BOARD EDGE ALREADY CONSTRUCTED!!!!!")
 
             gameState.boardEdges[position].construction = newConstruction
 
@@ -297,6 +300,10 @@ class Player(object):
 
             newConstruction = Construction(g_constructionTypes[1],
                                            self.seatNumber, len(self.settlements), position)
+
+            if gameState.boardNodes[position].construction is not None:
+                print("BOARD NODE ALREADY CONSTRUCTED!!!!!")
+                sys.exit("BOARD NODE ALREADY CONSTRUCTED!!!!!")
 
             gameState.boardNodes[position].construction = newConstruction
 
@@ -354,8 +361,6 @@ class Player(object):
 
                 if number is not None and number > 1:
                     self.diceProduction[number][g_resources.index(production)] += 1
-
-
 
     def UpdateRobDiceProduction(self, gameState, pastRobberPos, newRobberPos):
 
@@ -459,3 +464,37 @@ class Player(object):
         if sum(self.resources) > 7:
             # SET THE NEW RESOURCES AS UNKNOWN - (WE CANT KNOW WHAT RESOURCES THE ROBOT HAVE DISCARDED)
             self.resources = [0, 0, 0, 0, 0, int(math.ceil(sum(self.resources) / 2.0))]
+
+    # def UpdateLogStats(self, action):
+    #
+    #     if not self.logStats:
+    #         return
+    #
+    #     if self.logData is None:
+    #         self.logData = PlayerStats()
+    #
+    #     self.logData.numberOfTurns += 1
+
+    def GetPossibleActions(self, game, player=None, gameState=None, ignoreTurn=False):
+        pass
+
+    def DoMove(self, game):
+        pass
+
+    def ChooseCardsToDiscard(self, game, player=None):
+        pass
+
+    def ChooseRobberPosition(self, game, player=None):
+        pass
+
+    def ChoosePlayerToStealFrom(self, game, player=None):
+        pass
+
+    def GetPossibleBankTrades(self, game, player=None):
+        pass
+
+    def GetMonopolyResource(self, game, player=None):
+        pass
+
+    def GetYearOfPlentyResource(self, game, player=None):
+        pass
