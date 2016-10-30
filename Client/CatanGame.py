@@ -17,7 +17,7 @@ class Game:
 
     def CreateBoard(self, message):
         # Hexes
-        for i in range(0, len(message.hexes)):
+        for i in xrange(0, len(message.hexes)):
 
             self.gameState.boardHexes[g_boardHexes[i]].SetTerrain(message.hexes[i])
 
@@ -35,7 +35,7 @@ class Game:
 
         hex_indicies   = [0, 2, 8, 9, 21, 22, 32, 33, 35]
 
-        for i in range(0, len(hex_indicies)):
+        for i in xrange(0, len(hex_indicies)):
 
             portType = g_board_indicators[ message.hexes[hex_indicies[i]] ]
 
@@ -57,7 +57,7 @@ class Game:
 
         return gameState
 
-class GameState:
+class GameState(object):
 
     def __init__(self):
 
@@ -86,6 +86,7 @@ class GameState:
         self.winner = -1
 
         self.checkLongestRoad = False
+        self.currTurn         = 0
 
         # self.logStats = False
 
@@ -110,6 +111,7 @@ class GameState:
                     self.constructableNodes[adjNode][3] = False
 
         self.setupDone = True
+
         for player in self.players:
             UpdateNode(player.settlements[0])
             UpdateNode(player.settlements[1])
@@ -247,7 +249,7 @@ class GameState:
                         return True
                 return False
 
-            for i in range(0, len(self.players)):
+            for i in xrange(0, len(self.players)):
                 if i == playerNumber:
                     continue
                 for edge in self.boardNodes[position].adjacentEdges:
@@ -348,7 +350,7 @@ class GameState:
 
             usedDevCards = random.sample(currDevCardsPopulation, diff)
 
-            for index in range(0, len(usedDevCards)):
+            for index in xrange(0, len(usedDevCards)):
                 self.developmentCardsDeck[usedDevCards[index]] -= 1
 
     def SetLargestArmy(self, playerNumber):
@@ -394,11 +396,21 @@ class GameState:
             self.players[playerNumber].developmentCards[index] += 1
             self.players[playerNumber].UpdateMayPlayDevCards(recentlyCardIndex=index)
 
-    def UpdateLongestRoad(self):
+    def UpdateLongestRoad(self, player = -1):
+
+        if player != -1 and self.longestRoadPlayer != -1:
+            tgtPlayer = self.players[player]
+            tgtPlayer.roadCount += 1
+            if tgtPlayer.roadCount <= self.players[self.longestRoadPlayer].roadCount:
+                return
+            else:
+                roadCount = tgtPlayer.CountRoads(self)
+                if roadCount >= 5 and roadCount > self.players[self.longestRoadPlayer].roadCount:
+                    self.SetLongestRoad(player)
 
         roadCount = [0 for i in range(0, len(self.players))]
 
-        for i in range(0, len(self.players)):
+        for i in xrange(0, len(self.players)):
 
             roadCount[i] = self.players[i].CountRoads(self)
 

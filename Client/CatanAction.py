@@ -1,5 +1,6 @@
 from JSettlersMessages import *
 from CatanBoard import *
+from CatanUtils import listm
 
 import random
 
@@ -48,31 +49,18 @@ class BuildAction(Action):
 
         gameState.players[self.playerNumber].Build(gameState, g_constructionTypes[self.pieceId][0], self.position)
 
-        if not gameState.setupDone:
-            if self.pieceId == 0: # ROAD
-                gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
-            else:
-                gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
-                gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position, True)
-        else:
-            gameState.UpdatePossibleRoads(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
-            gameState.UpdatePossibleSettlements(self.playerNumber, g_constructionTypes[self.pieceId][0], self.position)
-
         if gameState.currState not in BuildAction.freeBuildStates:
-            currResources = gameState.players[self.playerNumber].resources
-
-            gameState.players[self.playerNumber].resources = \
-                [x1 - x2 for (x1, x2) in zip(currResources, self.cost)]
+            gameState.players[self.playerNumber].resources -= self.cost
 
 class BuildRoadAction(BuildAction):
 
     type = 'BuildRoad'
-    cost = ( 1,  # brick
-             0,  # ore
-             0,  # wool
-             0,  # grain
-             1,  # lumber
-             0 ) # unknown
+    cost = listm([ 1,  # brick
+                   0,  # ore
+                   0,  # wool
+                   0,  # grain
+                   1,  # lumber
+                   0 ]) # unknown
 
     pieceId = 0
 
@@ -84,8 +72,8 @@ class BuildRoadAction(BuildAction):
 
         super(BuildRoadAction, self).ApplyAction(gameState)
 
-        # if gameState.checkLongestRoad:
-        #     gameState.UpdateLongestRoad()
+        if gameState.checkLongestRoad:
+            gameState.UpdateLongestRoad(self.playerNumber)
 
         if gameState.currState == "START1B":
 
@@ -122,12 +110,12 @@ class BuildRoadAction(BuildAction):
 class BuildSettlementAction(BuildAction):
 
     type = 'BuildSettlement'
-    cost = ( 1,  # brick
-             0,  # ore
-             1,  # wool
-             1,  # grain
-             1,  # lumber
-             0 ) # unknown
+    cost = listm([ 1,  # brick
+                   0,  # ore
+                   1,  # wool
+                   1,  # grain
+                   1,  # lumber
+                   0 ]) # unknown
 
     pieceId = 1
 
@@ -139,8 +127,20 @@ class BuildSettlementAction(BuildAction):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
 
-        # if gameState.checkLongestRoad:
-        #   gameState.UpdateLongestRoad()
+        if gameState.boardNodes[self.position].portType is not None:
+            gameState.players[self.playerNumber].UpdateTradeRates(gameState)
+
+        if gameState.checkLongestRoad:
+
+            for edge in gameState.boardNodes[self.position].adjacentEdges:
+                checkLongestRoad = False
+                if gameState.boardEdges[edge].construction is not None and \
+                   gameState.boardEdges[edge].construction.owner != self.playerNumber:
+                    checkLongestRoad = True
+                    break
+
+            if checkLongestRoad:
+                gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1A":
 
@@ -160,12 +160,12 @@ class BuildSettlementAction(BuildAction):
 class BuildCityAction(BuildAction):
 
     type = 'BuildCity'
-    cost = ( 0,  # brick
-             3,  # ore
-             0,  # wool
-             2,  # grain
-             0,  # lumber
-             0 ) # unknown
+    cost = listm([ 0,  # brick
+                   3,  # ore
+                   0,  # wool
+                   2,  # grain
+                   0,  # lumber
+                   0 ]) # unknown
 
     pieceId = 2
 
@@ -190,7 +190,7 @@ class RollDicesAction(Action):
         if result is not None:
             self.result = result
         else:
-            self.result = random.randint(1, 6) + random.randint(1, 6)
+            self.result = 2 + int(random.random() * 6) + int(random.random() * 6)
 
     def GetMessage(self, gameName, currGameStateName = None):
 
@@ -206,7 +206,7 @@ class RollDicesAction(Action):
 
             discardRound = False
 
-            for index in range(0, len(gameState.players)):
+            for index in xrange(0, len(gameState.players)):
 
                 if sum(gameState.players[index].resources) > 7:
                     discardRound = True
@@ -230,12 +230,12 @@ class RollDicesAction(Action):
 class BuyDevelopmentCardAction(Action):
 
     type = 'BuyDevelopmentCard'
-    cost = ( 0,  # brick
-             1,  # ore
-             1,  # wool
-             1,  # grain
-             0,  # lumber
-             0 ) # unknown
+    cost = listm([ 0,  # brick
+                   1,  # ore
+                   1,  # wool
+                   1,  # grain
+                   0,  # lumber
+                   0 ]) # unknown
 
     def __init__(self, playerNumber):
 
@@ -249,10 +249,7 @@ class BuyDevelopmentCardAction(Action):
 
         #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(BuyDevelopmentCardAction.type))
 
-        currResources = gameState.players[self.playerNumber].resources
-
-        gameState.players[self.playerNumber].resources = \
-            [ x1 - x2 for (x1, x2) in zip(currResources, BuyDevelopmentCardAction.cost) ]
+        gameState.players[self.playerNumber].resources -= BuyDevelopmentCardAction.cost
 
         gameState.DrawDevCard(self.playerNumber)
 
@@ -322,7 +319,7 @@ class UseMonopolyCardAction(UseDevelopmentCardAction):
 
         total = 0
 
-        for index in range(0, len(gameState.players)):
+        for index in xrange(0, len(gameState.players)):
 
             if index == self.playerNumber:
                 continue
@@ -435,12 +432,13 @@ class EndTurnAction(Action):
 
         gameState.players[self.playerNumber].rolledTheDices = False
         gameState.players[self.playerNumber].placedRobber   = False
+        gameState.currTurn += 1
 
         playerPoints = gameState.players[self.playerNumber].GetVictoryPoints()
 
-        # if playerPoints >= 8 and not gameState.checkLongestRoad:
-        #     #gameState.UpdateLongestRoad()
-        #     gameState.checkLongestRoad = True
+        if playerPoints >= 8 and not gameState.checkLongestRoad:
+            gameState.UpdateLongestRoad()
+            gameState.checkLongestRoad = True
 
         if playerPoints >= 10:
             gameState.currState = "OVER"
@@ -449,12 +447,7 @@ class EndTurnAction(Action):
         else:
             gameState.currState = "PLAY"
 
-            #no way! - modulo is really expensive!
-            #gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
-
-            gameState.currPlayer += 1
-            if gameState.currPlayer >= len(gameState.players):
-                gameState.currPlayer = 0
+            gameState.currPlayer = (gameState.currPlayer + 1) % len(gameState.players)
 
             gameState.players[gameState.currPlayer].UpdateMayPlayDevCards(canUseAll=True)
             gameState.players[gameState.currPlayer].playedDevCard = False
@@ -478,10 +471,7 @@ class DiscardResourcesAction(Action):
 
         #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(DiscardResourcesAction.type))
 
-        currResources = gameState.players[self.playerNumber].resources
-
-        gameState.players[self.playerNumber].resources = \
-            [ x1 - x2 for (x1, x2) in zip(currResources, self.resources) ]
+        gameState.players[self.playerNumber].resources -= self.resources
 
         gameState.currPlayerChoice += 1
 
@@ -569,13 +559,9 @@ class BankTradeOfferAction(Action):
         give = self.giveResources + [0]
         get  = self.getResources  + [0]
 
-        gameState.players[self.playerNumber].resources = \
-            [x1 - x2 for (x1, x2) in
-             zip(gameState.players[self.playerNumber].resources, give)]
+        gameState.players[self.playerNumber].resources -= listm(give)
 
-        gameState.players[self.playerNumber].resources = \
-            [x1 + x2 for (x1, x2) in
-             zip(gameState.players[self.playerNumber].resources, get)]
+        gameState.players[self.playerNumber].resources += listm(get)
 
 class ChangeGameStateAction(Action):
 

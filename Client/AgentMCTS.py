@@ -197,7 +197,7 @@ class AgentMCTS(AgentRandom):
                 for i in range(0, quantity):
                     resources[random.randint(0, 4)] += 1
 
-                player.resources = [x1 + x2 for (x1, x2) in zip(player.resources, resources)]
+                player.resources = player.resources + resources
 
     @staticmethod
     def GetPossibleActions(gameState, player):

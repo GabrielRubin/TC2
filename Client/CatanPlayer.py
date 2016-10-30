@@ -1,9 +1,8 @@
-from CatanBoard import *
 from CatanAction import *
-import logging
 import math
 import sys
-import numpy as np
+from CatanUtils import CanAfford as cf
+from CatanUtils import listm
 
 class PlayerStats(object):
 
@@ -29,7 +28,7 @@ class Player(object):
 
         self.name             = name
         self.seatNumber       = seatNumber
-        self.resources        = [ 0 for i in range(0, len(g_resources))           ]
+        self.resources        = listm([0, 0, 0, 0, 0, 0])
         self.developmentCards = [ 0 for i in range(0, len(g_developmentCards))    ]
         self.mayPlayDevCards  = [ False for i in range(0, len(g_developmentCards))]
         self.roads            = [ ]
@@ -44,17 +43,19 @@ class Player(object):
 
         self.diceProduction = \
         {
-            2  : [0, 0, 0, 0, 0, 0],
-            3  : [0, 0, 0, 0, 0, 0],
-            4  : [0, 0, 0, 0, 0, 0],
-            5  : [0, 0, 0, 0, 0, 0],
-            6  : [0, 0, 0, 0, 0, 0],
-            8  : [0, 0, 0, 0, 0, 0],
-            9  : [0, 0, 0, 0, 0, 0],
-            10 : [0, 0, 0, 0, 0, 0],
-            11 : [0, 0, 0, 0, 0, 0],
-            12 : [0, 0, 0, 0, 0, 0]
+            2  : listm([0, 0, 0, 0, 0, 0]),
+            3  : listm([0, 0, 0, 0, 0, 0]),
+            4  : listm([0, 0, 0, 0, 0, 0]),
+            5  : listm([0, 0, 0, 0, 0, 0]),
+            6  : listm([0, 0, 0, 0, 0, 0]),
+            8  : listm([0, 0, 0, 0, 0, 0]),
+            9  : listm([0, 0, 0, 0, 0, 0]),
+            10 : listm([0, 0, 0, 0, 0, 0]),
+            11 : listm([0, 0, 0, 0, 0, 0]),
+            12 : listm([0, 0, 0, 0, 0, 0])
         }
+
+        self.tradeRates = [4, 4, 4, 4, 4, 4]
 
         self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
@@ -66,10 +67,29 @@ class Player(object):
         self.victoryPoints         = 0
         self.updateVictoryPoints   = False
 
+        self.roadCount = 0
+
         self.agentName = "RANDOM"
 
         self.logStats  = False
         self.logData   = None
+
+    def UpdateTradeRates(self, gameState):
+
+        availablePorts = self.GetPorts(gameState)
+
+        if availablePorts[-1]:
+            minTradeRate = 3
+        else:
+            minTradeRate = 4
+
+        tradeRates = [minTradeRate, minTradeRate, minTradeRate, minTradeRate, minTradeRate]
+
+        for i in range(0, len(tradeRates)):
+            if availablePorts[i]:
+                tradeRates[i] = 2
+
+        self.tradeRates = tradeRates
 
     def GetVictoryPoints(self):
 
@@ -115,51 +135,13 @@ class Player(object):
 
     def UpdatePlayerResources(self, gameState, diceNumber = None):
 
-        #logging.info("UPDATING PLAYER {0} RESOURCES...".format(self.seatNumber))
-
         if diceNumber is not None:
 
             diceProduction = self.diceProduction[diceNumber]
 
             if sum(diceProduction) > 0:
 
-                currResources = self.resources
-
-                self.resources = [x1 + x2 for (x1, x2) in zip(currResources, diceProduction)]
-
-        # if diceNumber is not None:
-        #
-        #     for s in range(0, len(self.settlements)):
-        #
-        #         adjacentHexes = gameState.boardNodes[self.settlements[s]].adjacentHexes
-        #
-        #         for h in range(0, len(adjacentHexes)):
-        #
-        #             if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
-        #
-        #                 if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
-        #
-        #                     if gameState.boardHexes[adjacentHexes[h]].production is not None:
-        #
-        #                         logging.info("  >> GAIN 1 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
-        #
-        #                         self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 1
-        #
-        #     for c in range(0, len(self.cities)):
-        #
-        #         adjacentHexes = gameState.boardNodes[self.cities[c]].adjacentHexes
-        #
-        #         for h in range(0, len(adjacentHexes)):
-        #
-        #             if adjacentHexes[h] is not None and gameState.robberPos != adjacentHexes[h]:
-        #
-        #                 if int(gameState.boardHexes[adjacentHexes[h]].number) == int(diceNumber):
-        #
-        #                     if gameState.boardHexes[adjacentHexes[h]].production is not None:
-        #
-        #                         logging.info("  >> GAIN 2 {0}".format(gameState.boardHexes[adjacentHexes[h]].production))
-        #
-        #                         self.resources[g_resources.index(gameState.boardHexes[adjacentHexes[h]].production)] += 2
+                self.resources += diceProduction
 
     def UpdateLargestArmy(self, option):
 
@@ -169,7 +151,7 @@ class Player(object):
     def UpdateMayPlayDevCards(self, recentlyCardIndex = None, canUseAll = False):
 
         if canUseAll:
-            for i in range(0, len(self.developmentCards)):
+            for i in xrange(0, len(self.developmentCards)):
                 self.mayPlayDevCards[i] = self.developmentCards[i] > 0
 
         else:
@@ -179,19 +161,16 @@ class Player(object):
                     self.updateVictoryPoints = True
 
                 if recentlyCardIndex is None:
-                    for i in range(0, len(self.developmentCards)):
+                    for i in xrange(0, len(self.developmentCards)):
                         self.mayPlayDevCards[i] = self.developmentCards[i] > 0
 
                 else:
-                    for i in range(0, len(self.developmentCards)):
+                    for i in xrange(0, len(self.developmentCards)):
                         self.mayPlayDevCards[i] = self.developmentCards[i] > 1 if i == recentlyCardIndex \
                                                   else self.developmentCards[i] > 0
 
     def CanAfford(self, price):
-        for i in range(5):
-            if price[i] > self.resources[i]:
-                return False
-        return True
+        return cf(self.resources, price)
 
     def HavePiece(self, pieceIndex):
         if self.numberOfPieces[pieceIndex] > 0:
@@ -235,7 +214,7 @@ class Player(object):
 
                     self.resources[g_resources.index('UNKNOWN')] = resourceAmount
 
-                    for index in range(len(self.resources) - 1):
+                    for index in xrange(len(self.resources) - 1):
                         self.resources[index] = 0
                 else:
                     self.resources[g_resources.index(element)] -= value
@@ -272,6 +251,12 @@ class Player(object):
 
         if pieceType == 'ROAD':
 
+            if not gameState.setupDone:
+                gameState.UpdatePossibleRoads(self.seatNumber, pieceType, position)
+            else:
+                gameState.UpdatePossibleRoads(self.seatNumber, pieceType, position)
+                gameState.UpdatePossibleSettlements(self.seatNumber, pieceType, position)
+
             if gameState.currState == "START1B":
                 self.firstRoadBuild  = True
             elif gameState.currState == "START2B":
@@ -293,6 +278,12 @@ class Player(object):
             self.numberOfPieces[0] -= 1
 
         elif pieceType == 'SETTLEMENT':
+
+            gameState.UpdatePossibleRoads(self.seatNumber, pieceType, position)
+            if not gameState.setupDone:
+                gameState.UpdatePossibleSettlements(self.seatNumber, pieceType, position, True)
+            else:
+                gameState.UpdatePossibleSettlements(self.seatNumber, pieceType, position)
 
             if gameState.currState == "START1A":
                 self.firstSettlementBuild  = True
@@ -433,7 +424,9 @@ class Player(object):
         if len(results) <= 0:
             return 0
 
-        return max(results)
+        self.roadCount = max(results)
+
+        return self.roadCount
 
     def DefaultDiscard(self):
         #ROBOT PLAYER DEFAULT DISCARD METHOD

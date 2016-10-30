@@ -311,7 +311,7 @@ class Client:
 
             if self.game.gameState.currState == "PLAY" and not self.game.gameState.setupDone:
 
-                self.game.gameState.setupDone = True
+                self.game.gameState.FinishSetup()
 
                 for index in range(0, len(self.game.gameState.players)):
                     if index != self.player.seatNumber:
@@ -457,7 +457,7 @@ class Client:
                     putPieceAction = BuildCityAction(instance.playerNumber, instance.position,
                                                      len(self.game.gameState.players[instance.playerNumber].cities))
 
-                putPieceAction.ApplyAction(self.debugGame.gameState)
+                #putPieceAction.ApplyAction(self.debugGame.gameState)
 
             self.game.gameState.players[instance.playerNumber].Build(self.game.gameState,
                                                                      instance.pieceType[0],

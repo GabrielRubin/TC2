@@ -1,14 +1,16 @@
-from Client import *
+#from Client import *
 import GameStateViewer
-import logging
+#import logging
 import datetime
 import cProfile
 import pstats
 import timeit
 import os.path
 import socket
-from AgentMCTS import AgentMCTS
+#from AgentMCTS import AgentMCTS
 import cPickle
+from CatanGame import *
+from AgentRandom import *
 
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
@@ -193,6 +195,26 @@ def RunSpeedTest(numberOfRepetitions):
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
 
+def RunSpeedTest2():
+    logger = logging.getLogger()
+
+    logger.disabled = True
+
+    today = datetime.datetime.today()
+
+    timer = timeit.Timer("Run300Times()", setup="from __main__ import Run300Times")
+
+    speedResults = timer.repeat(1, 1)
+
+    print("\n{0} - {1} >> Best Case: {2}s, Worst Case: {3}s, Average: {4}s".format(
+                socket.gethostname(),
+                today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
+                round(max(speedResults), 4), round(sum(speedResults)/1, 4)))
+
+def Run300Times():
+    for i in range(300):
+        RunSingleGame(defaultGame)
+
 def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = False):
 
     if players is None:
@@ -219,10 +241,10 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    #RunWithLogging(10, saveGameStateLogs=True)
+    #RunWithLogging(30, saveGameStateLogs=True)
 
     # SPEED TEST
-    RunSpeedTest(300)
+    RunSpeedTest(10000)
 
     # SIMULATOR PROFILER
     #RunProfiler()

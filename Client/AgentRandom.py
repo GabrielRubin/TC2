@@ -2,6 +2,7 @@ from CatanPlayer import *
 import random
 import logging
 import math
+from CatanUtils import GetRandomBankTrade
 
 class AgentRandom(Player):
 
@@ -15,6 +16,17 @@ class AgentRandom(Player):
 
         if player is None:
             player = self
+
+        if not gameState.setupDone:
+            return self.PossibleActionsSetupTurns(gameState, player)
+        elif gameState.currState == "PLAY" or gameState.currState == "PLAY1":
+            return self.PossibleActionsRegularTurns(gameState, player)
+        else:
+            return self.PossibleActionsSpecial(gameState, player)
+
+        return None
+
+    def PossibleActionsSetupTurns(self, gameState, player = None):
 
         if   gameState.currState == 'START1A':
 
@@ -72,7 +84,12 @@ class AgentRandom(Player):
 
             return [BuildRoadAction(player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
 
-        elif gameState.currState == 'PLAY':
+    actions = ('buildRoad', 'buildSettlement', 'buildCity',
+               'buyDevCard', 'useDevCard')
+
+    def PossibleActionsRegularTurns(self, gameState, player):
+
+        if gameState.currState == 'PLAY':
 
             # FIXME: TRYING TO USE KNIGHT 2 TIMES!!! WHAT??? (fixed?)
 
@@ -89,39 +106,32 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'PLAY1':
 
-            actions             = ('buildRoad', 'buildSettlement', 'buildCity',
-                                   'buyDevCard', 'useDevCard')
-
             possibleActions     = []
 
             if player.HavePiece(g_pieces.index('ROADS')) and \
                 player.CanAfford(BuildRoadAction.cost):
 
-                possibleActions.append(actions[0])
+                possibleActions.append(AgentRandom.actions[0])
 
             if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
                 player.CanAfford(BuildSettlementAction.cost):
 
-                possibleActions.append(actions[1])
+                possibleActions.append(AgentRandom.actions[1])
 
             if len(player.settlements) > 0 and\
                 player.HavePiece(g_pieces.index('CITIES')) and\
                 player.CanAfford(BuildCityAction.cost):
 
-                possibleActions.append(actions[2])
+                possibleActions.append(AgentRandom.actions[2])
 
             if gameState.CanBuyADevCard(player) and not player.biggestArmy:
-                possibleActions.append(actions[3])
+                possibleActions.append(AgentRandom.actions[3])
 
             if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
-                possibleActions.append(actions[4])
+                possibleActions.append(AgentRandom.actions[4])
 
             if len(possibleActions) == 0:
-
-                if random.random() >= 0.5:
-                    return player.GetPossibleBankTrades(gameState, player)
-                else:
-                    return None
+                return player.GetPossibleBankTrades(gameState, player)
 
             chosenAction = random.choice(possibleActions)
 
@@ -133,7 +143,9 @@ class AgentRandom(Player):
 
                 if possibleRoads is not None and len(possibleRoads) > 0:
 
-                    return [('buildRoad', player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
+                    choice = possibleRoads[int(random.random() * len(possibleRoads))]
+
+                    return BuildRoadAction(player.seatNumber, choice, len(player.roads))
 
             elif chosenAction == 'buildSettlement':
 
@@ -143,7 +155,9 @@ class AgentRandom(Player):
 
                 if possibleSettlements is not None and len(possibleSettlements) > 0:
 
-                    return [('buildSettlement', player.seatNumber, setNode, len(player.settlements)) for setNode in possibleSettlements]
+                    choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
+
+                    return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
 
             elif chosenAction == 'buildCity':
 
@@ -151,11 +165,13 @@ class AgentRandom(Player):
 
                 if possibleCities is not None and len(possibleCities) > 0:
 
-                    return [('buildCity', player.seatNumber, setNode, len(player.cities)) for setNode in possibleCities]
+                    choice = possibleCities[int(random.random() * len(possibleCities))]
+
+                    return BuildCityAction(player.seatNumber, choice, len(player.cities))
 
             elif chosenAction == 'buyDevCard':
 
-                return [BuyDevelopmentCardAction(player.seatNumber)]
+                return BuyDevelopmentCardAction(player.seatNumber)
 
             elif chosenAction == 'useDevCard':
 
@@ -176,9 +192,12 @@ class AgentRandom(Player):
                                     player.numberOfPieces[0] > 0:
                         possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
 
-                return possibleCardsToUse
+                if len(possibleCardsToUse) > 0:
+                    return possibleCardsToUse[int(random.random() * len(possibleCardsToUse))]
 
-        elif gameState.currState == 'PLACING_ROBBER':
+    def PossibleActionsSpecial(self, gameState, player):
+
+        if gameState.currState == 'PLACING_ROBBER':
 
             # Rolled out 7  * or *  Used a knight card
             return player.ChooseRobberPosition(gameState, player)
@@ -213,8 +232,6 @@ class AgentRandom(Player):
                                     len(player.roads))
                     for roadEdge in possibleRoads]
 
-        return None
-
     def DoMove(self, game):
 
         if game.gameState.currPlayer != self.seatNumber and \
@@ -227,20 +244,9 @@ class AgentRandom(Player):
 
         if game.gameState.currState == "PLAY1":
 
-            if possibleActions is not None and len(possibleActions) > 0:
+            if possibleActions is not None:
 
-                #choice = random.choice(possibleActions)
-                choice = possibleActions[int(random.random() * len(possibleActions))]
-
-                if isinstance(choice, tuple):
-                    if   choice[0] == 'buildRoad':
-                        return BuildRoadAction(choice[1], choice[2], choice[3])
-                    elif choice[0] == 'buildSettlement':
-                        return BuildSettlementAction(choice[1], choice[2], choice[3])
-                    elif choice[0] == 'buildCity':
-                        return BuildCityAction(choice[1], choice[2], choice[3])
-                else:
-                    return choice
+                return possibleActions
 
             return EndTurnAction(self.seatNumber)
 
@@ -312,68 +318,10 @@ class AgentRandom(Player):
         if player is None:
             player = self
 
-        availablePorts = self.GetPorts(gameState)
+        result = GetRandomBankTrade(player.resources, self.tradeRates)
 
-        if availablePorts[-1]:
-            minTradeRate = 3
-        else:
-            minTradeRate = 4
-
-        tradeRates = [minTradeRate, minTradeRate, minTradeRate, minTradeRate, minTradeRate]
-
-        for i in range(0, len(tradeRates)):
-            if availablePorts[i]:
-                tradeRates[i] = 2
-
-        possibleTradeAmount = [0, 0, 0, 0, 0]
-        candidateForTrade   = []
-
-        minResourceAmount = min(player.resources[:-1]) #Don't count the 'UNKNOWN' resource
-
-        for i in range(len(possibleTradeAmount)):
-            possibleTradeAmount[i] = int(player.resources[i] / tradeRates[i])
-            if player.resources[i] == minResourceAmount:
-                candidateForTrade.append(i)
-
-        #tradeAmount = random.randint(0, sum(possibleTradeAmount))
-        tradeAmount = int(random.random() * sum(possibleTradeAmount))
-
-        if tradeAmount > 0 and len(candidateForTrade) > 0:
-
-            possibleTradePopulation = [0 for i in range(0, possibleTradeAmount[0])] + \
-                                      [1 for j in range(0, possibleTradeAmount[1])] + \
-                                      [2 for k in range(0, possibleTradeAmount[2])] + \
-                                      [3 for l in range(0, possibleTradeAmount[3])] + \
-                                      [4 for m in range(0, possibleTradeAmount[4])]
-
-            # logging.critical("Player {0} is checking if he can trade...\n"
-            #               " He have this resources: {1}\n"
-            #               " And he thinks he can trade these: {2}".format(player.name, player.resources,
-            #                                                               possibleTradeAmount))
-
-            chosenResources   = random.sample(possibleTradePopulation, tradeAmount)
-
-            expectedResources = []
-            for i in range(0, tradeAmount):
-                expectedResources.append(candidateForTrade[int(random.random() * len(candidateForTrade))])
-
-            # logging.critical("Chosen: {0}\n Expected: {1}\n MaxTrades: {2}".format(
-            #     chosenResources, expectedResources, tradeAmount
-            # ))
-
-            give = [chosenResources.count(0) * tradeRates[0], chosenResources.count(1) * tradeRates[1],
-                    chosenResources.count(2) * tradeRates[2], chosenResources.count(3) * tradeRates[3],
-                    chosenResources.count(4) * tradeRates[4]]
-
-            get  = [expectedResources.count(0), expectedResources.count(1),
-                    expectedResources.count(2), expectedResources.count(3),
-                    expectedResources.count(4)]
-
-            # logging.critical("Player {0} will trade with the bank!\n"
-            #               " GIVE = {1}\n"
-            #               " GET  = {2}".format(player.name, give, get))
-
-            return [ BankTradeOfferAction(player.seatNumber, give, get) ]
+        if result is not None:
+            return [ BankTradeOfferAction(player.seatNumber, result[0], result[1]) ]
 
         return None
 
@@ -386,7 +334,7 @@ class AgentRandom(Player):
 
         minResourceAmount = min(player.resources[:-1])
 
-        for i in range(0, len(player.resources) - 1):
+        for i in xrange(0, len(player.resources) - 1):
 
             if player.resources[i] == minResourceAmount:
                 candidateResource.append(i + 1)
@@ -417,7 +365,7 @@ class AgentRandom(Player):
 
         minResourceAmount = min(player.resources[:-1])
 
-        for i in range(0, len(player.resources) - 1):
+        for i in xrange(0, len(player.resources) - 1):
 
             if player.resources[i] == minResourceAmount:
                 candidateResource.append(i)

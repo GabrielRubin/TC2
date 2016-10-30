@@ -20,7 +20,7 @@ clientProcess = None
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                    default = 'mcts')
+                    default = 'rand')
 
 parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                     default='TC2_agent')

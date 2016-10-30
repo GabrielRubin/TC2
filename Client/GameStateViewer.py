@@ -4,6 +4,7 @@ import cPickle
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from Tkinter import Tk
 from tkFileDialog import askopenfilename
+import logging
 
 
 def tintImage(image, tintColor):
@@ -346,6 +347,8 @@ if __name__ == '__main__':
         savedGameState = cPickle.load(handle)
 
     if savedGameState is not None:
+
+        savedGameState.UpdateLongestRoad()
 
         logging.critical("#########################################################")
 
