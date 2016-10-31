@@ -57,6 +57,9 @@ class Player(object):
 
         self.tradeRates = [4, 4, 4, 4, 4, 4]
 
+        self.possibleRoads         = []
+        self.possibleSettlements   = []
+
         self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
         self.firstRoadBuild        = False

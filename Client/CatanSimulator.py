@@ -7,10 +7,13 @@ import pstats
 import timeit
 import os.path
 import socket
-#from AgentMCTS import AgentMCTS
+from AgentMCTS import AgentMCTS
 import cPickle
 from CatanGame import *
 from AgentRandom import *
+from joblib import Parallel, delayed
+import multiprocessing
+
 
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
@@ -69,19 +72,22 @@ def RunSingleGame(game):
         #if game.gameState.setupDone:
             return game
 
-def RunGame(players = None, saveLog = False):
+def RunGame(inGame = None, players = None, saveLog = False, showLog = False, showFullLog = False):
 
     if players is None:
         players = copy.deepcopy(defaultPlayers)
 
-    game = RunSingleGame(CreateGame(players))
+    if inGame is None:
+        inGame = CreateGame(players)
+
+    game = RunSingleGame(inGame)
+
+    now = datetime.datetime.today()
 
     if saveLog:
 
         if not os.path.isdir("GameStates"):
             os.makedirs("GameStates")
-
-        now = datetime.datetime.today()
 
         currGameStateName = "board_" + now.strftime("%d-%m-%Y_%H-%M-%S-%f")
 
@@ -95,64 +101,71 @@ def RunGame(players = None, saveLog = False):
 
         GameStateViewer.SaveGameStateImage(game.gameState, 'GameStates/{0}.png'.format(currGameStateName))
 
-    logging.critical("#########################################################")
+    if showLog:
 
-    logging.critical("Game Over! Player {0} Wins!".format(game.gameState.players[game.gameState.winner].name))
+        logging.critical("#########################################################")
 
-    logging.critical("GAME STATS:")
+        logging.critical("Game Over! Player {0} Wins!".format(game.gameState.players[game.gameState.winner].name))
 
-    logging.critical(" largest army player: {0} \n longest road player: {1} ".format(
-        game.gameState.largestArmyPlayer,
-        game.gameState.longestRoadPlayer
-    ))
+        logging.critical("GAME STATS:")
 
-    logging.critical("#########################################################")
-
-    for i in range(0, len(game.gameState.players)):
-
-        logging.critical("Player {0} stats:".format(game.gameState.players[i].name))
-
-        logging.critical("Player {0} is a {1} agent".format(game.gameState.players[i].name,
-                                                            game.gameState.players[i].agentName))
-
-        logging.critical("his resources are: "
-                      "\n POINTS          = {0} "
-                      "\n LARGEST ARMY    = {1} "
-                      "\n LONGEST ROAD    = {2} "
-                      "\n RESOURCES       = {3} "
-                      "\n PIECES          = {4} "
-                      "\n KNIGHTS         = {5} "
-                      "\n DICE PRODUCTION = {6}".format(
-            game.gameState.players[i].GetVictoryPoints(),
-            game.gameState.players[i].biggestArmy,
-            game.gameState.players[i].biggestRoad,
-            game.gameState.players[i].resources,
-            game.gameState.players[i].numberOfPieces,
-            game.gameState.players[i].knights,
-            game.gameState.players[i].diceProduction
+        logging.critical(" total turns: {0} \n starting player: {1} \n largest army player: {2} \n longest road player: {3} ".format(
+            game.gameState.currTurn,
+            game.gameState.startingPlayer,
+            game.gameState.largestArmyPlayer,
+            game.gameState.longestRoadPlayer
         ))
 
-        devCards = ""
+        logging.critical("#########################################################")
 
-        for j in range(0, len(g_developmentCards)):
+        if showFullLog:
 
-            devCards += " {0} : {1}".format(
-                g_developmentCards[j], game.gameState.players[i].developmentCards[j]
-            )
+            for i in range(0, len(game.gameState.players)):
 
-        logging.critical(" DevCards : {0}".format(devCards))
+                logging.critical("Player {0} stats:".format(game.gameState.players[i].name))
 
-        logging.critical(" Roads: {0}\n Settlements: {1}\n Cities: {2}".format(
-            [hex(road) for road in game.gameState.players[i].roads],
-            [hex(settlement) for settlement in game.gameState.players[i].settlements],
-            [hex(city) for city in game.gameState.players[i].cities]
-        ))
+                logging.critical("Player {0} is a {1} agent".format(game.gameState.players[i].name,
+                                                                    game.gameState.players[i].agentName))
 
-        logging.critical("---------------------------------------------------------")
+                logging.critical("his resources are: "
+                              "\n POINTS          = {0} "
+                              "\n LARGEST ARMY    = {1} "
+                              "\n LONGEST ROAD    = {2} "
+                              "\n RESOURCES       = {3} "
+                              "\n PIECES          = {4} "
+                              "\n KNIGHTS         = {5} "
+                              "\n DICE PRODUCTION = {6}".format(
+                    game.gameState.players[i].GetVictoryPoints(),
+                    game.gameState.players[i].biggestArmy,
+                    game.gameState.players[i].biggestRoad,
+                    game.gameState.players[i].resources,
+                    game.gameState.players[i].numberOfPieces,
+                    game.gameState.players[i].knights,
+                    game.gameState.players[i].diceProduction
+                ))
 
+                devCards = ""
+
+                for j in range(0, len(g_developmentCards)):
+
+                    devCards += " {0} : {1}".format(
+                        g_developmentCards[j], game.gameState.players[i].developmentCards[j]
+                    )
+
+                logging.critical(" DevCards : {0}".format(devCards))
+
+                logging.critical(" Roads: {0}\n Settlements: {1}\n Cities: {2}".format(
+                    [hex(road) for road in game.gameState.players[i].roads],
+                    [hex(settlement) for settlement in game.gameState.players[i].settlements],
+                    [hex(city) for city in game.gameState.players[i].cities]
+                ))
+
+                logging.critical("---------------------------------------------------------")
 
     if saveLog:
         logging.getLogger().removeHandler(gameStateFile)
+
+    return game.gameState.winner
 
 def RunProfiler():
 
@@ -195,27 +208,17 @@ def RunSpeedTest(numberOfRepetitions):
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
 
-def RunSpeedTest2():
-    logger = logging.getLogger()
+def RunParallel(game, index, numberOfRepetitions):
 
-    logger.disabled = True
+    result = RunGame(game, game.gameState.players, showLog=False)
 
-    today = datetime.datetime.today()
+    print("\n TOTAL GAMES = {0}/{1} ".format(
+        (index + 1),
+        numberOfRepetitions))
 
-    timer = timeit.Timer("Run300Times()", setup="from __main__ import Run300Times")
+    return result
 
-    speedResults = timer.repeat(1, 1)
-
-    print("\n{0} - {1} >> Best Case: {2}s, Worst Case: {3}s, Average: {4}s".format(
-                socket.gethostname(),
-                today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
-                round(max(speedResults), 4), round(sum(speedResults)/1, 4)))
-
-def Run300Times():
-    for i in range(300):
-        RunSingleGame(defaultGame)
-
-def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = False):
+def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = False, agentIndex = 0, multiprocess = False):
 
     if players is None:
         players = defaultPlayers
@@ -228,23 +231,59 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
     logger.addHandler(logFile)
 
-    for i in range(0, numberOfRepetitions):
-        RunGame(players, True)
+    winCount = [0, 0, 0, 0]
+
+    totalTime = datetime.datetime.utcnow()
+
+    if multiprocess:
+        num_cores = multiprocessing.cpu_count()
+        winners = Parallel(n_jobs=num_cores)(delayed(RunParallel)(CreateGame(players), i, numberOfRepetitions) for i in range(0, numberOfRepetitions))
+        winCount = [winners.count(0), winners.count(1), winners.count(2), winners.count(3)]
+
+    else:
+
+        games = [CreateGame(players) for i in range(numberOfRepetitions)]
+
+        for i in range(0, numberOfRepetitions):
+
+            time = datetime.datetime.utcnow()
+
+            winner = RunGame(games[i], games[i].gameState.players, showLog=True, showFullLog=False)
+
+            logging.critical("\n GAME TIME = {0}".format(((datetime.datetime.utcnow() - time).total_seconds())))
+
+            winCount[winner] += 1
+
+            total = "\n TOTAL GAMES = {0}/{1} ".format(
+                (i + 1),
+                numberOfRepetitions)
+
+            print(total)
+
+            logging.critical(total)
+
+    logging.critical("\n TOTAL TIME = {0}".format(((datetime.datetime.utcnow() - totalTime).total_seconds())))
+
+    logging.critical(" TOTAL GAMES = {0} \n WIN COUNT = {1} \n AGENT WIN PERCENTAGE = {2}%".format(
+        numberOfRepetitions,
+        winCount,
+        (float(winCount[agentIndex]) / numberOfRepetitions) * 100.0
+    ))
 
 if __name__ == '__main__':
 
     #RunGame(defaultPlayers)
 
-    # for i in range(0, 100):
+    # for i in range(0, 10):
     #     RunGame(defaultPlayers)
     #
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    #RunWithLogging(30, saveGameStateLogs=True)
+    RunWithLogging(100, saveGameStateLogs=False, multiprocess=True)
 
     # SPEED TEST
-    RunSpeedTest(10000)
+    #RunSpeedTest(300)
 
     # SIMULATOR PROFILER
     #RunProfiler()

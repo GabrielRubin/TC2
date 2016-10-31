@@ -65,6 +65,8 @@ class GameState(object):
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
+        self.updatePlayerNodes  = [True, True, True, True]
+        self.updatePlayerEdges  = [True, True, True, True]
         self.constructableNodes = g_constructableNodes
         self.constructableEdges = g_constructableEdges
         self.possibleRobberPos  = g_possibleRobberPos
@@ -86,7 +88,6 @@ class GameState(object):
         self.winner = -1
 
         self.checkLongestRoad = False
-        self.currTurn         = 0
 
         # self.logStats = False
 
@@ -230,6 +231,10 @@ class GameState(object):
     def UpdatePossibleRoads(self, playerNumber, constructionType, position):
 
         if constructionType == 'ROAD':
+            self.updatePlayerEdges[0] = True
+            self.updatePlayerEdges[1] = True
+            self.updatePlayerEdges[2] = True
+            self.updatePlayerEdges[3] = True
 
             self.constructableEdges[position][0] = False
             self.constructableEdges[position][1] = False
@@ -256,6 +261,8 @@ class GameState(object):
                     if edge in self.constructableEdges and self.boardEdges[edge].construction is None:
                         self.constructableEdges[edge][playerNumber] = haveConnection(edge, i)
 
+            self.updatePlayerEdges[playerNumber] = True
+
 
     #ANOTHER METHOD FOR DISCOVERING POSSIBLE SETTLEMENTS
     def UpdatePossibleSettlements(self, playerNumber, constructionType, position, isSetup=False):
@@ -273,7 +280,14 @@ class GameState(object):
             for node in self.boardEdges[position].adjacentNodes:
                 self.constructableNodes[node][playerNumber] = isNodeAvailable(node)
 
+            self.updatePlayerNodes[playerNumber] = True
+
         elif constructionType == 'SETTLEMENT':
+
+            self.updatePlayerNodes[0] = True
+            self.updatePlayerNodes[1] = True
+            self.updatePlayerNodes[2] = True
+            self.updatePlayerNodes[3] = True
 
             self.constructableNodes[position][0] = isSetup
             self.constructableNodes[position][1] = isSetup
@@ -289,29 +303,41 @@ class GameState(object):
 
     def GetPossibleRoads(self, player, setUpPhase = False, freeRoad = False):
 
-        if setUpPhase:
-            if self.currState == "START1B":
-                return [edge for edge in
-                        self.boardNodes[player.settlements[0]].adjacentEdges if
-                        edge in self.constructableEdges]
-            else:
-                return [edge for edge in
-                        self.boardNodes[player.settlements[1]].adjacentEdges if
-                        edge in self.constructableEdges]
+        if self.updatePlayerEdges[player.seatNumber]:
 
-        return [edge for edge in
-                self.constructableEdges if self.constructableEdges[edge][player.seatNumber]]
+            if setUpPhase:
+                if self.currState == "START1B":
+                    player.possibleRoads = [edge for edge in
+                                            self.boardNodes[player.settlements[0]].adjacentEdges if
+                                            edge in self.constructableEdges]
+                else:
+                    player.possibleRoads = [edge for edge in
+                                            self.boardNodes[player.settlements[1]].adjacentEdges if
+                                            edge in self.constructableEdges]
+            else:
+                player.possibleRoads = [edge for edge in
+                                        self.constructableEdges if self.constructableEdges[edge][player.seatNumber]]
+
+            self.updatePlayerEdges[player.seatNumber] = False
+
+        return player.possibleRoads
 
     def GetPossibleSettlements(self, player, setUpPhase = False):
 
-        if setUpPhase:
-            return [node for node in
-                    self.constructableNodes if
-                    not self.constructableNodes[node][player.seatNumber]]
+        if self.updatePlayerNodes[player.seatNumber]:
 
-        return [node for node in
-                self.constructableNodes if
-                self.constructableNodes[node][player.seatNumber]]
+            if setUpPhase:
+                player.possibleSettlements = [node for node in
+                                              self.constructableNodes if
+                                              not self.constructableNodes[node][player.seatNumber]]
+            else:
+                player.possibleSettlements = [node for node in
+                                              self.constructableNodes if
+                                              self.constructableNodes[node][player.seatNumber]]
+
+            self.updatePlayerNodes[player.seatNumber] = False
+
+        return player.possibleSettlements
 
     def GetPossibleCities(self, player):
 
