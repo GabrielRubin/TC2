@@ -14,13 +14,12 @@ from AgentRandom import *
 from joblib import Parallel, delayed
 import multiprocessing
 
-
 boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
 
-defaultPlayers = [AgentRandom("P1", 0),
+defaultPlayers = [AgentMCTS("P1", 0, 30),
                   AgentRandom("P2", 1),
                   AgentRandom("P3", 2),
                   AgentRandom("P4", 3)]
@@ -72,7 +71,7 @@ def RunSingleGame(game):
         #if game.gameState.setupDone:
             return game
 
-def RunGame(inGame = None, players = None, saveLog = False, showLog = False, showFullLog = False):
+def RunGame(inGame = None, players = None, saveLog = False, showLog = False, showFullLog = False, returnLog=False):
 
     if players is None:
         players = copy.deepcopy(defaultPlayers)
@@ -165,6 +164,22 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
     if saveLog:
         logging.getLogger().removeHandler(gameStateFile)
 
+    if returnLog:
+
+        logstr = "######################################################### \n " \
+                 "Game Over! Player {0} Wins!\nGAME STATS:\n" \
+                 " total turns: {1} \n starting player: {2} \n largest army player: {3} \n longest road player: {4} ".format(
+            game.gameState.players[game.gameState.winner].name,
+            game.gameState.currTurn,
+            game.gameState.startingPlayer,
+            game.gameState.largestArmyPlayer,
+            game.gameState.longestRoadPlayer
+        )
+
+        logging.critical("#########################################################")
+
+        return game.gameState.winner, logstr
+
     return game.gameState.winner
 
 def RunProfiler():
@@ -208,15 +223,21 @@ def RunSpeedTest(numberOfRepetitions):
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
 
-def RunParallel(game, index, numberOfRepetitions):
+def RunParallel(game, index, numberOfRepetitions, fileName):
 
-    result = RunGame(game, game.gameState.players, showLog=False)
+    result = RunGame(game, game.gameState.players, showLog=False, returnLog=True)
 
     print("\n TOTAL GAMES = {0}/{1} ".format(
         (index + 1),
         numberOfRepetitions))
 
-    return result
+    logger = logging.getLogger()
+
+    logger.addHandler(logging.FileHandler(fileName))
+
+    logging.critical(result[1])
+
+    return result[0]
 
 def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = False, agentIndex = 0, multiprocess = False):
 
@@ -227,7 +248,9 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
     today = datetime.datetime.today()
 
-    logFile = logging.FileHandler('SimulatorLogs/log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M")))
+    fileName = 'SimulatorLogs/log_{0}.txt'.format(today.strftime("%d-%m-%Y_%H-%M"))
+
+    logFile = logging.FileHandler(fileName)
 
     logger.addHandler(logFile)
 
@@ -237,8 +260,12 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
     if multiprocess:
         num_cores = multiprocessing.cpu_count()
-        winners = Parallel(n_jobs=num_cores)(delayed(RunParallel)(CreateGame(players), i, numberOfRepetitions) for i in range(0, numberOfRepetitions))
-        winCount = [winners.count(0), winners.count(1), winners.count(2), winners.count(3)]
+
+        winners   = Parallel(n_jobs=num_cores)(delayed(RunParallel)
+                                               (CreateGame(players), i, numberOfRepetitions, fileName)
+                                               for i in range(0, numberOfRepetitions))
+
+        winCount  = [winners.count(0), winners.count(1), winners.count(2), winners.count(3)]
 
     else:
 
@@ -262,7 +289,7 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
             logging.critical(total)
 
-    logging.critical("\n TOTAL TIME = {0}".format(((datetime.datetime.utcnow() - totalTime).total_seconds())))
+    logging.critical("\n TOTAL TIME = {0}".format(((datetime.datetime.utcnow() - totalTime).total_seconds())/60.0))
 
     logging.critical(" TOTAL GAMES = {0} \n WIN COUNT = {1} \n AGENT WIN PERCENTAGE = {2}%".format(
         numberOfRepetitions,
@@ -272,7 +299,7 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
 if __name__ == '__main__':
 
-    #RunGame(defaultPlayers)
+    #RunGame(showLog=True)
 
     # for i in range(0, 10):
     #     RunGame(defaultPlayers)
@@ -280,7 +307,7 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(100, saveGameStateLogs=False, multiprocess=True)
+    RunWithLogging(25, saveGameStateLogs=False, multiprocess=True)
 
     # SPEED TEST
     #RunSpeedTest(300)

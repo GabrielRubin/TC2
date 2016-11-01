@@ -1,5 +1,6 @@
 import subprocess
 import os
+import signal
 import time
 import argparse
 
@@ -20,7 +21,7 @@ clientProcess = None
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                    default = 'rand')
+                    default = 'mcts')
 
 parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                     default='TC2_agent')
@@ -110,18 +111,19 @@ except Exception():
 
     if clientProcess:
         clientProcess.wait()
-        clientProcess.kill()
     if robot1Process:
         robot1Process.wait()
-        robot1Process.kill()
     if robot2Process:
         robot2Process.wait()
-        robot2Process.kill()
     if robot3Process:
         robot3Process.wait()
-        robot3Process.kill()
     if serverProcess:
         serverProcess.wait()
-        serverProcess.kill()
+
+    os.killpg(os.getpgid(clientProcess.pid), signal.SIGTERM)
+    os.killpg(os.getpgid(robot1Process.pid), signal.SIGTERM)
+    os.killpg(os.getpgid(robot2Process.pid), signal.SIGTERM)
+    os.killpg(os.getpgid(robot3Process.pid), signal.SIGTERM)
+    os.killpg(os.getpgid(serverProcess.pid), signal.SIGTERM)
 
     print(serverProcess.returncode)

@@ -474,7 +474,7 @@ class AgentAlphabeta(AgentRandom):
         if gameState.largestArmyPlayer == playerNumber:
             largestArmyPts = 3
 
-        return playerPoints * 0.5 + numRoads * 1 + numSettlements * 2 + numCities * 3 + \
+        return playerPoints + numRoads * 1 + numSettlements * 2 + numCities * 3 + \
                 largestArmyPts + longestRoadPts
 
 '''

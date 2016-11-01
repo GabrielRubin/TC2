@@ -4,6 +4,14 @@ from CatanUtils import listm
 
 import random
 
+freeBuildStates = ["START1A", "START1B", "START2A", "START2B",
+                   "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
+                   "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
+
+putPieceStates = ["START1A", "START1B", "START2A", "START2B",
+                  "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
+                  "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
+
 class Action(object):
 
     def __init__(self):
@@ -17,14 +25,6 @@ class Action(object):
 
 class BuildAction(Action):
 
-    freeBuildStates = ["START1A", "START1B", "START2A", "START2B",
-                       "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
-                       "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
-
-    putPieceStates = ["START1A", "START1B", "START2A", "START2B",
-                      "PLACING_ROAD", "PLACING_SETTLEMENT", "PLACING_CITY",
-                      "PLACING_FREE_ROAD1", "PLACING_FREE_ROAD2"]
-
     def __init__(self, playerNumber, position, index, pieceId, cost):
 
         self.playerNumber = playerNumber
@@ -36,7 +36,7 @@ class BuildAction(Action):
     def GetMessage(self, gameName, currGameStateName = None):
 
         if currGameStateName is not None and \
-            currGameStateName in BuildAction.putPieceStates:
+            currGameStateName in putPieceStates:
 
             return PutPieceMessage(gameName, self.playerNumber, self.pieceId, self.position)
 
@@ -49,8 +49,20 @@ class BuildAction(Action):
 
         gameState.players[self.playerNumber].Build(gameState, g_constructionTypes[self.pieceId][0], self.position)
 
-        if gameState.currState not in BuildAction.freeBuildStates:
+        if gameState.currState not in freeBuildStates:
             gameState.players[self.playerNumber].resources -= self.cost
+
+    def __str__(self):
+
+        return "Build {0} Action:  \n" \
+               "    player   = {1} \n" \
+               "    position = {2} \n" \
+               "    index    = {3}".format(
+            g_constructionTypes[self.pieceId][0],
+            self.playerNumber,
+            hex(self.position),
+            self.index
+        )
 
 class BuildRoadAction(BuildAction):
 

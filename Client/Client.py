@@ -56,7 +56,7 @@ class Client:
 
         if not condition:
             logging.critical("ASSERT FAILED! - {0}".format(message))
-            sys.exit(-1)
+            return Exception
 
     # Connection to jsettlers game server
     def ConnectToServer(self, serverAddress):
@@ -66,7 +66,9 @@ class Client:
 
             self.socket.connect(serverAddress)
 
-            self.socket.settimeout(240)
+            self.socket.settimeout(0)
+
+            self.socket.setblocking(1)
 
         except socket.error, exc:
 
@@ -149,7 +151,9 @@ class Client:
             return None
         else:
             (messageName, message) = parsed
-            self.TreatMessage(messageName, message)
+            winner = self.TreatMessage(messageName, message)
+            if winner:
+                return winner
 
     def TreatMessage(self, name, instance):
 
@@ -192,7 +196,7 @@ class Client:
             if instance.nickname == self.player.name:
                 self.game.AddPlayer(self.player, instance.playerNumber)
             else:
-                self.game.AddPlayer(Player(instance.nickname, instance.playerNumber), instance.playerNumber)
+                self.game.AddPlayer(AgentRandom(instance.nickname, instance.playerNumber), instance.playerNumber)
 
         elif name == "ChangeFaceMessage":
 
@@ -343,7 +347,16 @@ class Client:
                 return
 
             elif self.game.gameState.currState == "OVER":
-                pass
+
+                winner    = 0
+                winPoints = 0
+
+                for player in self.game.gameState.players:
+                    playerPoints = player.GetVictoryPoints()
+                    if playerPoints > winPoints:
+                        winner = player.seatNumber
+
+                return winner
 
             self.RespondToServer()
 

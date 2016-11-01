@@ -23,7 +23,7 @@ class AgentMCTS(AgentRandom):
             self.possibleActions = actionsFunction(state,
                                                    state.players[state.currPlayer])
 
-    explorationConstant = 0.5
+    explorationConstant = 1.0
 
     def __init__(self, name, seatNumber, choiceTime = 30.0):
 
@@ -63,7 +63,7 @@ class AgentMCTS(AgentRandom):
         rootNode = self.MCTSNode(
                         state=gameState,
                         action=None,
-                        qValue=[0 for i in range(len(gameState.players))],
+                        qValue=listm(0 for i in range(len(gameState.players))),
                         nValue=0,
                         parent=None,
                         children=[],
@@ -94,7 +94,11 @@ class AgentMCTS(AgentRandom):
 
         #print("TOTAL SIMULATIONS = {0}".format(self.numberOfSimulations))
 
-        return self.BestChild(rootNode, 0).action
+        best = self.BestChild(rootNode, 0).action
+
+        #print(best)
+
+        return best
 
     def TreePolicy(self, node):
 
@@ -119,7 +123,7 @@ class AgentMCTS(AgentRandom):
 
         childNode = self.MCTSNode(state=nextGameState,
                                   action=chosenAction,
-                                  qValue=[0 for i in range(len(nextGameState.players))],
+                                  qValue=listm(0 for i in range(len(nextGameState.players))),
                                   nValue=0,
                                   parent=node,
                                   children=[],
@@ -138,53 +142,81 @@ class AgentMCTS(AgentRandom):
 
         def UCTClassifier(childNode):
 
-            evaluationPart  = childNode.QValue[currPlayerNumber] / childNode.NValue
-            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / childNode.NValue )
+            evaluationPart  = float(childNode.QValue[currPlayerNumber]) / float(childNode.NValue)
+            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
             return evaluationPart + explorationPart
 
         return max(node.children, key=lambda child : UCTClassifier(child))
 
     def SimulationPolicy(self, gameState):
 
-        #startTime = datetime.utcnow()
-        #print("starting simulation {0}".format(startTime))
-
         while not gameState.IsTerminal():
 
             possibleActions = self.GetPossibleActions(gameState,
                                                       gameState.players[gameState.currPlayer],
                                                       atRandom=True)
+            # if possibleActions is None:
+            #     possibleActions = self.GetPossibleActions(gameState,
+            #                                               gameState.players[gameState.currPlayer],
+            #                                               atRandom=True)
 
             if len(possibleActions) > 1:
                 action = random.choice(possibleActions)
             else:
-
                 if not possibleActions:
                     print(gameState.currState)
 
                 action = possibleActions[0]
 
+            # if action is None:
+            #     print(possibleActions)
+            #     print(gameState.currState)
+            #     possibleActions = self.GetPossibleActions(gameState,
+            #                                               gameState.players[gameState.currPlayer],
+            #                                               atRandom=True)
+
             action.ApplyAction(gameState)
 
-        #endTime = datetime.utcnow()
-        #print("simulation ENDED {0} - deltaTime = {1}".format(endTime, (endTime - startTime).total_seconds()))
-
-        return self.Utility(gameState, self.seatNumber)
+        return self.Utility(gameState)
 
     def BackUp(self, node, reward):
 
-        currPlayer = node.gameState.currPlayer
-
         while node is not None:
+            node.NValue += 1
+            node.QValue += reward
+            node         = node.parent
 
-            node.NValue             += 1
-            node.QValue[currPlayer] += reward
-            node = node.parent
+    def Utility(self, gameState):
 
-    def Utility(self, gameState, playerNumber):
+        vp = listm(0 for i in range(len(gameState.players)))
 
-        # TEMP...
-        return gameState.players[playerNumber].GetVictoryPoints()
+        # 60 % WINS!!!!
+        for player in gameState.players:
+            vp[player.seatNumber] += player.GetVictoryPoints()
+
+        vp[gameState.winner] += 10
+
+        # for player in gameState.players:
+        #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)
+
+        return vp
+
+    def GetGameStateReward(self, gameState, player):
+
+        playerPoints   = player.GetVictoryPoints()
+
+        playerPoints  *= 3 if gameState.winner == player.seatNumber else 1
+
+        longestRoadPts = 3 if gameState.longestRoadPlayer == player.seatNumber else 0
+
+        largestArmyPts = 3 if gameState.largestArmyPlayer == player.seatNumber else 0
+
+        numSettlements = len(player.settlements)
+
+        numCities      = len(player.cities)
+
+        return  playerPoints + (numSettlements * 2) + (numCities * 3) + \
+                largestArmyPts + longestRoadPts
 
     def PrepareGameStateForSimulation(self, gameState):
 
