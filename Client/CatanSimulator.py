@@ -19,7 +19,7 @@ boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
 
-defaultPlayers = [AgentMCTS("P1", 0, 30),
+defaultPlayers = [AgentMCTS("P1", 0, simulationCount=10000),
                   AgentRandom("P2", 1),
                   AgentRandom("P3", 2),
                   AgentRandom("P4", 3)]

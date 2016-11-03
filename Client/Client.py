@@ -153,7 +153,7 @@ class Client:
             (messageName, message) = parsed
             winner = self.TreatMessage(messageName, message)
             if winner:
-                return winner
+                return self.game.gameState
 
     def TreatMessage(self, name, instance):
 

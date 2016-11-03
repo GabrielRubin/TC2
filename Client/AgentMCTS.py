@@ -25,7 +25,7 @@ class AgentMCTS(AgentRandom):
 
     explorationConstant = 1.0
 
-    def __init__(self, name, seatNumber, choiceTime = 30.0):
+    def __init__(self, name, seatNumber, choiceTime = 1.0, simulationCount = 10000):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
@@ -34,6 +34,8 @@ class AgentMCTS(AgentRandom):
         self.agentName = "MONTE CARLO TREE SEARCH : {0} sec".format(choiceTime)
 
         self.numberOfSimulations = 0
+
+        self.maxSimulations = simulationCount
 
     def DoMove(self, game):
 
@@ -82,7 +84,7 @@ class AgentMCTS(AgentRandom):
 
         startTime = datetime.utcnow()
 
-        while (datetime.utcnow() - startTime) < maxDuration:
+        while (datetime.utcnow() - startTime) < maxDuration or self.numberOfSimulations < self.maxSimulations:
 
             nextNode    = self.TreePolicy(rootNode)
 
@@ -92,11 +94,10 @@ class AgentMCTS(AgentRandom):
 
             self.numberOfSimulations += 1
 
-        #print("TOTAL SIMULATIONS = {0}".format(self.numberOfSimulations))
+        # print("TOTAL SIMULATIONS = {0}".format(self.numberOfSimulations))
+        # print("TOTAL TIME        = {0}".format((datetime.utcnow() - startTime)))
 
         best = self.BestChild(rootNode, 0).action
-
-        #print(best)
 
         return best
 
@@ -138,15 +139,15 @@ class AgentMCTS(AgentRandom):
         currPlayerNumber = node.gameState.currPlayer
 
         # Returns the Child Node with the max 'Q-Value'
-        #return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
+        return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
 
-        def UCTClassifier(childNode):
-
-            evaluationPart  = float(childNode.QValue[currPlayerNumber]) / float(childNode.NValue)
-            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
-            return evaluationPart + explorationPart
-
-        return max(node.children, key=lambda child : UCTClassifier(child))
+        # def UCTClassifier(childNode):
+        #
+        #     evaluationPart  = float(childNode.QValue[currPlayerNumber]) / float(childNode.NValue)
+        #     explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
+        #     return evaluationPart + explorationPart
+        #
+        # return max(node.children, key=lambda child : UCTClassifier(child))
 
     def SimulationPolicy(self, gameState):
 
