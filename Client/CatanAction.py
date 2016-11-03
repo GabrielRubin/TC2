@@ -1,5 +1,6 @@
 from JSettlersMessages import *
 from CatanBoard import *
+
 from CatanUtils import listm
 
 import random

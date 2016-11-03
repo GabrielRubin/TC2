@@ -940,8 +940,8 @@ static const char __pyx_k_minResourceAmount[] = "minResourceAmount";
 static const char __pyx_k_GetRandomBankTrade[] = "GetRandomBankTrade";
 static const char __pyx_k_possibleTradeAmount[] = "possibleTradeAmount";
 static const char __pyx_k_possibleTradePopulation[] = "possibleTradePopulation";
-static const char __pyx_k_C_Users_Gabriel_PycharmProjects[] = "C:\\Users\\Gabriel\\PycharmProjects\\TC2\\Client\\Cython\\CatanUtils.pyx";
-static PyObject *__pyx_kp_s_C_Users_Gabriel_PycharmProjects;
+static const char __pyx_k_C_Users_bruno_Documents_GitHub_T[] = "C:\\Users\\bruno\\Documents\\GitHub\\TC2\\Client\\CatanUtils.pyx";
+static PyObject *__pyx_kp_s_C_Users_bruno_Documents_GitHub_T;
 static PyObject *__pyx_n_s_CanAfford;
 static PyObject *__pyx_n_s_CatanUtils;
 static PyObject *__pyx_n_s_GetRandomBankTrade;
@@ -3387,7 +3387,7 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
-  {&__pyx_kp_s_C_Users_Gabriel_PycharmProjects, __pyx_k_C_Users_Gabriel_PycharmProjects, sizeof(__pyx_k_C_Users_Gabriel_PycharmProjects), 0, 0, 1, 0},
+  {&__pyx_kp_s_C_Users_bruno_Documents_GitHub_T, __pyx_k_C_Users_bruno_Documents_GitHub_T, sizeof(__pyx_k_C_Users_bruno_Documents_GitHub_T), 0, 0, 1, 0},
   {&__pyx_n_s_CanAfford, __pyx_k_CanAfford, sizeof(__pyx_k_CanAfford), 0, 0, 1, 1},
   {&__pyx_n_s_CatanUtils, __pyx_k_CatanUtils, sizeof(__pyx_k_CatanUtils), 0, 0, 1, 1},
   {&__pyx_n_s_GetRandomBankTrade, __pyx_k_GetRandomBankTrade, sizeof(__pyx_k_GetRandomBankTrade), 0, 0, 1, 1},
@@ -3532,7 +3532,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__12 = PyTuple_Pack(3, __pyx_n_s_resources, __pyx_n_s_price, __pyx_n_s_i); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(0, 77, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__12);
   __Pyx_GIVEREF(__pyx_tuple__12);
-  __pyx_codeobj__13 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_C_Users_Gabriel_PycharmProjects, __pyx_n_s_CanAfford, 77, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__13)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_codeobj__13 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_C_Users_bruno_Documents_GitHub_T, __pyx_n_s_CanAfford, 77, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__13)) __PYX_ERR(0, 77, __pyx_L1_error)
 
   /* "CatanUtils.pyx":84
  *     return True
@@ -3544,7 +3544,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__14 = PyTuple_Pack(16, __pyx_n_s_playerResources, __pyx_n_s_tradeRates, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_l, __pyx_n_s_m, __pyx_n_s_possibleTradeAmount, __pyx_n_s_candidateForTrade, __pyx_n_s_minResourceAmount, __pyx_n_s_tradeAmount, __pyx_n_s_possibleTradePopulation, __pyx_n_s_chosenResources, __pyx_n_s_expectedResources, __pyx_n_s_give, __pyx_n_s_get); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(0, 84, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__14);
   __Pyx_GIVEREF(__pyx_tuple__14);
-  __pyx_codeobj__15 = (PyObject*)__Pyx_PyCode_New(2, 0, 16, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_C_Users_Gabriel_PycharmProjects, __pyx_n_s_GetRandomBankTrade, 84, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__15)) __PYX_ERR(0, 84, __pyx_L1_error)
+  __pyx_codeobj__15 = (PyObject*)__Pyx_PyCode_New(2, 0, 16, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_C_Users_bruno_Documents_GitHub_T, __pyx_n_s_GetRandomBankTrade, 84, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__15)) __PYX_ERR(0, 84, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
