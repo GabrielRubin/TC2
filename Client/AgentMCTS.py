@@ -14,7 +14,7 @@ class AgentMCTS(AgentRandom):
     class MCTSNode:
 
         def __init__(self, state, action, qValue, nValue, parent, children, actionsFunction):
-            self.gameState       = state  # current gameState
+            self.gameState       = cPickle.dumps(state, -1) # current gameState
             self.action          = action  # action that led to this state
             self.QValue          = qValue  # node estimated reward value
             self.NValue          = nValue  # number of visits
@@ -22,8 +22,13 @@ class AgentMCTS(AgentRandom):
             self.children        = children  # children
             self.possibleActions = actionsFunction(state,
                                                    state.players[state.currPlayer])
+            if self.possibleActions is None:
+                actionsFunction(state,
+                                state.players[state.currPlayer])
 
     explorationConstant = 1.0
+
+    saveNodeValue       = 20
 
     def __init__(self, name, seatNumber, choiceTime = 1.0, simulationCount = 10000):
 
@@ -88,7 +93,10 @@ class AgentMCTS(AgentRandom):
 
             nextNode    = self.TreePolicy(rootNode)
 
-            reward      = self.SimulationPolicy(cPickle.loads(cPickle.dumps(nextNode.gameState, -1)))
+            if nextNode.NValue < AgentMCTS.saveNodeValue:
+                reward  = self.SimulationPolicy(cPickle.loads(nextNode.gameState))
+            else:
+                reward  = self.SimulationPolicy(cPickle.loads(cPickle.dumps(nextNode.gameState, -1)))
 
             self.BackUp(nextNode, reward)
 
@@ -99,18 +107,30 @@ class AgentMCTS(AgentRandom):
         # print("TOTAL SIMULATIONS = {0}".format(self.numberOfSimulations))
         # print("TOTAL TIME        = {0}".format((datetime.utcnow() - startTime)))
 
-        best = self.BestChild(rootNode, 0).action
+        best = self.BestChild(rootNode, gameState.currPlayer, 0).action
 
         return best
 
     def TreePolicy(self, node):
 
-        while not node.gameState.IsTerminal():
+        if node.NValue < AgentMCTS.saveNodeValue:
+            gameStateObj = cPickle.loads(node.gameState)
+
+        if node.NValue >= AgentMCTS.saveNodeValue:
+            gameStateObj = node.gameState
+
+        while not gameStateObj.IsTerminal() and node.possibleActions is not None:
             # There are still actions to try in this node...
             if len(node.possibleActions) > 0:
                 return self.Expand(node)
-            else:
-                node = self.BestChild(node, AgentMCTS.explorationConstant)
+
+            node = self.BestChild(node, gameStateObj.currPlayer, AgentMCTS.explorationConstant)
+
+            if node.NValue < AgentMCTS.saveNodeValue:
+                gameStateObj = cPickle.loads(node.gameState)
+
+            if node.NValue >= AgentMCTS.saveNodeValue:
+                gameStateObj = node.gameState
 
         return node
 
@@ -120,7 +140,10 @@ class AgentMCTS(AgentRandom):
 
         node.possibleActions.remove(chosenAction)
 
-        nextGameState = cPickle.loads(cPickle.dumps(node.gameState, -1))
+        if node.NValue < AgentMCTS.saveNodeValue:
+            nextGameState = cPickle.loads(node.gameState)
+        else:
+            nextGameState = cPickle.loads(cPickle.dumps(node.gameState, -1))
 
         chosenAction.ApplyAction(nextGameState)
 
@@ -136,16 +159,14 @@ class AgentMCTS(AgentRandom):
 
         return childNode
 
-    def BestChild(self, node, explorationValue):
-
-        currPlayerNumber = node.gameState.currPlayer
+    def BestChild(self, node, player, explorationValue):
 
         # Returns the Child Node with the max 'Q-Value'
         #return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
 
         def UCTClassifier(childNode):
 
-            evaluationPart  = float(childNode.QValue[currPlayerNumber]) / float(childNode.NValue)
+            evaluationPart  = float(childNode.QValue[player]) / float(childNode.NValue)
             explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
             return evaluationPart + explorationPart
 
@@ -185,8 +206,14 @@ class AgentMCTS(AgentRandom):
     def BackUp(self, node, reward):
 
         while node is not None:
+
             node.NValue += 1
+
+            if node.NValue == AgentMCTS.saveNodeValue:
+                node.gameState = cPickle.loads(node.gameState)
+
             node.QValue += reward
+
             node         = node.parent
 
     def Utility(self, gameState):

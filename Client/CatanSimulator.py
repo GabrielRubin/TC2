@@ -84,9 +84,11 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
     if inGame is None:
         inGame = CreateGame(players)
 
+    start = datetime.datetime.utcnow()
+
     game = RunSingleGame(inGame)
 
-    now = datetime.datetime.today()
+    now   = datetime.datetime.today()
 
     if saveLog:
 
@@ -173,8 +175,10 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
 
         logstr = "######################################################### \n " \
                  "Game Over! Player {0} Wins!\nGAME STATS:\n" \
-                 " total turns: {1} \n starting player: {2} \n largest army player: {3} \n longest road player: {4} ".format(
+                 " game time: {1}\n total turns: {2} \n starting player: {3}\n" \
+                 " largest army player: {4} \n longest road player: {5} ".format(
             game.gameState.players[game.gameState.winner].name,
+            ((datetime.datetime.utcnow() - start).total_seconds() / 60.0),
             game.gameState.currTurn,
             game.gameState.startingPlayer,
             game.gameState.largestArmyPlayer,
@@ -236,10 +240,6 @@ def RunParallel(game, index, numberOfRepetitions, fileName):
         (index + 1),
         numberOfRepetitions))
 
-    logger = logging.getLogger()
-
-    #logger.addHandler(logging.FileHandler(fileName))
-
     if os.path.isfile(fileName):
 
         with open(fileName, "a") as text_file:
@@ -272,7 +272,7 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
     totalTime = datetime.datetime.utcnow()
 
     if multiprocess:
-        num_cores = 1#multiprocessing.cpu_count() / 2
+        num_cores = multiprocessing.cpu_count()
 
         winners   = Parallel(n_jobs=num_cores)(delayed(RunParallel)
                                                (CreateGame(players), i, numberOfRepetitions, fileNameSimulations)
@@ -320,7 +320,7 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(5, saveGameStateLogs=False, multiprocess=False)
+    RunWithLogging(25, saveGameStateLogs=False, multiprocess=True)
 
     # SPEED TEST
     #RunSpeedTest(300)
