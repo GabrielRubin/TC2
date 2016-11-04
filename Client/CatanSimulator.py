@@ -86,6 +86,7 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
 
     start = datetime.datetime.utcnow()
 
+    #test = RunSingleGame(inGame)
     game = RunSingleGame(inGame)
 
     now   = datetime.datetime.today()
@@ -173,19 +174,51 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
 
     if returnLog:
 
+        playerPoints = [0 for i in range(len(game.gameState.players))]
+        for player in game.gameState.players:
+            playerPoints[player.seatNumber] = player.GetVictoryPoints()
+
+        # @REVIEW:
+        ourAgent = game.gameState.players[0]
+
+        totalDiceProduction = listm([0, 0, 0, 0, 0, 0])
+        for key, value in ourAgent.diceProduction.iteritems():
+            totalDiceProduction += value
+
         logstr = "######################################################### \n " \
                  "Game Over! Player {0} Wins!\nGAME STATS:\n" \
                  " game time: {1}\n total turns: {2} \n starting player: {3}\n" \
-                 " largest army player: {4} \n longest road player: {5} ".format(
+                 " largest army player: {4} \n longest road player: {5} "\
+                 " MORE STATS :          \n" \
+                 " playerPoints     = {6}\n" \
+                 " roadsBuilt       = {7}\n" \
+                 " settlementsBuilt = {8}\n" \
+                 " citiesBuilt      = {9}\n" \
+                 " cardsBought      = {10}\n" \
+                 " diceProduction   = {11}\n" \
+                 " knights          = {12}\n".format(
             game.gameState.players[game.gameState.winner].name,
             ((datetime.datetime.utcnow() - start).total_seconds() / 60.0),
             game.gameState.currTurn,
             game.gameState.startingPlayer,
             game.gameState.largestArmyPlayer,
-            game.gameState.longestRoadPlayer
+            game.gameState.longestRoadPlayer,
+            playerPoints,
+            [hex(road) for road in ourAgent.roads],
+            [hex(settlement) for settlement in ourAgent.settlements],
+            [hex(city) for city in ourAgent.cities],
+            "TODO",
+            totalDiceProduction,
+            ourAgent.knights
         )
 
         logging.critical("#########################################################")
+
+        currGameStateName = "board_" + now.strftime("%d-%m-%Y_%H-%M-%S-%f")
+
+        # Review:
+        with open('GameStates/{0}.pickle'.format(currGameStateName), 'wb') as handle:
+            cPickle.dump(game.gameState, handle, protocol=cPickle.HIGHEST_PROTOCOL)
 
         return game.gameState.winner, logstr
 
@@ -320,7 +353,7 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(25, saveGameStateLogs=False, multiprocess=True)
+    RunWithLogging(100, saveGameStateLogs=False, multiprocess=True)
 
     # SPEED TEST
     #RunSpeedTest(300)
