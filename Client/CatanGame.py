@@ -1,8 +1,5 @@
-import random
-from CatanBoard import *
-from CatanBoard2 import *
-from JSettlersMessages import *
 from CatanAction import *
+import cPickle
 import copy
 
 class Game:
@@ -67,9 +64,9 @@ class GameState(object):
 
         self.updatePlayerNodes  = [True, True, True, True]
         self.updatePlayerEdges  = [True, True, True, True]
-        self.constructableNodes = g_constructableNodes
-        self.constructableEdges = g_constructableEdges
-        self.possibleRobberPos  = g_possibleRobberPos
+        self.constructableNodes = cPickle.loads(cPickle.dumps(g_constructableNodes, -1))
+        self.constructableEdges = cPickle.loads(cPickle.dumps(g_constructableEdges, -1))
+        self.possibleRobberPos  = cPickle.loads(cPickle.dumps(g_possibleRobberPos,  -1))
 
         self.currState        = None
         self.currPlayer       = -1
@@ -227,7 +224,6 @@ class GameState(object):
         else:
             return False
 
-    #ANOTHER METHOD FOR DISCOVERING POSSIBLE ROADS
     def UpdatePossibleRoads(self, playerNumber, constructionType, position):
 
         if constructionType == 'ROAD':
@@ -263,8 +259,6 @@ class GameState(object):
 
             self.updatePlayerEdges[playerNumber] = True
 
-
-    #ANOTHER METHOD FOR DISCOVERING POSSIBLE SETTLEMENTS
     def UpdatePossibleSettlements(self, playerNumber, constructionType, position, isSetup=False):
 
         if constructionType == 'ROAD':
@@ -301,7 +295,7 @@ class GameState(object):
                     self.constructableNodes[node][2] = isSetup
                     self.constructableNodes[node][3] = isSetup
 
-    def GetPossibleRoads(self, player, setUpPhase = False, freeRoad = False):
+    def GetPossibleRoads(self, player, setUpPhase = False):
 
         if self.updatePlayerEdges[player.seatNumber]:
 
@@ -434,11 +428,14 @@ class GameState(object):
                 if roadCount >= 5 and roadCount > self.players[self.longestRoadPlayer].roadCount:
                     self.SetLongestRoad(player)
 
+            player.updateVictoryPoints = True
+            return
+
         roadCount = [0 for i in range(0, len(self.players))]
 
         for i in xrange(0, len(self.players)):
-
             roadCount[i] = self.players[i].CountRoads(self)
+            self.players[i].updateVictoryPoints = True
 
         maxRoads = max(roadCount)
 
