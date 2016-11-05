@@ -50,7 +50,7 @@ class AgentMCTS(AgentRandom):
 
     saveNodeValue       = 20
 
-    def __init__(self, name, seatNumber, choiceTime = 1.0, simulationCount = None):
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
