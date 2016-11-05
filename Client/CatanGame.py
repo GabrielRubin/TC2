@@ -428,7 +428,7 @@ class GameState(object):
                 if roadCount >= 5 and roadCount > self.players[self.longestRoadPlayer].roadCount:
                     self.SetLongestRoad(player)
 
-            player.updateVictoryPoints = True
+            tgtPlayer.updateVictoryPoints = True
             return
 
         roadCount = [0 for i in range(0, len(self.players))]
