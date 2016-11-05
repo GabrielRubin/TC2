@@ -25,5 +25,5 @@ if __name__ == '__main__':
     serverProcess = subprocess.Popen("java -jar JSettlersServer.jar 8880 10 dbUser dbPass",
                                  shell=False, stdout=subprocess.PIPE)
     games = 5
-    for i in range(games):
+    for i in range(0, games):
         RunMain((i+1))

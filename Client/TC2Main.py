@@ -91,26 +91,12 @@ class TC2Main(object):
             result = self.ourClient.StartClient(("localhost", 8880))
 
         finally:
-            if self.clientProcess:
-                self.clientProcess.wait()
-            if self.robot1Process:
-                self.robot1Process.wait()
-            if self.robot2Process:
-                self.robot2Process.wait()
-            if self.robot3Process:
-                self.robot3Process.wait()
-            if self.serverProcess:
-                self.serverProcess.wait()
-
             os.kill(os.getpgid(self.clientProcess.pid), signal.SIGTERM)
             os.kill(os.getpgid(self.robot1Process.pid), signal.SIGTERM)
             os.kill(os.getpgid(self.robot2Process.pid), signal.SIGTERM)
             os.kill(os.getpgid(self.robot3Process.pid), signal.SIGTERM)
-            os.kill(os.getpgid(self.serverProcess.pid), signal.SIGTERM)
 
-            print(self.serverProcess.returncode)
-
-            return result
+        return result
 
     def InitGame(self, canInitServer = True, gameNamePrefix = None):
 
