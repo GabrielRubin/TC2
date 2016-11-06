@@ -91,10 +91,10 @@ class TC2Main(object):
             result = self.ourClient.StartClient(("localhost", 8880))
 
         finally:
-            os.kill(os.getpgid(self.clientProcess.pid), signal.SIGTERM)
-            os.kill(os.getpgid(self.robot1Process.pid), signal.SIGTERM)
-            os.kill(os.getpgid(self.robot2Process.pid), signal.SIGTERM)
-            os.kill(os.getpgid(self.robot3Process.pid), signal.SIGTERM)
+            self.clientProcess.kill()
+            self.robot1Process.kill()
+            self.robot2Process.kill()
+            self.robot3Process.kill()
 
         return result
 
