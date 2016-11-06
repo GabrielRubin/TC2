@@ -86,19 +86,21 @@ class TC2Main(object):
                     text_file.write(msg)
 
 
-    def RunClient(self):
+    def RunClient(self, killProcess=True):
         try:
             result = self.ourClient.StartClient(("localhost", 8880))
 
         finally:
-            self.clientProcess.kill()
-            self.robot1Process.kill()
-            self.robot2Process.kill()
-            self.robot3Process.kill()
 
-        return result
+            if killProcess:
+              self.clientProcess.kill()
+              self.robot1Process.kill()
+              self.robot2Process.kill()
+              self.robot3Process.kill()
 
-    def InitGame(self, canInitServer = True, gameNamePrefix = None):
+            return result
+
+    def InitGame(self, canInitServer = True, gameNamePrefix = None, callProcess=True):
 
         AgentTypes = { 'rand' : 'random', 'min' : 'minimax', 'exp' : 'expectimax', 'mcts' : 'monte carlo tree search'}
 
@@ -152,7 +154,7 @@ class TC2Main(object):
             self.serverProcess = subprocess.Popen("java -jar JSettlersServer.jar 8880 10 dbUser dbPass",
                                              shell=False, stdout=subprocess.PIPE)
 
-        if not args.noRobots:
+        if not args.noRobots and callProcess:
             self.robot1Process = subprocess.Popen(
                 "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd",
                 shell=True, stdout=subprocess.PIPE)
@@ -165,7 +167,7 @@ class TC2Main(object):
                 "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd",
                 shell=True, stdout=subprocess.PIPE)
 
-        if not args.noClient:
+        if not args.noClient and callProcess:
 
             self.clientProcess = subprocess.Popen("java -jar JSettlers.jar localhost 8880")
 
