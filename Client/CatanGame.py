@@ -237,25 +237,33 @@ class GameState(object):
             self.constructableEdges[position][2] = False
             self.constructableEdges[position][3] = False
 
+            def verifyEdge(edgeIndex, adjacentEdgeIndex):
+                for node in self.boardEdges[edgeIndex].adjacentNodes:
+                    construction = self.boardNodes[node].construction
+                    if construction is not None and construction.owner != playerNumber:
+                        if node in self.boardEdges[adjacentEdgeIndex].adjacentNodes:
+                            return False
+                return True
+
             for edge in self.boardEdges[position].adjacentEdges:
                 if edge in self.constructableEdges and self.boardEdges[edge].construction is None:
-                    self.constructableEdges[edge][playerNumber] = True
+                    self.constructableEdges[edge][playerNumber] = verifyEdge(position, edge)
 
         elif constructionType == 'SETTLEMENT':
 
-            def haveConnection(edgeIndex, playerIndex):
+            def haveConnection(edgeIndex, seatNumber):
                 for adjEdge in self.boardEdges[edgeIndex].adjacentEdges:
                     if self.boardEdges[adjEdge].construction is not None \
-                            and self.boardEdges[adjEdge].construction.owner == playerIndex:
+                            and self.boardEdges[adjEdge].construction.owner == seatNumber:
                         return True
                 return False
 
-            for i in xrange(0, len(self.players)):
-                if i == playerNumber:
-                    continue
-                for edge in self.boardNodes[position].adjacentEdges:
-                    if edge in self.constructableEdges and self.boardEdges[edge].construction is None:
-                        self.constructableEdges[edge][playerNumber] = haveConnection(edge, i)
+            for edge in self.boardNodes[position].adjacentEdges:
+                if edge in self.constructableEdges and self.boardEdges[edge].construction is None:
+                    for player in self.players:
+                        if player.seatNumber == playerNumber:
+                            continue
+                        self.constructableEdges[edge][player.seatNumber] = haveConnection(edge, player.seatNumber)
 
             self.updatePlayerEdges[playerNumber] = True
 
