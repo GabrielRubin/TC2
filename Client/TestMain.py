@@ -1,17 +1,17 @@
 from TC2Main import *
 
 m_clientPath = os.getcwd()
-m_totalGames = 5
+m_totalGames = 10
 
 def RunMain(gameNamePrefix):
 
     main = TC2Main()
 
-    main.InitGame(canInitServer=False, gameNamePrefix=gameNamePrefix, callProcess=(gameNamePrefix == 1))
+    main.InitGame(canInitServer=False, gameNamePrefix=gameNamePrefix, callProcess=False)
 
     time.sleep(2)
 
-    gameState = main.RunClient(killProcess=(gameNamePrefix == m_totalGames))
+    gameState = main.RunClient(killProcess=False)
 
     os.chdir(m_clientPath)
 
@@ -27,6 +27,24 @@ if __name__ == '__main__':
 
     serverProcess = subprocess.Popen("java -jar JSettlersServer.jar 8880 10 dbUser dbPass",
                                  shell=False, stdout=subprocess.PIPE)
+    robot1Process = subprocess.Popen(
+        "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd",
+        shell=True, stdout=subprocess.PIPE)
+
+    robot2Process = subprocess.Popen(
+        "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd",
+        shell=True, stdout=subprocess.PIPE)
+
+    robot3Process = subprocess.Popen(
+        "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd",
+        shell=True, stdout=subprocess.PIPE)
+
+    clientProcess = subprocess.Popen("java -jar JSettlers.jar localhost 8880")
 
     for i in range(0, m_totalGames):
         RunMain((i+1))
+
+    clientProcess.kill()
+    robot1Process.kill()
+    robot2Process.kill()
+    robot3Process.kill()

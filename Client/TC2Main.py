@@ -137,7 +137,7 @@ class TC2Main(object):
             self.player = AgentRandom(args.nickname, 0)
 
         if args.agentType == 'mcts':
-            self.player = AgentMCTS(args.nickname, 0, simulationCount=1000)
+            self.player = AgentMCTS(args.nickname, 0, simulationCount=5000)
 
         # Change the current directory...
         mycwd = os.getcwd()
