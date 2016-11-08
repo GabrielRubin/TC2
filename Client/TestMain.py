@@ -1,7 +1,7 @@
 from TC2Main import *
 
 m_clientPath = os.getcwd()
-m_totalGames = 10
+m_totalGames = 20
 
 def RunMain(gameNamePrefix):
 

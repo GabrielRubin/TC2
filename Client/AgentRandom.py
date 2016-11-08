@@ -113,9 +113,9 @@ class AgentRandom(Player):
 
         elif gameState.currState == 'PLAY1':
 
-            possibleActions = []
+            possibleActions     = []
             possibleSettlements = gameState.GetPossibleSettlements(player)
-            possibleRoads = gameState.GetPossibleRoads(player)
+            possibleRoads       = gameState.GetPossibleRoads(player)
 
             if player.settlements and \
                     player.HavePiece(g_pieces.index('CITIES')) and \
@@ -480,37 +480,37 @@ class AgentRandom(Player):
 
         return [ UseYearOfPlentyCardAction(player.seatNumber, chosenResources) ]
 
-    def UpdateResourcesFromServer(self, action, element, value):
-
-        if element in g_resources:  # RESOURCE
-
-            if action == 'SET':
-                self.resources[g_resources.index(element)] = value
-
-            elif action == 'GAIN':
-                self.resources[g_resources.index(element)] += value
-
-            elif action == 'LOSE':
-                self.resources[g_resources.index(element)] -= value
-
-        elif element in g_pieces:  # PIECES
-
-            if action == 'SET':
-                self.numberOfPieces[g_pieces.index(element)] = value
-
-            elif action == 'GAIN':
-                self.numberOfPieces[g_pieces.index(element)] += value
-
-            elif action == 'LOSE':
-                self.numberOfPieces[g_pieces.index(element)] -= value
-
-        elif element == 'KNIGHTS':  # KNIGHTS
-
-            if action == 'SET':
-                self.knights = value
-
-            elif action == 'GAIN':
-                self.knights += value
-
-            elif action == 'LOSE':
-                self.knights -= value
+    # def UpdateResourcesFromServer(self, action, element, value):
+    #
+    #     if element in g_resources:  # RESOURCE
+    #
+    #         if action == 'SET':
+    #             self.resources[g_resources.index(element)] = value
+    #
+    #         elif action == 'GAIN':
+    #             self.resources[g_resources.index(element)] += value
+    #
+    #         elif action == 'LOSE':
+    #             self.resources[g_resources.index(element)] -= value
+    #
+    #     elif element in g_pieces:  # PIECES
+    #
+    #         if action == 'SET':
+    #             self.numberOfPieces[g_pieces.index(element)] = value
+    #
+    #         elif action == 'GAIN':
+    #             self.numberOfPieces[g_pieces.index(element)] += value
+    #
+    #         elif action == 'LOSE':
+    #             self.numberOfPieces[g_pieces.index(element)] -= value
+    #
+    #     elif element == 'KNIGHTS':  # KNIGHTS
+    #
+    #         if action == 'SET':
+    #             self.knights = value
+    #
+    #         elif action == 'GAIN':
+    #             self.knights += value
+    #
+    #         elif action == 'LOSE':
+    #             self.knights -= value

@@ -19,15 +19,15 @@ boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
 
-defaultPlayers = [AgentMCTS("P1", 0, simulationCount=10000),
+defaultPlayers = [AgentMCTS("P1", 0, simulationCount=1000),
                   AgentRandom("P2", 1),
                   AgentRandom("P3", 2),
                   AgentRandom("P4", 3)]
 
-# defaultPlayers = [AgentRandom("P1", 0),
-#                   AgentRandom("P2", 1),
-#                   AgentRandom("P3", 2),
-#                   AgentRandom("P4", 3)]
+#defaultPlayers = [AgentRandom("P1", 0),
+#                  AgentRandom("P2", 1),
+#                  AgentRandom("P3", 2),
+#                  AgentRandom("P4", 3)]
 
 def CreateGame(players):
 
@@ -76,7 +76,7 @@ def RunSingleGame(game):
         #if game.gameState.setupDone:
             return game
 
-def RunGame(inGame = None, players = None, saveLog = False, showLog = False, showFullLog = False, returnLog=False):
+def RunGame(inGame = None, players = None, saveImgLog = False, showLog = False, showFullLog = False, returnLog=False):
 
     if players is None:
         players = copy.deepcopy(defaultPlayers)
@@ -91,16 +91,16 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
 
     now   = datetime.datetime.today()
 
-    if saveLog:
+    if saveImgLog:
 
         if not os.path.isdir("GameStates"):
             os.makedirs("GameStates")
 
         currGameStateName = "board_" + now.strftime("%d-%m-%Y_%H-%M-%S-%f")
 
-        gameStateFile = logging.FileHandler('GameStates/{0}.txt'.format(currGameStateName))
+        #gameStateFile = logging.FileHandler('GameStates/{0}.txt'.format(currGameStateName))
 
-        logging.getLogger().addHandler(gameStateFile)
+        #logging.getLogger().addHandler(gameStateFile)
 
         # Store the last GameState
         with open('GameStates/{0}.pickle'.format(currGameStateName), 'wb') as handle:
@@ -169,8 +169,8 @@ def RunGame(inGame = None, players = None, saveLog = False, showLog = False, sho
 
                 logging.critical("---------------------------------------------------------")
 
-    if saveLog:
-        logging.getLogger().removeHandler(gameStateFile)
+    # if saveImgLog:
+    #     logging.getLogger().removeHandler(gameStateFile)
 
     if returnLog:
 
@@ -321,7 +321,7 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
             time = datetime.datetime.utcnow()
 
-            winner = RunGame(games[i], games[i].gameState.players, showLog=True, showFullLog=False, saveLog=saveGameStateLogs)
+            winner = RunGame(games[i], games[i].gameState.players, showLog=True, showFullLog=False, saveImgLog=saveGameStateLogs)
 
             logging.critical("\n GAME TIME = {0}".format(((datetime.datetime.utcnow() - time).total_seconds())))
 
@@ -345,6 +345,9 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
 
 if __name__ == '__main__':
 
+    # for i in range(0, 25):
+    #     RunGame(saveImgLog=True)
+
     #RunGame(showLog=True)
 
     # for i in range(0, 10):
@@ -353,7 +356,7 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(100, saveGameStateLogs=False, multiprocess=True)
+    RunWithLogging(10, saveGameStateLogs=False, multiprocess=True)
 
     # SPEED TEST
     #RunSpeedTest(300)
