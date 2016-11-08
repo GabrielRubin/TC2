@@ -7,6 +7,7 @@ import argparse
 from Client import *
 from AgentRandom import *
 from AgentMCTS import AgentMCTS
+import CSVGenerator
 
 class TC2Main(object):
 
@@ -19,6 +20,24 @@ class TC2Main(object):
         self.clientProcess = None
         self.player        = None
         self.ourClient     = None
+
+    def ComposeGameStatsMessageCSV(self, gameState):
+
+        msg = (gameState.players[gameState.winner].name, #winner name
+              (gameState.players[0].GetVictoryPoints(),  #players points
+               gameState.players[1].GetVictoryPoints(),
+               gameState.players[2].GetVictoryPoints(),
+               gameState.players[3].GetVictoryPoints()),
+               gameState.currTurn,                       #total turns
+               gameState.players[0].GetVictoryPoints(),  #agent points
+               len(gameState.players[0].roads),          #total roads
+               len(gameState.players[0].settlements),    #total settlements
+               len(gameState.players[0].cities),         #total cities
+               gameState.players[0].knights,             #total knights
+               gameState.players[0].biggestRoad,         #has the biggest road?
+               gameState.players[0].biggestArmy)         #has the biggest army?
+
+        return msg
 
     def ComposeGameStatsMessage(self, gameState):
 
@@ -72,18 +91,24 @@ class TC2Main(object):
 
             return msg
 
+    def SaveGameStatsCSV(self, gameState):
+
+      msg = self.ComposeGameStatsMessageCSV(gameState)
+
+      CSVGenerator.WriteCSVFile("GamesStats", "GameStats", msg)
+
     def SaveGameStats(self, gameState):
 
-            msg = self.ComposeGameStatsMessage(gameState)
+        msg = self.ComposeGameStatsMessage(gameState)
 
-            if os.path.isfile("SimulatorLogs/JSettlersVSGames.txt"):
+        if os.path.isfile("SimulatorLogs/JSettlersVSGames.txt"):
 
-                with open("SimulatorLogs/JSettlersVSGames.txt", "a") as text_file:
-                    text_file.write("\n"+msg)
-            else:
+            with open("SimulatorLogs/JSettlersVSGames.txt", "a") as text_file:
+                text_file.write("\n"+msg)
+        else:
 
-                with open("SimulatorLogs/JSettlersVSGames.txt", "w") as text_file:
-                    text_file.write(msg)
+            with open("SimulatorLogs/JSettlersVSGames.txt", "w") as text_file:
+                text_file.write(msg)
 
 
     def RunClient(self, killProcess=True):

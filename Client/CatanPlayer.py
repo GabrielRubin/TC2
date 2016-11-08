@@ -31,6 +31,7 @@ class Player(object):
         self.resources        = listm([0, 0, 0, 0, 0, 0])
         self.developmentCards = [ 0 for i in range(0, len(g_developmentCards))    ]
         self.mayPlayDevCards  = [ False for i in range(0, len(g_developmentCards))]
+        self.recentCard       = [ 0 for i in range(0, len(g_developmentCards))]
         self.roads            = [ ]
         self.settlements      = [ ]
         self.cities           = [ ]
@@ -156,21 +157,22 @@ class Player(object):
         if canUseAll:
             for i in xrange(0, len(self.developmentCards)):
                 self.mayPlayDevCards[i] = self.developmentCards[i] > 0
+                self.recentCard[i]      = 0
 
         else:
-            if recentlyCardIndex is not None:
+            if recentlyCardIndex is None:
+                for i in xrange(0, len(self.developmentCards)):
+                    self.mayPlayDevCards[i] = self.developmentCards[i] > 0
+
+            else:
                 # IF ITS A VICTORY POINT - WE NEED TO UPDATE THE PLAYERS VICTORY POINT COUNT
-                if recentlyCardIndex == 4:
+                if recentlyCardIndex == VICTORY_POINT_CARD_INDEX:
                     self.updateVictoryPoints = True
 
-                if recentlyCardIndex is None:
-                    for i in xrange(0, len(self.developmentCards)):
-                        self.mayPlayDevCards[i] = self.developmentCards[i] > 0
+                self.recentCard[recentlyCardIndex] += 1
 
-                else:
-                    for i in xrange(0, len(self.developmentCards)):
-                        self.mayPlayDevCards[i] = self.developmentCards[i] > 1 if i == recentlyCardIndex \
-                                                  else self.developmentCards[i] > 0
+                for i in xrange(0, len(self.developmentCards)):
+                    self.mayPlayDevCards[i] = self.recentCard[i] < self.developmentCards[i]
 
     def CanAfford(self, price):
         return cf(self.resources, price)

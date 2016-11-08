@@ -1,7 +1,7 @@
 from TC2Main import *
 
 m_clientPath = os.getcwd()
-m_totalGames = 20
+m_totalGames = 1
 
 def RunMain(gameNamePrefix):
 
@@ -15,7 +15,7 @@ def RunMain(gameNamePrefix):
 
     os.chdir(m_clientPath)
 
-    main.SaveGameStats(gameState)
+    main.SaveGameStatsCSV(gameState)
 
 if __name__ == '__main__':
 
