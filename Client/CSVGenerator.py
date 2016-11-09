@@ -1,9 +1,9 @@
 import numpy as np
 import os
 
-gameStatsColumms = [
+gameStatsColumns = [
                     ("Winner",       np.str_, 16),
-                    ("Points",       np.int),
+                    ("Points",       np.str_, 16),
                     ("Turns",        np.int),
                     ("Agent Points", np.int),
                     ("Roads",        np.int),
@@ -20,7 +20,7 @@ def WriteCSVFile(fileName, fileType, fileContent):
 
   if fileType == "GameStats":
 
-    arrayType = np.dtype(gameStatsColumms)
+    arrayType = np.dtype(gameStatsColumns)
 
     grades = np.array(fileContent, dtype=arrayType)
 
@@ -30,16 +30,18 @@ def WriteCSVFile(fileName, fileType, fileContent):
         np.savetxt(csv_file,
                    grades,
                    delimiter=',',
-                   fmt=('%s', '%2u', '%2.1f'),
-                   comments='', )
+                   fmt=('%s', '%s', '%2u', '%2u', '%2u', '%2u', '%2u', '%2u', '%2u', '%2u'),
+                   comments='')
     else:
 
       with open(filePath, "w") as csv_file:
         np.savetxt(csv_file,
                    grades,
                    delimiter=',',
-                   fmt=('%s', '%2u', '%2.1f'),
-                   header='Winner, Points, Turns, Agent Points, Roads, Settlements, Cities, Knights, Largest Road, Largest Army',
-                   comments='', )
+                   fmt=('%s', '%s', '%2u', '%2u', '%2u', '%2u', '%2u', '%2u', '%2u', '%2u'),
+                   comments='',
+                   header='Winner, Points, Turns, Agent Points, Roads, Settlements, Cities, Knights, Largest Road, Largest Army')
+
+    print ("---- CSV file generated in {0}! ----".format(filePath))
 
 

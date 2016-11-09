@@ -23,19 +23,21 @@ class TC2Main(object):
 
     def ComposeGameStatsMessageCSV(self, gameState):
 
-        msg = (gameState.players[gameState.winner].name, #winner name
-              (gameState.players[0].GetVictoryPoints(),  #players points
-               gameState.players[1].GetVictoryPoints(),
-               gameState.players[2].GetVictoryPoints(),
-               gameState.players[3].GetVictoryPoints()),
-               gameState.currTurn,                       #total turns
-               gameState.players[0].GetVictoryPoints(),  #agent points
-               len(gameState.players[0].roads),          #total roads
-               len(gameState.players[0].settlements),    #total settlements
-               len(gameState.players[0].cities),         #total cities
-               gameState.players[0].knights,             #total knights
-               gameState.players[0].biggestRoad,         #has the biggest road?
-               gameState.players[0].biggestArmy)         #has the biggest army?
+        playersPoints = "{0} | {1} | {2} | {3}".format(gameState.players[0].GetVictoryPoints(),
+                                                       gameState.players[1].GetVictoryPoints(),
+                                                       gameState.players[2].GetVictoryPoints(),
+                                                       gameState.players[3].GetVictoryPoints())
+
+        msg = [(gameState.players[gameState.winner].name, #winner name
+               playersPoints,
+               gameState.currTurn,                        #total turns
+               gameState.players[0].GetVictoryPoints(),   #agent points
+               len(gameState.players[0].roads),           #total roads
+               len(gameState.players[0].settlements),     #total settlements
+               len(gameState.players[0].cities),          #total cities
+               gameState.players[0].knights,              #total knights
+               gameState.players[0].biggestRoad,          #has the biggest road?
+               gameState.players[0].biggestArmy)]         #has the biggest army?
 
         return msg
 
@@ -162,7 +164,7 @@ class TC2Main(object):
             self.player = AgentRandom(args.nickname, 0)
 
         if args.agentType == 'mcts':
-            self.player = AgentMCTS(args.nickname, 0, simulationCount=5000)
+            self.player = AgentMCTS(args.nickname, 0, simulationCount=100)
 
         # Change the current directory...
         mycwd = os.getcwd()
