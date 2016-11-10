@@ -300,6 +300,8 @@ class Player(object):
 
             if gameState.boardNodes[position].construction is not None:
                 print("BOARD NODE ALREADY CONSTRUCTED!!!!!")
+                print(gameState.currState)
+                print(gameState.boardNodes[position].construction.owner)
                 sys.exit("BOARD NODE ALREADY CONSTRUCTED!!!!!")
 
             gameState.boardNodes[position].construction = newConstruction

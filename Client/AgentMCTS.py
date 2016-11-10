@@ -21,8 +21,6 @@ class AgentMCTS(AgentRandom):
         12 : listm([0.03, 0.03, 0.03, 0.03, 0.03, 0.03])
     }
 
-
-
     # * OPTION (for performance)*
     #    implement nodes as a tuple (worse to read/understand)
     # MCTS TREE NODE STRUCTURE:
@@ -30,7 +28,9 @@ class AgentMCTS(AgentRandom):
     #  currState, from parent, reward  , n. of visits, parent node, children
     class MCTSNode:
 
-        def __init__(self, state, action, qValue, nValue, parent, children, actionsFunction):
+        def __init__(self, player, state, action, qValue, nValue, parent, children, actionsFunction):
+
+            self.actingPlayer    = player
             self.gameState       = cPickle.dumps(state, -1) # current gameState
             self.action          = action  # action that led to this state
             self.QValue          = qValue  # node estimated reward value
@@ -72,7 +72,7 @@ class AgentMCTS(AgentRandom):
         self.agentName           = "MONTE CARLO TREE SEARCH : {0} sec".format(choiceTime)
         self.simulationCounter   = 0
         self.maxSimulations      = simulationCount
-        # self.movesToDo           = []
+        self.movesToDo           = []
 
     def DoMove(self, game):
 
@@ -89,11 +89,11 @@ class AgentMCTS(AgentRandom):
            (game.gameState.currState == "START2B" and self.secondRoadBuild):
             return None
 
-        # if len(self.movesToDo) > 0:
-        #
-        #     print(self.movesToDo)
-        #     nextMove = self.movesToDo.pop()
-        #     return nextMove
+        # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
+        if len(self.movesToDo) > 0:
+            action         = self.movesToDo[0]  # get first element
+            self.movesToDo = self.movesToDo[1:] # remove first element
+            return action
 
         self.simulationCounter = 0
 
@@ -106,6 +106,7 @@ class AgentMCTS(AgentRandom):
     def MonteCarloTreeSearch(self, gameState, maxDuration, simulationCount):
 
         rootNode = self.MCTSNode(
+                        player=self.seatNumber,
                         state=gameState,
                         action=None,
                         qValue=listm(0 for i in range(len(gameState.players))),
@@ -145,15 +146,16 @@ class AgentMCTS(AgentRandom):
         #print("TOTAL SIMULATIONS = {0}".format(self.simulationCounter))
         #print("TOTAL TIME        = {0}".format((datetime.utcnow() - startTime)))
 
-        # break this line to see the result of the search
-        best = self.BestChild(rootNode, 0)
-        #
-        # bestChild = self.BestChild(best, 0)
-        # while bestChild.currentPlayer == self.seatNumber:
-        #     self.movesToDo.append(bestChild.action)
-        #     if bestChild.isTerminal:
-        #         break
-        #     bestChild = self.BestChild(bestChild, 0)
+        best       = self.BestChild(rootNode, 0)
+
+        # KEEP FUTURE ACTIONS IN A "BUFFER"...
+        bestChild = self.BestChild(best, 0)
+        while bestChild is not None and \
+              bestChild.currentPlayer == self.seatNumber and \
+              not bestChild.isTerminal:
+
+            self.movesToDo.append(bestChild.action)
+            bestChild = self.BestChild(bestChild, 0)
 
         return best.action
 
@@ -178,7 +180,8 @@ class AgentMCTS(AgentRandom):
 
         chosenAction.ApplyAction(nextGameState)
 
-        childNode = self.MCTSNode(state=nextGameState,
+        childNode = self.MCTSNode(player=node.currentPlayer,
+                                  state=nextGameState,
                                   action=chosenAction,
                                   qValue=listm(0 for i in range(len(nextGameState.players))),
                                   nValue=0,
@@ -190,7 +193,10 @@ class AgentMCTS(AgentRandom):
 
         return childNode
 
-    def BestChild(self, node, explorationValue):
+    def BestChild(self, node, explorationValue, player=None):
+
+        if len(node.children) <= 0:
+            return None
 
         # Returns the Child Node with the max 'Q-Value'
         #return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
@@ -198,7 +204,9 @@ class AgentMCTS(AgentRandom):
         # Returns the Child according to the UCB Function
         def UCB1(childNode):
 
-            evaluationPart  = float(childNode.QValue[node.currentPlayer]) / float(childNode.NValue)
+            tgtPlayer = node.currentPlayer if player is None else player
+
+            evaluationPart  = float(childNode.QValue[tgtPlayer]) / float(childNode.NValue)
             explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
             return evaluationPart + explorationPart
 
@@ -234,10 +242,10 @@ class AgentMCTS(AgentRandom):
         # 60 % WINS!!!!
         for player in gameState.players:
 
-            resourcesVal = self.GetResourceUsabilityValue(player)
-            vp[player.seatNumber] += player.GetVictoryPoints()/10.0 + resourcesVal
+            #resourcesVal = self.GetResourceUsabilityValue(player)
+            vp[player.seatNumber] += player.GetVictoryPoints() #+ resourcesVal
 
-        vp[gameState.winner] += 1
+        vp[gameState.winner] += 10
 
         # for player in gameState.players:
         #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)
@@ -257,22 +265,22 @@ class AgentMCTS(AgentRandom):
 
         return cityProb * 0.3 + settlementProb * 0.3 + roadProb * 0.2 + cardProb * 0.2
 
-    def GetGameStateReward(self, gameState, player):
-
-        playerPoints   = player.GetVictoryPoints()
-
-        playerPoints  *= 3 if gameState.winner == player.seatNumber else 1
-
-        longestRoadPts = 3 if gameState.longestRoadPlayer == player.seatNumber else 0
-
-        largestArmyPts = 3 if gameState.largestArmyPlayer == player.seatNumber else 0
-
-        numSettlements = len(player.settlements)
-
-        numCities      = len(player.cities)
-
-        return  playerPoints + (numSettlements * 2) + (numCities * 3) + \
-                largestArmyPts + longestRoadPts
+    # def GetGameStateReward(self, gameState, player):
+    #
+    #     playerPoints   = player.GetVictoryPoints()
+    #
+    #     playerPoints  *= 3 if gameState.winner == player.seatNumber else 1
+    #
+    #     longestRoadPts = 3 if gameState.longestRoadPlayer == player.seatNumber else 0
+    #
+    #     largestArmyPts = 3 if gameState.largestArmyPlayer == player.seatNumber else 0
+    #
+    #     numSettlements = len(player.settlements)
+    #
+    #     numCities      = len(player.cities)
+    #
+    #     return  playerPoints + (numSettlements * 2) + (numCities * 3) + \
+    #             largestArmyPts + longestRoadPts
 
     def PrepareGameStateForSimulation(self, gameState):
 
@@ -308,92 +316,112 @@ class AgentMCTS(AgentRandom):
         else:
             return self.GetPossibleActions_SpecialTurns(gameState, player)
 
-    # def GetPossibleActions_RegularTurns(self, gameState, player):
-    #
-    #     if gameState.currState == 'PLAY':
-    #
-    #         if not player.rolledTheDices and \
-    #                 not player.playedDevCard and \
-    #                 player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
-    #                         player.developmentCards[KNIGHT_CARD_INDEX] > 0:
-    #             return [UseKnightsCardAction(player.seatNumber, None, None)]
-    #
-    #         if not player.rolledTheDices:
-    #             return [RollDicesAction(player.seatNumber)]
-    #
-    #     elif gameState.currState == 'PLAY1':
-    #
-    #         possibleActions     = []
-    #         possibleSettlements = gameState.GetPossibleSettlements(player)
-    #         possibleRoads       = gameState.GetPossibleRoads(player)
-    #
-    #         if player.settlements and \
-    #             player.HavePiece(g_pieces.index('CITIES')) and \
-    #             player.CanAfford(BuildCityAction.cost):
-    #
-    #             possibleCities = gameState.GetPossibleCities(player)
-    #
-    #             if possibleCities is not None and len(possibleCities) > 0:
-    #                 possibleActions += [BuildCityAction(player.seatNumber, node, len(player.cities))
-    #                                         for node in possibleCities]
-    #
-    #         if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
-    #                 player.CanAfford(BuildSettlementAction.cost) and \
-    #                 possibleSettlements:
-    #
-    #             possibleActions += [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
-    #                                 for node in possibleSettlements]
-    #
-    #         if player.HavePiece(g_pieces.index('ROADS')) and \
-    #                 player.CanAfford(BuildRoadAction.cost) and \
-    #                 possibleRoads:
-    #
-    #             possibleActions += [BuildRoadAction(player.seatNumber, edge, len(player.roads))
-    #                     for edge in possibleRoads]
-    #
-    #         if gameState.CanBuyADevCard(player) and not player.biggestArmy:
-    #
-    #             possibleActions += [BuyDevelopmentCardAction(player.seatNumber)]
-    #
-    #         if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0 and \
-    #                 not self.biggestArmy:
-    #
-    #             possibleCardsToUse = []
-    #
-    #             if not player.playedDevCard:
-    #
-    #                 if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
-    #                         player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-    #
-    #                         monopolyPick = player.GetMonopolyResource(gameState, player)
-    #
-    #                         if monopolyPick is not None:
-    #                             possibleCardsToUse += monopolyPick
-    #
-    #                 if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
-    #                         player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-    #
-    #                         yearOfPlentyPick = player.GetYearOfPlentyResource(gameState, player)
-    #
-    #                         if yearOfPlentyPick is not None:
-    #                             possibleCardsToUse += yearOfPlentyPick
-    #
-    #                 if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
-    #                         player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
-    #                                 player.numberOfPieces[0] > 0:
-    #
-    #                         freeRoads = UseFreeRoadsCardAction(player.seatNumber, None, None)
-    #
-    #                         if freeRoads is not None:
-    #                             possibleCardsToUse.append(freeRoads)
-    #
-    #             if possibleCardsToUse:
-    #                 possibleActions += possibleCardsToUse
-    #
-    #         possibleTrade = player.GetPossibleBankTrades(gameState, player)
-    #         if possibleTrade is not None and possibleTrade:
-    #             possibleActions += possibleTrade
-    #
-    #         possibleActions += [EndTurnAction(playerNumber=player.seatNumber)]
-    #
-    #         return possibleActions
+    def GetPossibleBankTrades(self, gameState, player):
+
+        if player is None:
+            player = self
+
+        possibleTrades = []
+
+        for i in range(5):
+            if int(player.resources[i] / self.tradeRates[i]) > 0:
+
+                give = [0, 0, 0, 0, 0]
+                give[i] = self.tradeRates[i]
+                for j in range(4):
+                    get = [0, 0, 0, 0, 0]
+                    index = (i + j) % 5
+                    get[index] = 1
+                    possibleTrades.append(BankTradeOfferAction(player.seatNumber, give, get))
+
+        return possibleTrades
+
+    def GetPossibleActions_RegularTurns(self, gameState, player):
+
+        if gameState.currState == 'PLAY':
+
+            if not player.rolledTheDices and \
+                    not player.playedDevCard and \
+                    player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
+                            player.developmentCards[KNIGHT_CARD_INDEX] > 0:
+                return [UseKnightsCardAction(player.seatNumber, None, None)]
+
+            if not player.rolledTheDices:
+                return [RollDicesAction(player.seatNumber)]
+
+        elif gameState.currState == 'PLAY1':
+
+            possibleActions     = []
+            possibleSettlements = gameState.GetPossibleSettlements(player)
+            possibleRoads       = gameState.GetPossibleRoads(player)
+
+            if player.settlements and \
+                player.HavePiece(g_pieces.index('CITIES')) and \
+                player.CanAfford(BuildCityAction.cost):
+
+                possibleCities = gameState.GetPossibleCities(player)
+
+                if possibleCities is not None and len(possibleCities) > 0:
+                    possibleActions += [BuildCityAction(player.seatNumber, node, len(player.cities))
+                                        for node in possibleCities]
+
+            if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
+                    player.CanAfford(BuildSettlementAction.cost) and \
+                    possibleSettlements:
+
+                possibleActions += [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
+                                    for node in possibleSettlements]
+
+            if player.HavePiece(g_pieces.index('ROADS')) and \
+                    player.CanAfford(BuildRoadAction.cost) and \
+                    possibleRoads:
+
+                possibleActions += [BuildRoadAction(player.seatNumber, edge, len(player.roads))
+                                    for edge in possibleRoads]
+
+            if gameState.CanBuyADevCard(player) and not player.biggestArmy:
+
+                possibleActions += [BuyDevelopmentCardAction(player.seatNumber)]
+
+            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0 and \
+                    not self.biggestArmy:
+
+                possibleCardsToUse = []
+
+                if not player.playedDevCard:
+
+                    if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
+                            player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+
+                            monopolyPick = player.GetMonopolyResource(gameState, player)
+
+                            if monopolyPick is not None:
+                                possibleCardsToUse += monopolyPick
+
+                    if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
+                            player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+
+                            yearOfPlentyPick = player.GetYearOfPlentyResource(gameState, player)
+
+                            if yearOfPlentyPick is not None:
+                                possibleCardsToUse += yearOfPlentyPick
+
+                    if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
+                            player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
+                                    player.numberOfPieces[0] > 0:
+
+                            freeRoads = UseFreeRoadsCardAction(player.seatNumber, None, None)
+
+                            if freeRoads is not None:
+                                possibleCardsToUse.append(freeRoads)
+
+                if possibleCardsToUse:
+                    possibleActions += possibleCardsToUse
+
+            possibleTrade = player.GetPossibleBankTrades(gameState, player)
+            if possibleTrade is not None and possibleTrade:
+                possibleActions += possibleTrade
+
+            possibleActions += [EndTurnAction(playerNumber=player.seatNumber)]
+
+            return possibleActions

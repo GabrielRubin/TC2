@@ -265,7 +265,10 @@ class GameState(object):
                             continue
                         self.constructableEdges[edge][player.seatNumber] = haveConnection(edge, player.seatNumber)
 
-            self.updatePlayerEdges[playerNumber] = True
+            self.updatePlayerEdges[0] = True
+            self.updatePlayerEdges[1] = True
+            self.updatePlayerEdges[2] = True
+            self.updatePlayerEdges[3] = True
 
     def UpdatePossibleSettlements(self, playerNumber, constructionType, position, isSetup=False):
 
