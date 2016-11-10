@@ -92,7 +92,13 @@ class AgentMCTS(AgentRandom):
         # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
         if len(self.movesToDo) > 0:
             action         = self.movesToDo[0]  # get first element
-            self.movesToDo = self.movesToDo[1:] # remove first element
+            # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
+            if isinstance(action, UseDevelopmentCardAction) and \
+                action.index == g_developmentCards.index('MONOPOLY'):
+                self.movesToDo = []
+            else:
+                self.movesToDo = self.movesToDo[1:] # remove first element
+
             return action
 
         self.simulationCounter = 0
@@ -101,7 +107,14 @@ class AgentMCTS(AgentRandom):
 
         self.PrepareGameStateForSimulation(state)
 
-        return self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
+        action = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
+
+        # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
+        if isinstance(action, UseDevelopmentCardAction) and \
+                        action.index == g_developmentCards.index('MONOPOLY'):
+            self.movesToDo = []
+
+        return action
 
     def MonteCarloTreeSearch(self, gameState, maxDuration, simulationCount):
 
@@ -314,7 +327,7 @@ class AgentMCTS(AgentRandom):
             else:
                 return self.GetPossibleActions_RegularTurns(gameState, player)
         else:
-            return self.GetPossibleActions_SpecialTurns(gameState, player)
+            return self.GetPossibleActions_SpecialTurns(gameState, player, atRandom)
 
     def GetPossibleBankTrades(self, gameState, player):
 
@@ -325,16 +338,83 @@ class AgentMCTS(AgentRandom):
 
         for i in range(5):
             if int(player.resources[i] / self.tradeRates[i]) > 0:
-
                 give = [0, 0, 0, 0, 0]
                 give[i] = self.tradeRates[i]
-                for j in range(4):
+                for j in range(1, 5):
                     get = [0, 0, 0, 0, 0]
                     index = (i + j) % 5
                     get[index] = 1
                     possibleTrades.append(BankTradeOfferAction(player.seatNumber, give, get))
 
         return possibleTrades
+
+    def ChooseRobberPosition(self, gameState, player):
+
+        def CheckHex(hexPosition):
+
+            if hexPosition in player.settlements or \
+               hexPosition in player.cities      or \
+               hexPosition == gameState.robberPos:
+                return False
+            return True
+
+        possiblePositions = []
+
+        for otherPlayer in gameState.players:
+
+            if otherPlayer.seatNumber == player.seatNumber:
+                continue
+
+            for settlementPos in otherPlayer.settlements:
+                for hexPos in gameState.boardNodes[settlementPos].adjacentHexes:
+                    if hexPos in gameState.possibleRobberPos and CheckHex(hexPos):
+                        possiblePositions.append(hexPos)
+
+            for cityPos in otherPlayer.cities:
+                for hexPos in gameState.boardNodes[cityPos].adjacentHexes:
+                    if hexPos in gameState.possibleRobberPos and CheckHex(hexPos):
+                        possiblePositions.append(hexPos)
+
+        return [PlaceRobberAction(player.seatNumber, pos) for pos in possiblePositions]
+
+    def GetPossibleActions_SpecialTurns(self, gameState, player, atRandom):
+
+        if gameState.currState == 'PLACING_ROBBER':
+
+            if atRandom:
+                return super(AgentMCTS, self).ChooseRobberPosition(gameState, player)
+            else:
+                return self.ChooseRobberPosition(gameState, player)
+
+        elif gameState.currState == 'WAITING_FOR_DISCARDS':
+
+            return [player.ChooseCardsToDiscard(player)]
+
+        elif gameState.currState == 'WAITING_FOR_CHOICE':
+
+            return [player.ChoosePlayerToStealFrom(gameState, player)]
+
+        elif gameState.currState == "PLACING_FREE_ROAD1":
+
+            possibleRoads = gameState.GetPossibleRoads(player)
+
+            if possibleRoads is None or not possibleRoads or self.numberOfPieces[0] <= 0:
+                return [ ChangeGameStateAction("PLAY1") ]
+
+            return [BuildRoadAction(player.seatNumber, roadEdge,
+                                    len(player.roads))
+                    for roadEdge in possibleRoads]
+
+        elif gameState.currState == "PLACING_FREE_ROAD2":
+
+            possibleRoads = gameState.GetPossibleRoads(player)
+
+            if possibleRoads is None or not possibleRoads or self.numberOfPieces[0] <= 0:
+                return [ ChangeGameStateAction("PLAY1") ]
+
+            return [BuildRoadAction(player.seatNumber, roadEdge,
+                                    len(player.roads))
+                    for roadEdge in possibleRoads]
 
     def GetPossibleActions_RegularTurns(self, gameState, player):
 
@@ -418,7 +498,7 @@ class AgentMCTS(AgentRandom):
                 if possibleCardsToUse:
                     possibleActions += possibleCardsToUse
 
-            possibleTrade = player.GetPossibleBankTrades(gameState, player)
+            possibleTrade = self.GetPossibleBankTrades(gameState, player)
             if possibleTrade is not None and possibleTrade:
                 possibleActions += possibleTrade
 
