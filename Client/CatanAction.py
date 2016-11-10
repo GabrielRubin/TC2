@@ -51,6 +51,7 @@ class BuildAction(Action):
         gameState.players[self.playerNumber].Build(gameState, g_constructionTypes[self.pieceId][0], self.position)
 
         if gameState.currState not in freeBuildStates:
+
             gameState.players[self.playerNumber].resources -= self.cost
 
     def __str__(self):
@@ -214,6 +215,7 @@ class RollDicesAction(Action):
         #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(RollDicesAction.type))
 
         gameState.players[self.playerNumber].rolledTheDices = True
+        gameState.dicesAreRolled = True
 
         if self.result == 7:
 
@@ -443,6 +445,7 @@ class EndTurnAction(Action):
 
     def ApplyAction(self, gameState):
 
+        gameState.dicesAreRolled = False
         gameState.players[self.playerNumber].rolledTheDices = False
         gameState.players[self.playerNumber].placedRobber   = False
         gameState.currTurn += 1
@@ -528,7 +531,7 @@ class ChoosePlayerToStealFromAction(Action):
 
             gameState.players[self.targetPlayerNumber].resources[stolenResource] -= 1
 
-        if gameState.players[self.playerNumber].rolledTheDices:
+        if gameState.dicesAreRolled:
             gameState.currState = "PLAY1"
         else:
             gameState.currState = "PLAY"
@@ -573,7 +576,6 @@ class BankTradeOfferAction(Action):
         get  = self.getResources  + [0]
 
         gameState.players[self.playerNumber].resources -= listm(give)
-
         gameState.players[self.playerNumber].resources += listm(get)
 
 class ChangeGameStateAction(Action):

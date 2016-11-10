@@ -74,6 +74,7 @@ class GameState(object):
         self.currTurn         = 0
         self.players          = [ None, None, None, None ]
         self.robberPos        = 0
+        self.dicesAreRolled   = False
 
         self.developmentCardsDeck = [14, 2, 2, 2, 5]
 

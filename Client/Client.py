@@ -458,19 +458,19 @@ class Client:
             if instance.playerNumber != self.game.gameState.currPlayer:
                 logging.critical("ITS NOT THIS PLAYERS TURN!!!! Received: {0}, Expected: {1}".format(instance.playerNumber, self.game.gameState.currPlayer))
 
-            if self.debugSimulator:
-
-                if instance.pieceType[0] == 'ROAD':
-                    putPieceAction = BuildRoadAction(instance.playerNumber, instance.position,
-                                                     len(self.game.gameState.players[instance.playerNumber].roads))
-                elif instance.pieceType[0] == 'SETTLEMENT':
-                    putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position,
-                                                           len(self.game.gameState.players[instance.playerNumber].settlements))
-                elif instance.pieceType[0] == 'CITY':
-                    putPieceAction = BuildCityAction(instance.playerNumber, instance.position,
-                                                     len(self.game.gameState.players[instance.playerNumber].cities))
-
-                #putPieceAction.ApplyAction(self.debugGame.gameState)
+            # if self.debugSimulator:
+            #
+            #     if instance.pieceType[0] == 'ROAD':
+            #         putPieceAction = BuildRoadAction(instance.playerNumber, instance.position,
+            #                                          len(self.game.gameState.players[instance.playerNumber].roads))
+            #     elif instance.pieceType[0] == 'SETTLEMENT':
+            #         putPieceAction = BuildSettlementAction(instance.playerNumber, instance.position,
+            #                                                len(self.game.gameState.players[instance.playerNumber].settlements))
+            #     elif instance.pieceType[0] == 'CITY':
+            #         putPieceAction = BuildCityAction(instance.playerNumber, instance.position,
+            #                                          len(self.game.gameState.players[instance.playerNumber].cities))
+            #
+            #     #putPieceAction.ApplyAction(self.debugGame.gameState)
 
             self.game.gameState.players[instance.playerNumber].Build(self.game.gameState,
                                                                      instance.pieceType[0],
@@ -521,15 +521,15 @@ class Client:
             if instance.to[int(self.player.seatNumber)] == "true":
                 self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
-        elif name == "ChoosePlayerRequestMessage":
-
-            choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game.gameState, self.player)
-
-            self.SendMessage(choosePlayerAction.GetMessage(self.gameName))
-
-            if self.debugSimulator:
-
-                choosePlayerAction.ApplyAction(self.debugGame.gameState)
+        # elif name == "ChoosePlayerRequestMessage":
+        #
+        #     choosePlayerAction = self.player.ChoosePlayerToStealFrom(self.game.gameState, self.player)
+        #
+        #     self.SendMessage(choosePlayerAction.GetMessage(self.gameName))
+        #
+        #     if self.debugSimulator:
+        #
+        #         choosePlayerAction.ApplyAction(self.debugGame.gameState)
 
     preGameStates = ['NEW', 'READY']
 
