@@ -425,6 +425,11 @@ class PlaceRobberAction(Action):
         else:
             if len(possiblePlayers) == 1:
                 ChoosePlayerToStealFromAction(self.playerNumber, possiblePlayers[0]).ApplyAction(gameState)
+            else:
+                if gameState.dicesAreRolled:
+                    gameState.currState = "PLAY1"
+                else:
+                    gameState.currState = "PLAY"
 
 class EndTurnAction(Action):
 
