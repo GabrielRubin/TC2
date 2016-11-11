@@ -98,8 +98,7 @@ class AgentMCTS(AgentRandom):
         # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
         if len(self.movesToDo) > 0:
 
-            action         = self.movesToDo[0]  # get first element
-
+            action = self.movesToDo[0]  # get first element
             # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
             if isinstance(action, UseDevelopmentCardAction) and \
                 action.index == g_developmentCards.index('MONOPOLY'):
@@ -162,12 +161,11 @@ class AgentMCTS(AgentRandom):
             reward   = self.SimulationPolicy(nextNode.GetStateCopy())
             self.BackUp(nextNode, reward)
             self.simulationCounter += 1
-            #print("done! {0}".format(self.simulationCounter))
 
         #print("TOTAL SIMULATIONS = {0}".format(self.simulationCounter))
         #print("TOTAL TIME        = {0}".format((datetime.utcnow() - startTime)))
 
-        best       = self.BestChild(rootNode, 0)
+        best = self.BestChild(rootNode, 0)
 
         # KEEP FUTURE ACTIONS IN A "BUFFER"...
         # IF WE ARE CHOOSING A ROBBER POSITION, DON'T KEEP BUFFER -> WE DON'T KNOW WHAT RESOURCE WE WILL STEAL!
@@ -175,7 +173,7 @@ class AgentMCTS(AgentRandom):
 
             bestChild = self.BestChild(best, 0)
             while bestChild is not None and \
-                  bestChild.currentPlayer == self.seatNumber and \
+                  bestChild.actingPlayer == self.seatNumber and \
                   not bestChild.isTerminal:
 
                 self.movesToDo.append(bestChild.action)
@@ -268,7 +266,7 @@ class AgentMCTS(AgentRandom):
         for player in gameState.players:
 
             #resourcesVal = self.GetResourceUsabilityValue(player)
-            vp[player.seatNumber] += player.GetVictoryPoints() #+ resourcesVal
+            vp[player.seatNumber] += player.GetVictoryPoints(forceUpdate=True) #+ resourcesVal
 
         vp[gameState.winner] += 10
 

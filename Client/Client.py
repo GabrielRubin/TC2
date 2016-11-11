@@ -297,16 +297,6 @@ class Client:
                     self.game.gameState.players[instance.playerNumber].knights
                 ))
 
-        # SERVER DON'T WORK =)
-        #elif name == "ResourceCountMessage":
-
-        #    #self.expectedResourceCount[instance.playerNumber] = instance.count
-        #    logging.critical("SERVER>>> Player seated on: {0} : {1} have {2} resources\n currently, he have: {3}".
-        #        format(
-        #        instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
-        #        instance.count, self.game.gameState.players[instance.playerNumber].resources
-        #    ))
-
         elif name == "GameStateMessage":
 
             logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
