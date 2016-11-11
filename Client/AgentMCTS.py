@@ -170,14 +170,17 @@ class AgentMCTS(AgentRandom):
         best       = self.BestChild(rootNode, 0)
 
         # KEEP FUTURE ACTIONS IN A "BUFFER"...
-        bestChild = self.BestChild(best, 0)
-        while bestChild is not None and \
-              bestChild.currentPlayer == self.seatNumber and \
-              not bestChild.isTerminal:
+        # IF WE ARE CHOOSING A ROBBER POSITION, DON'T KEEP BUFFER -> WE DON'T KNOW WHAT RESOURCE WE WILL STEAL!
+        if gameState.currState != 'PLACING_ROBBER':
 
-            self.movesToDo.append(bestChild.action)
+            bestChild = self.BestChild(best, 0)
+            while bestChild is not None and \
+                  bestChild.currentPlayer == self.seatNumber and \
+                  not bestChild.isTerminal:
 
-            bestChild = self.BestChild(bestChild, 0)
+                self.movesToDo.append(bestChild.action)
+
+                bestChild = self.BestChild(bestChild, 0)
 
         return best.action
 
