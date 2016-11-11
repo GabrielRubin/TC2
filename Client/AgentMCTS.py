@@ -76,22 +76,30 @@ class AgentMCTS(AgentRandom):
 
     def DoMove(self, game):
 
+        # SERVER SPECIAL CASES:
+        # If its not our turn and the server is not waiting for discards...
         if game.gameState.currPlayer != self.seatNumber and \
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
-
+        # If the server is waiting for discards, respond, if needed...
         if game.gameState.currState == "WAITING_FOR_DISCARDS":
             return self.ChooseCardsToDiscard()
-
+        # If we already done our setup phase, ignore repeated message (strange bug from server)...
         if (game.gameState.currState == "START1A" and self.firstSettlementBuild) or \
            (game.gameState.currState == "START1B" and self.firstRoadBuild) or \
            (game.gameState.currState == "START2A" and self.secondSettlementBuild) or \
            (game.gameState.currState == "START2B" and self.secondRoadBuild):
             return None
 
+        # SPECIAL CASE -> WE JUST GOT OUR TURN AND CAN CLEAR THE "BUFFER"...
+        if game.gameState.currState == "PLAY":
+            self.movesToDo = []
+
         # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
         if len(self.movesToDo) > 0:
+
             action         = self.movesToDo[0]  # get first element
+
             # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
             if isinstance(action, UseDevelopmentCardAction) and \
                 action.index == g_developmentCards.index('MONOPOLY'):
@@ -168,6 +176,7 @@ class AgentMCTS(AgentRandom):
               not bestChild.isTerminal:
 
             self.movesToDo.append(bestChild.action)
+
             bestChild = self.BestChild(bestChild, 0)
 
         return best.action
@@ -350,10 +359,15 @@ class AgentMCTS(AgentRandom):
 
     def ChooseRobberPosition(self, gameState, player):
 
+        playerHexes = []
+        for s in player.settlements:
+            playerHexes += gameState.boardNodes[s].adjacentHexes
+        for c in player.cities:
+            playerHexes += gameState.boardNodes[c].adjacentHexes
+
         def CheckHex(hexPosition):
 
-            if hexPosition in player.settlements or \
-               hexPosition in player.cities      or \
+            if hexPosition in playerHexes or \
                hexPosition == gameState.robberPos:
                 return False
             return True
