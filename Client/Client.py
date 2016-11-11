@@ -498,6 +498,8 @@ class Client:
 
             logging.info("---- Dices are rolled! ----\n Dice Result = {0}".format(instance.result))
 
+            self.game.gameState.dicesAreRolled = True
+
             if self.debugSimulator:
 
                 RollDicesAction(self.game.gameState.currPlayer, result=instance.result).\
