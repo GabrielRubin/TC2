@@ -253,6 +253,9 @@ class Client:
             self.game.gameState.players[instance.playerNumber].\
                 UpdateResourcesFromServer(instance.action, instance.element, instance.value)
 
+            if instance.element == 'KNIGHTS':
+                self.game.gameState.UpdateLargestArmy()
+
             negativeResource = False
 
             for index in range(0, len(g_resources)):
@@ -321,15 +324,6 @@ class Client:
                     if index != self.player.seatNumber:
                         self.game.gameState.players[index].GetStartingResources(self.game.gameState)
 
-
-            #SERVER DONT WORK PROPERLY - THERE IS NO PLACE FOR THIS :'(
-            #for index in range(0, len(self.game.gameState.players)):
-            #    self.Assert(sum(self.game.gameState.players[index].resources) == self.expectedResourceCount[index],
-            #                "RESOURCE COUNT IS WRONG!\n player: {0} - resources: {1} - expected: {2}".format(
-            #                    self.game.gameState.players[index].name,
-            #                    self.game.gameState.players[index].resources,
-            #                    self.expectedResourceCount[index]
-            #                ))
 
             elif self.game.gameState.currState == "PLACING_ROAD" or \
                  self.game.gameState.currState == "PLACING_SETTLEMENT" or \
@@ -475,6 +469,8 @@ class Client:
             self.game.gameState.players[instance.playerNumber].Build(self.game.gameState,
                                                                      instance.pieceType[0],
                                                                      instance.position)
+
+            self.game.gameState.UpdateLongestRoad()
 
             logging.info("Player seated on {0} constructed a {1}, have this constructions now:\n"
                          " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
