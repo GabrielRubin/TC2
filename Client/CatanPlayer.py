@@ -95,9 +95,9 @@ class Player(object):
 
         self.tradeRates = tradeRates
 
-    def GetVictoryPoints(self):
+    def GetVictoryPoints(self, forceUpdate=False):
 
-        if self.updateVictoryPoints:
+        if self.updateVictoryPoints or forceUpdate:
 
             devCardPoints = self.developmentCards[VICTORY_POINT_CARD_INDEX]
 
