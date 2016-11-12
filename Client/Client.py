@@ -45,9 +45,6 @@ class Client:
 
         self.playerBuildAction = None
 
-        # TODO -> Assert that debugClientGame is equivalent to the game that is updated from server
-        #self.debugGame = None
-
         self.expectedResourceCount = [0, 0, 0, 0]
 
         self.messagetbl = {}
@@ -305,6 +302,12 @@ class Client:
         elif name == "GameStateMessage":
 
             logging.info("Switching gameState from {0} to: {1}".format(self.game.gameState.currState, instance.stateName))
+
+            if instance.stateName == "WAITING_FOR_DISCARDS":
+                if self.game.gameState.currState == "WAITING_FOR_DISCARDS":
+                    return
+                if sum(self.player.resources) <= 7:
+                    return
 
             self.game.gameState.currState = instance.stateName
 

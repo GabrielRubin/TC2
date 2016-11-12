@@ -98,101 +98,6 @@ class AgentRandom(Player):
     actions = ('buildRoad', 'buildSettlement', 'buildCity',
                'buyDevCard', 'useDevCard', 'bankTrade', 'endTurn')
 
-    # def GetPossibleActions_RegularTurns(self, gameState, player):
-    #
-    #     if gameState.currState == 'PLAY':
-    #
-    #         if not player.rolledTheDices and \
-    #                 not player.playedDevCard and \
-    #                 player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
-    #                         player.developmentCards[KNIGHT_CARD_INDEX] > 0:
-    #             return [UseKnightsCardAction(player.seatNumber, None, None)]
-    #
-    #         if not player.rolledTheDices:
-    #             return [RollDicesAction(player.seatNumber)]
-    #
-    #     elif gameState.currState == 'PLAY1':
-    #
-    #         possibleActions     = []
-    #         possibleSettlements = gameState.GetPossibleSettlements(player)
-    #         possibleRoads       = gameState.GetPossibleRoads(player)
-    #
-    #         if player.settlements and \
-    #                 player.HavePiece(g_pieces.index('CITIES')) and \
-    #                 player.CanAfford(BuildCityAction.cost):
-    #
-    #             possibleCities = gameState.GetPossibleCities(player)
-    #
-    #             if possibleCities is not None and len(possibleCities) > 0:
-    #
-    #                 return [BuildCityAction(player.seatNumber, node, len(player.cities))
-    #                         for node in possibleCities]
-    #
-    #         if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
-    #                 player.CanAfford(BuildSettlementAction.cost) and \
-    #                 possibleSettlements:
-    #
-    #             return [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
-    #                     for node in possibleSettlements]
-    #
-    #         if player.HavePiece(g_pieces.index('ROADS')) and \
-    #                 player.CanAfford(BuildRoadAction.cost) and \
-    #                 possibleRoads:
-    #
-    #             possibleActions.append(AgentRandom.actions[0])
-    #
-    #         if gameState.CanBuyADevCard(player) and not player.biggestArmy:
-    #
-    #             possibleActions.append(AgentRandom.actions[3])
-    #
-    #         if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0 and \
-    #                 not self.biggestArmy:
-    #
-    #             possibleActions.append(AgentRandom.actions[4])
-    #
-    #         if not possibleActions:
-    #
-    #             possibleTrade = player.GetPossibleBankTrades(gameState, player)
-    #             if possibleTrade is not None and possibleTrade:
-    #                 return possibleTrade
-    #
-    #             return [EndTurnAction(playerNumber=player.seatNumber)]
-    #
-    #         chosenAction = random.choice(possibleActions)
-    #
-    #         if chosenAction == 'buildRoad':
-    #
-    #             return [BuildRoadAction(player.seatNumber, edge, len(player.roads))
-    #                     for edge in possibleRoads]
-    #
-    #         elif chosenAction == 'buyDevCard':
-    #
-    #             return [BuyDevelopmentCardAction(player.seatNumber)]
-    #
-    #         elif chosenAction == 'useDevCard':
-    #
-    #             possibleCardsToUse = []
-    #
-    #             if not player.playedDevCard:
-    #
-    #                 if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
-    #                         player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-    #                     possibleCardsToUse += player.GetMonopolyResource(gameState, player)
-    #
-    #                 if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
-    #                         player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-    #                     possibleCardsToUse += player.GetYearOfPlentyResource(gameState, player)
-    #
-    #                 if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
-    #                         player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
-    #                                 player.numberOfPieces[0] > 0:
-    #                     possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
-    #
-    #             if possibleCardsToUse:
-    #                 return possibleCardsToUse
-    #             else:
-    #                 return [EndTurnAction(playerNumber=player.seatNumber)]
-
     def GetRandomAction_RegularTurns(self, gameState, player):
 
         if gameState.currState == 'PLAY':
@@ -367,10 +272,6 @@ class AgentRandom(Player):
                               [5 for n in range(0, player.resources[5])]
 
         discardCardCount = int(math.floor(len(resourcesPopulation) / 2.0))
-
-        if discardCardCount > 0:
-            #assert(player.discardCardCount == discardCardCount, "calculated cards to discard different from server!")
-            player.discardCardCount = 0
 
         selectedResources = random.sample(resourcesPopulation, discardCardCount)
 

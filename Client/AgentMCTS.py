@@ -37,8 +37,12 @@ class AgentMCTS(AgentRandom):
             self.NValue          = nValue  # number of visits
             self.parent          = parent  # parent
             self.children        = children  # children
-            self.possibleActions = actionsFunction(state,
-                                                   state.players[state.currPlayer])
+            if state.currPlayerChoice == -1:
+                self.possibleActions = actionsFunction(state,
+                                                       state.players[state.currPlayer])
+            else:
+                self.possibleActions = actionsFunction(state,
+                                                       state.players[state.currPlayerChoice])
             self.currentPlayer   = state.currPlayer
             self.isTerminal      = state.IsTerminal()
 
@@ -76,14 +80,19 @@ class AgentMCTS(AgentRandom):
 
     def DoMove(self, game):
 
+        copyState = None
+
         # SERVER SPECIAL CASES:
         # If its not our turn and the server is not waiting for discards...
         if game.gameState.currPlayer != self.seatNumber and \
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
-        # If the server is waiting for discards, respond, if needed...
+        #If the server is waiting for discards, respond, if needed...
         if game.gameState.currState == "WAITING_FOR_DISCARDS":
-            return self.ChooseCardsToDiscard()
+
+            copyState = cPickle.loads(cPickle.dumps(game.gameState, -1))
+            copyState.currPlayerChoice = self.seatNumber
+
         # If we already done our setup phase, ignore repeated message (strange bug from server)...
         if (game.gameState.currState == "START1A" and self.firstSettlementBuild) or \
            (game.gameState.currState == "START1B" and self.firstRoadBuild) or \
@@ -105,9 +114,11 @@ class AgentMCTS(AgentRandom):
 
             action = self.movesToDo[0]  # get first element
             # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
-            if isinstance(action, UseDevelopmentCardAction) and \
-                action.index == g_developmentCards.index('MONOPOLY'):
-                #print("Clear buffer -> MONOPOLY")
+            # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
+            if (isinstance(action, UseDevelopmentCardAction) and \
+                action.index == g_developmentCards.index('MONOPOLY')) or \
+                isinstance(action, ChoosePlayerToStealFromAction):
+                #print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
                 self.movesToDo = []
             else:
                 self.movesToDo = self.movesToDo[1:] # remove first element
@@ -118,16 +129,21 @@ class AgentMCTS(AgentRandom):
 
         self.simulationCounter = 0
 
-        state = cPickle.loads(cPickle.dumps(game.gameState, -1))
+        if copyState is None:
+            state = cPickle.loads(cPickle.dumps(game.gameState, -1))
+        else:
+            state = cPickle.loads(cPickle.dumps(copyState, -1))
 
         AgentMCTS.PrepareGameStateForSimulation(state)
 
         action = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
 
         # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
-        if isinstance(action, UseDevelopmentCardAction) and \
-                        action.index == g_developmentCards.index('MONOPOLY'):
-            #print("empty buffer! -> MONOPOLY")
+        # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
+        if (isinstance(action, UseDevelopmentCardAction) and \
+            action.index == g_developmentCards.index('MONOPOLY')) or \
+            isinstance(action, ChoosePlayerToStealFromAction):
+            #print("empty buffer! -> MONOPOLY OR CHOOSEPLAYER")
             self.movesToDo = []
 
         return action
@@ -483,6 +499,43 @@ class AgentMCTS(AgentRandom):
 
         return None
 
+    def ChooseCardsToDiscard(self, player = None):
+
+        if player is None:
+            player = self
+
+        if sum(player.resources) <= 7:
+            return [DiscardResourcesAction(player.seatNumber, [0, 0, 0, 0, 0, 0])]
+
+        resourcesPopulation = [0 for i in range(0, player.resources[0])] + \
+                              [1 for j in range(0, player.resources[1])] + \
+                              [2 for k in range(0, player.resources[2])] + \
+                              [3 for l in range(0, player.resources[3])] + \
+                              [4 for m in range(0, player.resources[4])] + \
+                              [5 for n in range(0, player.resources[5])]
+
+        discardCardCount = int(math.floor(len(resourcesPopulation) / 2.0))
+
+        resourcesSelected  = []
+        tradePossibilities = []
+
+        for i in range(0, 100):
+
+            selectedResources = random.sample(resourcesPopulation, discardCardCount)
+            if selectedResources in resourcesSelected:
+                continue
+
+            resourcesSelected.append(selectedResources)
+
+            tradePossibilities.append(DiscardResourcesAction(player.seatNumber, [selectedResources.count(0),
+                                                                                selectedResources.count(1),
+                                                                                selectedResources.count(2),
+                                                                                selectedResources.count(3),
+                                                                                selectedResources.count(4),
+                                                                                selectedResources.count(5)]))
+
+        return tradePossibilities
+
     def GetPossibleActions_SpecialTurns(self, gameState, player, atRandom):
 
         if gameState.currState == 'PLACING_ROBBER':
@@ -494,7 +547,10 @@ class AgentMCTS(AgentRandom):
 
         elif gameState.currState == 'WAITING_FOR_DISCARDS':
 
-            return [player.ChooseCardsToDiscard(player)]
+            if atRandom:
+                return [super(AgentMCTS, self).ChooseCardsToDiscard(player)]
+            else:
+                return self.ChooseCardsToDiscard(player)
 
         elif gameState.currState == 'WAITING_FOR_CHOICE':
 
