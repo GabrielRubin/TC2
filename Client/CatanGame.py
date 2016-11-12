@@ -364,7 +364,9 @@ class GameState(object):
 
         for node in possibleNodes:
             if node.construction is not None and node.construction.owner not in possiblePlayers \
-                    and node.construction.owner != playerIndex:
+                and node.construction.owner != playerIndex and \
+                sum(self.players[node.construction.owner].resources) > 0: #THE OTHER PLAYERS RESOURCES HAVE TO BE > 0!
+
                 possiblePlayers.append(node.construction.owner)
 
         return possiblePlayers

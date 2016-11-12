@@ -38,7 +38,7 @@ class AgentRandom(Player):
                 for hexIndex in gameState.boardNodes[node].adjacentHexes:
                     if gameState.boardHexes[hexIndex].production is not None:
                         total += 1
-                return total > 1
+                return total > 1 or gameState.boardNodes[node].portType == '3for1'
 
             bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
 
@@ -66,7 +66,7 @@ class AgentRandom(Player):
                 for hexIndex in gameState.boardNodes[node].adjacentHexes:
                     if gameState.boardHexes[hexIndex].production is not None:
                         total += 1
-                return total > 1
+                return total > 1 or gameState.boardNodes[node].portType == '3for1'
 
             bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
 
