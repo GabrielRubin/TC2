@@ -248,8 +248,6 @@ class Client:
                 self.waitBankTradeAck = False
                 self.RespondToServer()
 
-            #if self.game.gameState.currState != "PLAY":
-
             self.game.gameState.players[instance.playerNumber].\
                 UpdateResourcesFromServer(instance.action, instance.element, instance.value)
 
@@ -268,34 +266,19 @@ class Client:
                 self.game.gameState.players[instance.playerNumber].resources
             ))
 
-            if self.debugSimulator:
+            logging.debug("CLIENT >>>> Player seated on {0} is {1} : {2} {3} {4}".format(
+                instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
+                instance.action, instance.element, instance.value
+            ))
 
-                logging.debug("CLIENT >>>>\n Player seated on {0} is {1}, his resources are: "
-                              "\n RESOURCES = client: {2} - simulator{3} \n PIECES = client: {4} - simulator{5} "
-                              "\n KNIGHTS = client: {6} - simulator {7}".format(
-                    instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
-                    self.game.gameState.players[instance.playerNumber].resources,
-                    self.debugGame.gameState.players[instance.playerNumber].resources,
-                    self.game.gameState.players[instance.playerNumber].numberOfPieces,
-                    self.debugGame.gameState.players[instance.playerNumber].numberOfPieces,
-                    self.game.gameState.players[instance.playerNumber].knights,
-                    self.debugGame.gameState.players[instance.playerNumber].knights
-                ))
-            else:
-
-                logging.debug("CLIENT >>>> Player seated on {0} is {1} : {2} {3} {4}".format(
-                    instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
-                    instance.action, instance.element, instance.value
-                ))
-
-                logging.debug("CLIENT >>>> Player seated on {0} is {1}, his resources are: "
-                              "\n RESOURCES = {2} \n PIECES = {3} "
-                              "\n KNIGHTS = {4}".format(
-                    instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
-                    self.game.gameState.players[instance.playerNumber].resources,
-                    self.game.gameState.players[instance.playerNumber].numberOfPieces,
-                    self.game.gameState.players[instance.playerNumber].knights
-                ))
+            logging.debug("CLIENT >>>> Player seated on {0} is {1}, his resources are: "
+                          "\n RESOURCES = {2} \n PIECES = {3} "
+                          "\n KNIGHTS = {4}".format(
+                instance.playerNumber, self.game.gameState.players[instance.playerNumber].name,
+                self.game.gameState.players[instance.playerNumber].resources,
+                self.game.gameState.players[instance.playerNumber].numberOfPieces,
+                self.game.gameState.players[instance.playerNumber].knights
+            ))
 
         elif name == "GameStateMessage":
 
@@ -311,8 +294,7 @@ class Client:
                 self.game.gameState.FinishSetup()
 
                 for index in range(0, len(self.game.gameState.players)):
-                    if index != self.player.seatNumber:
-                        self.game.gameState.players[index].GetStartingResources(self.game.gameState)
+                    self.game.gameState.players[index].GetStartingResources(self.game.gameState)
 
 
             elif self.game.gameState.currState == "PLACING_ROAD" or \

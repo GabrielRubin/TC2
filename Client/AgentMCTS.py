@@ -98,6 +98,8 @@ class AgentMCTS(AgentRandom):
         # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
         if len(self.movesToDo) > 0:
 
+            print("Move Buffer = {0}".format(self.movesToDo))
+
             action = self.movesToDo[0]  # get first element
             # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
             if isinstance(action, UseDevelopmentCardAction) and \
@@ -265,10 +267,10 @@ class AgentMCTS(AgentRandom):
         # 60 % WINS!!!!
         for player in gameState.players:
 
-            #resourcesVal = self.GetResourceUsabilityValue(player)
-            vp[player.seatNumber] += player.GetVictoryPoints(forceUpdate=True) #+ resourcesVal
+            resourcesVal = self.GetResourceUsabilityValue(player)
+            vp[player.seatNumber] += 0.75 * (player.GetVictoryPoints(forceUpdate=True) / 10.0) + (0.25 * resourcesVal)
 
-        vp[gameState.winner] += 10
+        vp[gameState.winner] += 1
 
         # for player in gameState.players:
         #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)
@@ -457,14 +459,14 @@ class AgentMCTS(AgentRandom):
                 possibleCities = gameState.GetPossibleCities(player)
 
                 if possibleCities is not None and len(possibleCities) > 0:
-                    possibleActions += [BuildCityAction(player.seatNumber, node, len(player.cities))
+                    return [BuildCityAction(player.seatNumber, node, len(player.cities))
                                         for node in possibleCities]
 
             if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
                     player.CanAfford(BuildSettlementAction.cost) and \
                     possibleSettlements:
 
-                possibleActions += [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
+                return [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
                                     for node in possibleSettlements]
 
             if player.HavePiece(g_pieces.index('ROADS')) and \
