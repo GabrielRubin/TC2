@@ -21,26 +21,6 @@ class TC2Main(object):
         self.player        = None
         self.ourClient     = None
 
-    def ComposeGameStatsMessageCSV(self, gameState):
-
-        playersPoints = "{0} | {1} | {2} | {3}".format(gameState.players[0].GetVictoryPoints(),
-                                                       gameState.players[1].GetVictoryPoints(),
-                                                       gameState.players[2].GetVictoryPoints(),
-                                                       gameState.players[3].GetVictoryPoints())
-
-        msg = [(gameState.players[gameState.winner].name, #winner name
-               playersPoints,
-               gameState.currTurn,                        #total turns
-               gameState.players[0].GetVictoryPoints(),   #agent points
-               len(gameState.players[0].roads),           #total roads
-               len(gameState.players[0].settlements),     #total settlements
-               len(gameState.players[0].cities),          #total cities
-               gameState.players[0].knights,              #total knights
-               gameState.players[0].biggestRoad,          #has the biggest road?
-               gameState.players[0].biggestArmy)]         #has the biggest army?
-
-        return msg
-
     def ComposeGameStatsMessage(self, gameState):
 
         msg =  "#########################################################\n" \
@@ -92,12 +72,6 @@ class TC2Main(object):
             msg += "---------------------------------------------------------"
 
             return msg
-
-    def SaveGameStatsCSV(self, gameState):
-
-      msg = self.ComposeGameStatsMessageCSV(gameState)
-
-      CSVGenerator.WriteCSVFile("GamesStats", "GameStats", msg)
 
     def SaveGameStats(self, gameState):
 

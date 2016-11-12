@@ -7,6 +7,10 @@ from CatanGame import *
 from CatanAction import *
 from AgentRandom import *
 from AgentAlphabeta import *
+import os
+import CSVGenerator
+
+m_clientPath = os.getcwd()
 
 class Client:
 
@@ -153,6 +157,12 @@ class Client:
             (messageName, message) = parsed
             winner = self.TreatMessage(messageName, message)
             if winner:
+
+                # I KNOW THIS IS A BAD THING, BUT IT WORKS!!!!
+                self.game.gameState.winner = winner
+                os.chdir(m_clientPath)
+                CSVGenerator.SaveGameStatsCSV(self.game.gameState)
+
                 return self.game.gameState
 
     def TreatMessage(self, name, instance):
@@ -160,6 +170,18 @@ class Client:
         if name == "GameTextMsgMessage" and self.serverMessages:
 
             logging.info("Server> " + instance.message)
+
+            if self.game.gameState.isGameOver:
+
+                # EX: robot3 has won the game with 10 points
+                splitMsg = str(instance.message).split()
+
+                winner = 0
+                for player in self.game.gameState.players:
+                    if str(player.name) == str(splitMsg[0]):
+                        winner = player.seatNumber
+
+                return winner
 
         elif name == "ChannelsMessage":
 
@@ -314,15 +336,8 @@ class Client:
 
             elif self.game.gameState.currState == "OVER":
 
-                winner    = 0
-                winPoints = 0
-
-                for player in self.game.gameState.players:
-                    playerPoints = player.GetVictoryPoints()
-                    if playerPoints > winPoints:
-                        winner = player.seatNumber
-
-                return winner
+                self.game.gameState.isGameOver = True
+                #return winner
 
             self.RespondToServer()
 
@@ -401,6 +416,9 @@ class Client:
             #        self.game.gameState.players[index].resources,
             #        sum(self.game.gameState.players[index].resources)
             #    ))
+
+            if int(self.game.gameState.currPlayer) != int(instance.playerNumber):
+                self.game.gameState.currTurn += 1
 
             self.game.gameState.players[instance.playerNumber].StartTurn()
             self.game.gameState.currPlayer = instance.playerNumber

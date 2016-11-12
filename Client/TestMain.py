@@ -1,6 +1,5 @@
 from TC2Main import *
 
-m_clientPath = os.getcwd()
 m_totalGames = 1
 
 def RunMain(gameNamePrefix):
@@ -12,10 +11,6 @@ def RunMain(gameNamePrefix):
     time.sleep(2)
 
     gameState = main.RunClient(killProcess=False)
-
-    os.chdir(m_clientPath)
-
-    main.SaveGameStatsCSV(gameState)
 
 if __name__ == '__main__':
 
