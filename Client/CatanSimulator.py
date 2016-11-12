@@ -25,7 +25,7 @@ defaultPlayers = [AgentMCTS("P1", 0, simulationCount=1000),
                   AgentRandom("P3", 2),
                   AgentRandom("P4", 3)]
 
-#defaultPlayers = [AgentRandom("P1", 0),
+# defaultPlayers = [AgentRandom("P1", 0),
 #                  AgentRandom("P2", 1),
 #                  AgentRandom("P3", 2),
 #                  AgentRandom("P4", 3)]
@@ -357,7 +357,7 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(10, saveGameStateLogs=False, multiprocess=True)
+    RunWithLogging(10, saveGameStateLogs=False, multiprocess=False)
 
     # SPEED TEST
     #RunSpeedTest(300)
