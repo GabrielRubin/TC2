@@ -127,9 +127,7 @@ class AgentMCTS(AgentRandom):
         # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
         if isinstance(action, UseDevelopmentCardAction) and \
                         action.index == g_developmentCards.index('MONOPOLY'):
-
             #print("empty buffer! -> MONOPOLY")
-
             self.movesToDo = []
 
         return action
@@ -207,8 +205,8 @@ class AgentMCTS(AgentRandom):
         best = self.BestChild(rootNode, 0)
 
         # KEEP FUTURE ACTIONS IN A "BUFFER"...
-        # IF WE ARE CHOOSING A ROBBER POSITION, DON'T KEEP BUFFER -> WE DON'T KNOW WHAT RESOURCE WE WILL STEAL!
-        if gameState.currState != 'PLACING_ROBBER':
+        # IF WE ARE CHOOSING A PLAYER TO STEAL FROM, DON'T KEEP BUFFER -> WE DON'T KNOW WHAT RESOURCE WE WILL STEAL!
+        if gameState.currState != 'WAITING_FOR_CHOICE':
 
             bestChild = self.BestChild(best, 0)
             while bestChild is not None and \
