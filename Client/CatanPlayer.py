@@ -376,9 +376,10 @@ class Player(object):
 
                 if gameState.boardEdges[adjacentEdge].construction is None or \
                     gameState.boardEdges[adjacentEdge].construction.owner != self.seatNumber:
+                    if road not in startingRoads:
                         startingRoads.append(road)
-                        isStartPos = True
-                        break
+                    isStartPos = True
+                    break
 
             if isStartPos:
                 continue
@@ -390,7 +391,8 @@ class Player(object):
 
                 if gameState.boardNodes[adjacentNode].construction is not None and \
                     gameState.boardNodes[adjacentNode].construction.owner != self.seatNumber:
-                    startingRoads.append(road)
+                    if road not in startingRoads:
+                        startingRoads.append(road)
                     break
 
         def DepthSearch(playerNumber, currRoad, length, visited):

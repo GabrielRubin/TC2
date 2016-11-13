@@ -101,9 +101,7 @@ class AgentMCTS(AgentRandom):
 
         # SPECIAL CASE -> WE JUST GOT OUR TURN AND CAN CLEAR THE "BUFFER"...
         if game.gameState.currState == "PLAY":
-
             #print("empty buffer! -> PLAY")
-
             self.movesToDo = []
 
         # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
@@ -119,12 +117,12 @@ class AgentMCTS(AgentRandom):
                 isinstance(action, ChoosePlayerToStealFromAction) or \
                 isinstance(action, PlaceRobberAction) or \
                 isinstance(action, DiscardResourcesAction):
-                #print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
+                print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
                 self.movesToDo = []
             else:
                 self.movesToDo = self.movesToDo[1:] # remove first element
 
-            #print("BUFFER ACTION = \n{0}".format(action))
+            print("BUFFER ACTION = \n{0}".format(action))
 
             return action
 
@@ -163,33 +161,33 @@ class AgentMCTS(AgentRandom):
                         children=[],
                         actionsFunction=self.GetPossibleActions)
 
-        # print("GAME STATE      : {0}".format(gameState.currState))
-        # print("POSSIBLE ACTIONS: {0}".format(rootNode.possibleActions))
-        #
-        # print("RESOURCES = BRICK: {0}\n"
-        #       "              ORE: {1}\n"
-        #       "             WOOL: {2}\n"
-        #       "            GRAIN: {3}\n"
-        #       "           LUMBER: {4}".format(
-        #     self.resources[0],
-        #     self.resources[1],
-        #     self.resources[2],
-        #     self.resources[3],
-        #     self.resources[4]
-        # ))
-        #
-        # if sum(self.developmentCards) > 0:
-        #     print("DEVELOPMENT CARDS = KNIGHT:        {0}\n"
-        #           "                    ROAD_BUILDING: {1}\n"
-        #           "                    YEAR_OF_PLENTY:{2}\n"
-        #           "                    MONOPOLY:      {3}\n"
-        #           "                    VICTORY_POINT: {4}".format(
-        #         self.developmentCards[0],
-        #         self.developmentCards[1],
-        #         self.developmentCards[2],
-        #         self.developmentCards[3],
-        #         self.developmentCards[4]
-        #     ))
+        print("GAME STATE      : {0}".format(gameState.currState))
+        print("POSSIBLE ACTIONS: {0}".format(rootNode.possibleActions))
+
+        print("RESOURCES = BRICK: {0}\n"
+              "              ORE: {1}\n"
+              "             WOOL: {2}\n"
+              "            GRAIN: {3}\n"
+              "           LUMBER: {4}".format(
+            self.resources[0],
+            self.resources[1],
+            self.resources[2],
+            self.resources[3],
+            self.resources[4]
+        ))
+
+        if sum(self.developmentCards) > 0:
+            print("DEVELOPMENT CARDS = KNIGHT:        {0}\n"
+                  "                    ROAD_BUILDING: {1}\n"
+                  "                    YEAR_OF_PLENTY:{2}\n"
+                  "                    MONOPOLY:      {3}\n"
+                  "                    VICTORY_POINT: {4}".format(
+                self.developmentCards[0],
+                self.developmentCards[1],
+                self.developmentCards[2],
+                self.developmentCards[3],
+                self.developmentCards[4]
+            ))
 
         if rootNode.possibleActions is None:
             print("MCTS ERROR! POSSIBLE ACTIONS FROM ROOT NODE ARE NONE!!!!")
@@ -236,9 +234,9 @@ class AgentMCTS(AgentRandom):
 
                 bestChild = self.BestChild(bestChild, 0)
 
-            #print("Created Move Buffer = {0}".format(self.movesToDo))
+            print("Created Move Buffer = {0}".format(self.movesToDo))
 
-        #print("CHOSEN ACTION = \n{0}".format(best.action))
+        print("CHOSEN ACTION = \n{0}".format(best.action))
 
         return best.action
 
@@ -330,9 +328,9 @@ class AgentMCTS(AgentRandom):
             resourcesVal = AgentMCTS.GetResourceUsabilityValue(player)
             vp[player.seatNumber] += (player.GetVictoryPoints(forceUpdate=True) / 10.0) # + (0.5 * resourcesVal)
 
-        vp[gameState.winner] += 1
-
+        #vp[gameState.winner] += 1
         urgencyFactor = 100.0/gameState.currTurn
+        #print("UFactor = {0}".format(urgencyFactor))
 
         vp[gameState.winner] += urgencyFactor
 
@@ -360,39 +358,39 @@ class AgentMCTS(AgentRandom):
 
         if action.type == 'BuildRoad':
             if player.possibleSettlements <= 0:
-                return 100
-            return 50/(len(player.roads) + 1)
+                return 5
+            return 5/(len(player.roads) + 1)
 
         if action.type == 'BuildSettlement':
             bonus = 0
             for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
                 if gameState.boardHexes[hexIndex].production is not None:
-                    bonus += 500
+                    bonus += 2
                 if gameState.boardNodes[action.position].portType == '3for1':
-                    bonus += 50
+                    bonus += 2
                 elif gameState.boardNodes[action.position].portType is not None:
-                    bonus += 10
-            return 1000 + bonus
+                    bonus += 1
+            return 4 + bonus
 
         if action.type == 'BuildCity':
             bonus = 0
             for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
                 if gameState.boardHexes[hexIndex].production is not None:
-                    bonus += 500
-            return 2000 + bonus
+                    bonus += 4
+            return 8 + bonus
 
         if action.type == 'BuyDevelopmentCard':
             if player.biggestArmy:
-                return 10
-            return 50
+                return 1
+            return 2
 
         if action.type == 'BankTradeOffer':
             if not player.CanAfford(BuildCityAction.cost) and \
                not player.CanAfford(BuildSettlementAction.cost) and \
                not player.CanAfford(BuildRoadAction.cost) and \
                not player.CanAfford(BuyDevelopmentCardAction.cost):
-                return 100
-            return 10
+                return 10
+            return 1
 
         return 0
 
@@ -401,7 +399,7 @@ class AgentMCTS(AgentRandom):
 
         estimatedQValues = listm(0 for i in range(len(gameState.players)))
 
-        estimatedQValues[player.seatNumber] = (AgentMCTS.GetActionEstimatedValue(gameState, action, player) / 3500.0)
+        estimatedQValues[player.seatNumber] = (AgentMCTS.GetActionEstimatedValue(gameState, action, player) / 20.0)
 
         return estimatedQValues
 
