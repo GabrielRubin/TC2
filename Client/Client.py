@@ -154,12 +154,6 @@ class Client:
             (messageName, message) = parsed
             winner = self.TreatMessage(messageName, message)
             if winner:
-
-                # I KNOW THIS IS A BAD THING, BUT IT WORKS!!!!
-                self.game.gameState.winner = winner
-                os.chdir(m_clientPath)
-                CSVGenerator.SaveGameStatsCSV(self.game.gameState)
-
                 return self.game.gameState
 
     def TreatMessage(self, name, instance):
@@ -168,17 +162,33 @@ class Client:
 
             logging.info("Server> " + instance.message)
 
-            if self.game.gameState.isGameOver:
+            if self.game.gameState.isGameOver and self.game.gameState.isLogGenerated:
+                return self.game.gameState.winner
+            else:
+                if self.game.gameState.isGameOver and self.game.gameState.isLogGenerated == False:
 
-                # EX: robot3 has won the game with 10 points
-                splitMsg = str(instance.message).split()
+                    # EX: robot3 has won the game with 10 points
+                    splitMsg = str(instance.message).split()
 
-                winner = 0
-                for player in self.game.gameState.players:
-                    if str(player.name) == str(splitMsg[0]):
-                        winner = player.seatNumber
+                    winner = 0
+                    for player in self.game.gameState.players:
 
-                return winner
+                        print("player: {0} == {1}".format(str(player.name), str(splitMsg[0])))
+
+                        if str(player.name) == str(splitMsg[0]):
+
+                            print("player: {0} at seat {1} is the winner".format(str(player.name), player.seatNumber))
+
+                            winner = player.seatNumber
+
+                    # I KNOW THIS IS A BAD THING, BUT IT WORKS!!!!
+                    self.game.gameState.winner = winner
+                    os.chdir(m_clientPath)
+                    CSVGenerator.SaveGameStatsCSV(self.game.gameState)
+
+                    self.game.gameState.isLogGenerated = True
+
+                    return winner
 
         elif name == "ChannelsMessage":
 

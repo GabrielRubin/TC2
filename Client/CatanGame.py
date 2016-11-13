@@ -85,6 +85,7 @@ class GameState(object):
         self.setupDone = False
         self.winner = -1
         self.isGameOver = False
+        self.isLogGenerated = False
 
         self.checkLongestRoad = False
 
