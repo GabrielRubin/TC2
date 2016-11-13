@@ -153,7 +153,7 @@ class Client:
         else:
             (messageName, message) = parsed
             winner = self.TreatMessage(messageName, message)
-            if winner:
+            if winner is not None:
                 return self.game.gameState
 
     def TreatMessage(self, name, instance):
@@ -172,14 +172,10 @@ class Client:
 
                     winner = 0
                     for player in self.game.gameState.players:
-
-                        print("player: {0} == {1}".format(str(player.name), str(splitMsg[0])))
-
                         if str(player.name) == str(splitMsg[0]):
-
                             print("player: {0} at seat {1} is the winner".format(str(player.name), player.seatNumber))
-
                             winner = player.seatNumber
+                            break
 
                     # I KNOW THIS IS A BAD THING, BUT IT WORKS!!!!
                     self.game.gameState.winner = winner
