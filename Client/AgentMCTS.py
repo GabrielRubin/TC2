@@ -557,6 +557,35 @@ class AgentMCTS(AgentRandom):
 
         return tradePossibilities
 
+
+    def GetMonopolyResource(self, game, player):
+
+        if player is None:
+            player = self
+
+        actionPossibilities = []
+
+        for i in xrange(0, len(player.resources) - 1):
+            actionPossibilities.append(UseMonopolyCardAction(player.seatNumber, i+1))
+
+        return actionPossibilities
+
+    def GetYearOfPlentyResource(self, game, player):
+
+        if player is None:
+            player = self
+
+        actionPossibilities = []
+
+        for i in xrange(0, 5):
+            for j in xrange(0, 5):
+                chosenResources = [0, 0, 0, 0, 0]
+                chosenResources[i] += 1
+                chosenResources[j] += 1
+                actionPossibilities.append(UseYearOfPlentyCardAction(player.seatNumber, chosenResources))
+
+        return actionPossibilities
+
     def GetPossibleActions_SpecialTurns(self, gameState, player, atRandom):
 
         if gameState.currState == 'PLACING_ROBBER':
@@ -659,7 +688,7 @@ class AgentMCTS(AgentRandom):
                     if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
                             player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
 
-                            monopolyPick = player.GetMonopolyResource(gameState, player)
+                            monopolyPick = self.GetMonopolyResource(gameState, player)
 
                             if monopolyPick is not None:
                                 possibleCardsToUse += monopolyPick
@@ -667,7 +696,7 @@ class AgentMCTS(AgentRandom):
                     if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
                             player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
 
-                            yearOfPlentyPick = player.GetYearOfPlentyResource(gameState, player)
+                            yearOfPlentyPick = self.GetYearOfPlentyResource(gameState, player)
 
                             if yearOfPlentyPick is not None:
                                 possibleCardsToUse += yearOfPlentyPick

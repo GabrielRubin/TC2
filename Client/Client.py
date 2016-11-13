@@ -263,12 +263,12 @@ class Client:
 
         elif name == "PlayerElementMessage":
 
-            if self.waitBankTradeAck:
-                self.waitBankTradeAck = False
-                self.RespondToServer()
-
             self.game.gameState.players[instance.playerNumber].\
                 UpdateResourcesFromServer(instance.action, instance.element, instance.value)
+
+            if self.waitBankTradeAck and instance.action == 'GAIN':
+                self.waitBankTradeAck = False
+                self.RespondToServer()
 
             if instance.element == 'KNIGHTS':
                 self.game.gameState.UpdateLargestArmy()
@@ -464,6 +464,8 @@ class Client:
                                                                      instance.position)
 
             self.game.gameState.UpdateLongestRoad()
+
+            print("LONGEST ROAD PLAYER = {0}".format(self.game.gameState.longestRoadPlayer))
 
             logging.info("Player seated on {0} constructed a {1}, have this constructions now:\n"
                          " Roads: {2}\n Settlements: {3}\n Cities: {4}".format(
