@@ -117,7 +117,8 @@ class AgentMCTS(AgentRandom):
             # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
             if (isinstance(action, UseDevelopmentCardAction) and \
                 action.index == g_developmentCards.index('MONOPOLY')) or \
-                isinstance(action, ChoosePlayerToStealFromAction):
+                isinstance(action, ChoosePlayerToStealFromAction) or \
+                isinstance(action, PlaceRobberAction):
                 #print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
                 self.movesToDo = []
             else:
@@ -142,7 +143,8 @@ class AgentMCTS(AgentRandom):
         # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
         if (isinstance(action, UseDevelopmentCardAction) and \
             action.index == g_developmentCards.index('MONOPOLY')) or \
-            isinstance(action, ChoosePlayerToStealFromAction):
+            isinstance(action, ChoosePlayerToStealFromAction) or \
+            isinstance(action, PlaceRobberAction):
             #print("empty buffer! -> MONOPOLY OR CHOOSEPLAYER")
             self.movesToDo = []
 
@@ -260,7 +262,7 @@ class AgentMCTS(AgentRandom):
 
         chosenAction.ApplyAction(nextGameState)
 
-        estimatedQValues = AgentMCTS.GetEstimatedQValues(len(nextGameState.players), chosenAction, nextGameState.players[node.currentPlayer])
+        estimatedQValues = AgentMCTS.GetEstimatedQValues(nextGameState, chosenAction, nextGameState.players[node.currentPlayer])
 
         childNode = self.MCTSNode(player=node.currentPlayer,
                                   state=nextGameState,
@@ -349,20 +351,36 @@ class AgentMCTS(AgentRandom):
         return cityProb * 0.3 + settlementProb * 0.3 + roadProb * 0.2 + cardProb * 0.2
 
     @staticmethod
-    def GetActionEstimatedValue(action, player):
+    def GetActionEstimatedValue(gameState, action, player):
 
         if action.type == 'BuildRoad':
             if player.possibleSettlements <= 0:
                 return 100
             return 50/(len(player.roads) + 1)
+
         if action.type == 'BuildSettlement':
-            return 1000
+            bonus = 0
+            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
+                if gameState.boardHexes[hexIndex].production is not None:
+                    bonus += 500
+                if gameState.boardNodes[action.position].portType == '3for1':
+                    bonus += 50
+                elif gameState.boardNodes[action.position].portType is not None:
+                    bonus += 10
+            return 1000 + bonus
+
         if action.type == 'BuildCity':
-            return 2000
+            bonus = 0
+            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
+                if gameState.boardHexes[hexIndex].production is not None:
+                    bonus += 500
+            return 2000 + bonus
+
         if action.type == 'BuyDevelopmentCard':
             if player.biggestArmy:
                 return 10
             return 50
+
         if action.type == 'BankTradeOffer':
             if not player.CanAfford(BuildCityAction.cost) and \
                not player.CanAfford(BuildSettlementAction.cost) and \
@@ -374,11 +392,11 @@ class AgentMCTS(AgentRandom):
         return 0
 
     @staticmethod
-    def GetEstimatedQValues(lenght, action, player):
+    def GetEstimatedQValues(gameState, action, player):
 
-        estimatedQValues = listm(0 for i in range(lenght))
+        estimatedQValues = listm(0 for i in range(len(gameState.players)))
 
-        estimatedQValues[player.seatNumber] = AgentMCTS.GetActionEstimatedValue(action, player)
+        estimatedQValues[player.seatNumber] = (AgentMCTS.GetActionEstimatedValue(gameState, action, player) / 3500.0)
 
         return estimatedQValues
 
