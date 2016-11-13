@@ -89,7 +89,6 @@ class AgentMCTS(AgentRandom):
             return None
         #If the server is waiting for discards, respond, if needed...
         if game.gameState.currState == "WAITING_FOR_DISCARDS":
-
             copyState = cPickle.loads(cPickle.dumps(game.gameState, -1))
             copyState.currPlayerChoice = self.seatNumber
 
@@ -118,7 +117,8 @@ class AgentMCTS(AgentRandom):
             if (isinstance(action, UseDevelopmentCardAction) and \
                 action.index == g_developmentCards.index('MONOPOLY')) or \
                 isinstance(action, ChoosePlayerToStealFromAction) or \
-                isinstance(action, PlaceRobberAction):
+                isinstance(action, PlaceRobberAction) or \
+                isinstance(action, DiscardResourcesAction):
                 #print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
                 self.movesToDo = []
             else:
@@ -144,7 +144,8 @@ class AgentMCTS(AgentRandom):
         if (isinstance(action, UseDevelopmentCardAction) and \
             action.index == g_developmentCards.index('MONOPOLY')) or \
             isinstance(action, ChoosePlayerToStealFromAction) or \
-            isinstance(action, PlaceRobberAction):
+            isinstance(action, PlaceRobberAction) or \
+            isinstance(action, DiscardResourcesAction):
             #print("empty buffer! -> MONOPOLY OR CHOOSEPLAYER")
             self.movesToDo = []
 
@@ -330,6 +331,10 @@ class AgentMCTS(AgentRandom):
             vp[player.seatNumber] += (player.GetVictoryPoints(forceUpdate=True) / 10.0) # + (0.5 * resourcesVal)
 
         vp[gameState.winner] += 1
+
+        urgencyFactor = 100.0/gameState.currTurn
+
+        vp[gameState.winner] += urgencyFactor
 
         # for player in gameState.players:
         #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)
