@@ -332,7 +332,7 @@ class AgentMCTS(AgentRandom):
         urgencyFactor = 100.0/gameState.currTurn
         #print("UFactor = {0}".format(urgencyFactor))
 
-        vp[gameState.winner] += urgencyFactor
+        vp[gameState.winner] += urgencyFactor * 2.0
 
         # for player in gameState.players:
         #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)
@@ -390,6 +390,47 @@ class AgentMCTS(AgentRandom):
                not player.CanAfford(BuildRoadAction.cost) and \
                not player.CanAfford(BuyDevelopmentCardAction.cost):
                 return 10
+            return 1
+
+        return 0
+
+    @staticmethod
+    def GetActionExaggeratedValue(gameState, action, player):
+
+        if action.type == 'BuildRoad':
+            if player.possibleSettlements <= 0:
+                return 100
+            return 100/(len(player.roads) + 1)
+
+        if action.type == 'BuildSettlement':
+            bonus = 0
+            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
+                if gameState.boardHexes[hexIndex].production is not None:
+                    bonus += 50
+                if gameState.boardNodes[action.position].portType == '3for1':
+                    bonus += 25
+                elif gameState.boardNodes[action.position].portType is not None:
+                    bonus += 10
+            return 200 + bonus
+
+        if action.type == 'BuildCity':
+            bonus = 0
+            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
+                if gameState.boardHexes[hexIndex].production is not None:
+                    bonus += 100
+            return 400 + bonus
+
+        if action.type == 'BuyDevelopmentCard':
+            if player.biggestArmy:
+                return 1
+            return 10
+
+        if action.type == 'BankTradeOffer':
+            if not player.CanAfford(BuildCityAction.cost) and \
+               not player.CanAfford(BuildSettlementAction.cost) and \
+               not player.CanAfford(BuildRoadAction.cost) and \
+               not player.CanAfford(BuyDevelopmentCardAction.cost):
+                return 25
             return 1
 
         return 0
@@ -657,14 +698,14 @@ class AgentMCTS(AgentRandom):
                 possibleCities = gameState.GetPossibleCities(player)
 
                 if possibleCities is not None and len(possibleCities) > 0:
-                    possibleActions += [BuildCityAction(player.seatNumber, node, len(player.cities))
+                    return [BuildCityAction(player.seatNumber, node, len(player.cities))
                                         for node in possibleCities]
 
             if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
                     player.CanAfford(BuildSettlementAction.cost) and \
                     possibleSettlements:
 
-                possibleActions += [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
+                return [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
                                     for node in possibleSettlements]
 
             if player.HavePiece(g_pieces.index('ROADS')) and \
