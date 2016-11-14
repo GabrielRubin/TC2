@@ -1,7 +1,8 @@
 from AgentRandom import *
 from datetime import datetime
 from datetime import timedelta
-import copy
+import multiprocessing as mp
+import threading
 import cPickle
 
 class AgentMCTS(AgentRandom):
@@ -68,7 +69,7 @@ class AgentMCTS(AgentRandom):
 
     saveNodeValue       = 20
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None):
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
@@ -76,7 +77,8 @@ class AgentMCTS(AgentRandom):
         self.agentName           = "MONTE CARLO TREE SEARCH : {0} sec".format(choiceTime)
         self.simulationCounter   = 0
         self.maxSimulations      = simulationCount
-        self.movesToDo           = []
+        self.movesToDo           = [] #move buffer
+        self.multiTreading       = multiThreading
 
     def DoMove(self, game):
 
@@ -114,6 +116,8 @@ class AgentMCTS(AgentRandom):
             # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
             if (isinstance(action, UseDevelopmentCardAction) and \
                 action.index == g_developmentCards.index('MONOPOLY')) or \
+               (isinstance(action, UseDevelopmentCardAction) and \
+                action.index == g_developmentCards.index('YEAR_OF_PLENTY')) or \
                 isinstance(action, ChoosePlayerToStealFromAction) or \
                 isinstance(action, PlaceRobberAction) or \
                 isinstance(action, DiscardResourcesAction):
@@ -135,12 +139,40 @@ class AgentMCTS(AgentRandom):
 
         AgentMCTS.PrepareGameStateForSimulation(state)
 
-        action = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
+        if self.multiTreading:
+
+            numCores     = mp.cpu_count()
+            if self.maxSimulations is not None:
+                coreSimCount = int(math.floor(self.maxSimulations / numCores))
+            else:
+                coreSimCount = None
+            coreTime = int(math.floor(self.choiceTime / numCores))
+            ct = timedelta(seconds=coreTime)
+
+            manager = mp.Manager()
+            actions = manager.list(range(numCores))
+            processes = [mp.Process(target=self.MonteCarloTreeSearch, args=(state, ct, coreSimCount, True, i, actions))
+                         for i in range(numCores)]  # I am running as many processes as CPU my machine has (is this wise?).
+            for proc in processes:
+                proc.start()
+            for proc in processes:
+                proc.join()
+            # for result in dict:
+            #     actions.append(result)
+
+            chosenAction   = max(actions, key=lambda a : a[2])
+            action         = chosenAction[0]
+            self.movesToDo = chosenAction[1]
+
+        else:
+            action  = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
 
         # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
         # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
         if (isinstance(action, UseDevelopmentCardAction) and \
             action.index == g_developmentCards.index('MONOPOLY')) or \
+            (isinstance(action, UseDevelopmentCardAction) and \
+            action.index == g_developmentCards.index('YEAR_OF_PLENTY')) or \
             isinstance(action, ChoosePlayerToStealFromAction) or \
             isinstance(action, PlaceRobberAction) or \
             isinstance(action, DiscardResourcesAction):
@@ -149,7 +181,8 @@ class AgentMCTS(AgentRandom):
 
         return action
 
-    def MonteCarloTreeSearch(self, gameState, maxDuration, simulationCount):
+    def MonteCarloTreeSearch(self, gameState, maxDuration, simulationCount,
+                             parallel = False, processIndex = None, processList = None):
 
         rootNode = self.MCTSNode(
                         player=self.seatNumber,
@@ -223,22 +256,38 @@ class AgentMCTS(AgentRandom):
 
         # KEEP FUTURE ACTIONS IN A "BUFFER"...
         # IF WE ARE CHOOSING A PLAYER TO STEAL FROM, DON'T KEEP BUFFER -> WE DON'T KNOW WHAT RESOURCE WE WILL STEAL!
-        if gameState.currState != 'WAITING_FOR_CHOICE':
+        if not parallel:
+            if gameState.currState != 'WAITING_FOR_CHOICE':
 
-            bestChild = self.BestChild(best, 0)
-            while bestChild is not None and \
-                  bestChild.actingPlayer == self.seatNumber and \
-                  not bestChild.isTerminal:
+                bestChild = self.BestChild(best, 0)
+                while bestChild is not None and \
+                      bestChild.actingPlayer == self.seatNumber and \
+                      not bestChild.isTerminal:
 
-                self.movesToDo.append(bestChild.action)
+                    self.movesToDo.append(bestChild.action)
+                    bestChild = self.BestChild(bestChild, 0)
 
-                bestChild = self.BestChild(bestChild, 0)
+                print("Created Move Buffer = {0}".format(self.movesToDo))
 
-            print("Created Move Buffer = {0}".format(self.movesToDo))
+            print("CHOSEN ACTION = \n{0}".format(best.action))
 
-        print("CHOSEN ACTION = \n{0}".format(best.action))
+            return best.action
 
-        return best.action
+        else:
+
+            movesToDo = []
+
+            if gameState.currState != 'WAITING_FOR_CHOICE':
+                bestChild = self.BestChild(best, 0)
+                while bestChild is not None and \
+                                bestChild.actingPlayer == self.seatNumber and \
+                        not bestChild.isTerminal:
+                    movesToDo.append(bestChild.action)
+                    bestChild = self.BestChild(bestChild, 0)
+
+                print("Created Move Buffer = {0}".format(self.movesToDo))
+
+            processList[processIndex] = (best.action, movesToDo, (float(best.QValue[self.seatNumber]) / float(best.NValue)))
 
     def TreePolicy(self, node):
 
@@ -333,6 +382,11 @@ class AgentMCTS(AgentRandom):
         #print("UFactor = {0}".format(urgencyFactor))
 
         vp[gameState.winner] += urgencyFactor * 2.0
+
+        # if gameState.largestArmyPlayer == gameState.winner:
+        #     vp[gameState.winner] += 1.0
+        # if gameState.longestRoadPlayer == gameState.winner:
+        #     vp[gameState.winner] += 1.0
 
         # for player in gameState.players:
         #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)

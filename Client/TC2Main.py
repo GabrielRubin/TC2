@@ -88,18 +88,20 @@ class TC2Main(object):
 
 
     def RunClient(self, killProcess=True):
-        try:
-            result = self.ourClient.StartClient(("localhost", 8880))
-
-        finally:
-
-            if killProcess:
-              self.clientProcess.kill()
-              self.robot1Process.kill()
-              self.robot2Process.kill()
-              self.robot3Process.kill()
-
-            return result
+        result = self.ourClient.StartClient(("localhost", 8880))
+        return result
+        # try:
+        #     result = self.ourClient.StartClient(("localhost", 8880))
+        #
+        # finally:
+        #
+        #     if killProcess:
+        #       self.clientProcess.kill()
+        #       self.robot1Process.kill()
+        #       self.robot2Process.kill()
+        #       self.robot3Process.kill()
+        #
+        #     return result
 
     def InitGame(self, canInitServer = True, gameNamePrefix = None, callProcess=True):
 
@@ -138,7 +140,9 @@ class TC2Main(object):
             self.player = AgentRandom(args.nickname, 0)
 
         if args.agentType == 'mcts':
-            self.player = AgentMCTS(args.nickname, 0, simulationCount=1000)
+            # 10.000 sims without multiThread - 2 min and 30 sec
+            # 10.000 sims with    multiThread - 50 sec
+            self.player = AgentMCTS(args.nickname, 0, simulationCount=10000, multiThreading=False)
 
         # Change the current directory...
         mycwd = os.getcwd()
