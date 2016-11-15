@@ -69,16 +69,17 @@ class AgentMCTS(AgentRandom):
 
     saveNodeValue       = 20
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False):
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False, preSelect = True):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
         self.choiceTime          = choiceTime
-        self.agentName           = "MONTE CARLO TREE SEARCH : {0} sec".format(choiceTime)
+        self.agentName           = "MONTE CARLO TREE SEARCH : {0} sec, {1} sims".format(choiceTime, simulationCount)
         self.simulationCounter   = 0
         self.maxSimulations      = simulationCount
         self.movesToDo           = [] #move buffer
         self.multiTreading       = multiThreading
+        self.preSelect           = preSelect
 
     def DoMove(self, game):
 
@@ -121,12 +122,12 @@ class AgentMCTS(AgentRandom):
                 isinstance(action, ChoosePlayerToStealFromAction) or \
                 isinstance(action, PlaceRobberAction) or \
                 isinstance(action, DiscardResourcesAction):
-                print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
+                #print("Clear buffer -> MONOPOLY OR CHOOSEPLAYER")
                 self.movesToDo = []
             else:
                 self.movesToDo = self.movesToDo[1:] # remove first element
 
-            print("BUFFER ACTION = \n{0}".format(action))
+            #print("BUFFER ACTION = \n{0}".format(action))
 
             return action
 
@@ -194,33 +195,33 @@ class AgentMCTS(AgentRandom):
                         children=[],
                         actionsFunction=self.GetPossibleActions)
 
-        print("GAME STATE      : {0}".format(gameState.currState))
-        print("POSSIBLE ACTIONS: {0}".format(rootNode.possibleActions))
-
-        print("RESOURCES = BRICK: {0}\n"
-              "              ORE: {1}\n"
-              "             WOOL: {2}\n"
-              "            GRAIN: {3}\n"
-              "           LUMBER: {4}".format(
-            self.resources[0],
-            self.resources[1],
-            self.resources[2],
-            self.resources[3],
-            self.resources[4]
-        ))
-
-        if sum(self.developmentCards) > 0:
-            print("DEVELOPMENT CARDS = KNIGHT:        {0}\n"
-                  "                    ROAD_BUILDING: {1}\n"
-                  "                    YEAR_OF_PLENTY:{2}\n"
-                  "                    MONOPOLY:      {3}\n"
-                  "                    VICTORY_POINT: {4}".format(
-                self.developmentCards[0],
-                self.developmentCards[1],
-                self.developmentCards[2],
-                self.developmentCards[3],
-                self.developmentCards[4]
-            ))
+        # print("GAME STATE      : {0}".format(gameState.currState))
+        # print("POSSIBLE ACTIONS: {0}".format(rootNode.possibleActions))
+        #
+        # print("RESOURCES = BRICK: {0}\n"
+        #       "              ORE: {1}\n"
+        #       "             WOOL: {2}\n"
+        #       "            GRAIN: {3}\n"
+        #       "           LUMBER: {4}".format(
+        #     self.resources[0],
+        #     self.resources[1],
+        #     self.resources[2],
+        #     self.resources[3],
+        #     self.resources[4]
+        # ))
+        #
+        # if sum(self.developmentCards) > 0:
+        #     print("DEVELOPMENT CARDS = KNIGHT:        {0}\n"
+        #           "                    ROAD_BUILDING: {1}\n"
+        #           "                    YEAR_OF_PLENTY:{2}\n"
+        #           "                    MONOPOLY:      {3}\n"
+        #           "                    VICTORY_POINT: {4}".format(
+        #         self.developmentCards[0],
+        #         self.developmentCards[1],
+        #         self.developmentCards[2],
+        #         self.developmentCards[3],
+        #         self.developmentCards[4]
+        #     ))
 
         if rootNode.possibleActions is None:
             print("MCTS ERROR! POSSIBLE ACTIONS FROM ROOT NODE ARE NONE!!!!")
@@ -267,9 +268,9 @@ class AgentMCTS(AgentRandom):
                     self.movesToDo.append(bestChild.action)
                     bestChild = self.BestChild(bestChild, 0)
 
-                print("Created Move Buffer = {0}".format(self.movesToDo))
+                #print("Created Move Buffer = {0}".format(self.movesToDo))
 
-            print("CHOSEN ACTION = \n{0}".format(best.action))
+            #print("CHOSEN ACTION = \n{0}".format(best.action))
 
             return best.action
 
@@ -285,7 +286,7 @@ class AgentMCTS(AgentRandom):
                     movesToDo.append(bestChild.action)
                     bestChild = self.BestChild(bestChild, 0)
 
-                print("Created Move Buffer = {0}".format(self.movesToDo))
+                #print("Created Move Buffer = {0}".format(self.movesToDo))
 
             processList[processIndex] = (best.action, movesToDo, (float(best.QValue[self.seatNumber]) / float(best.NValue)))
 
@@ -330,19 +331,10 @@ class AgentMCTS(AgentRandom):
         if len(node.children) <= 0:
             return None
 
+        tgtPlayer = node.currentPlayer if player is None else player
+
         # Returns the Child Node with the max 'Q-Value'
-        #return max(node.children, key=lambda child: child.QValue[currPlayerNumber])
-
-        # Returns the Child according to the UCB Function
-        def UCB1(childNode):
-
-            tgtPlayer = node.currentPlayer if player is None else player
-
-            evaluationPart  = float(childNode.QValue[tgtPlayer]) / float(childNode.NValue)
-            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
-            return evaluationPart + explorationPart
-
-        return max(node.children, key=lambda child : UCB1(child))
+        return max(node.children, key=lambda child: child.QValue[tgtPlayer])
 
     def SimulationPolicy(self, gameState):
 
@@ -546,7 +538,7 @@ class AgentMCTS(AgentRandom):
             if atRandom:
                 return [self.GetRandomAction_RegularTurns(gameState, player)]
             else:
-                return self.GetPossibleActions_RegularTurns(gameState, player)
+                return self.GetPossibleActions_RegularTurns(gameState, player, self.preSelect)
         else:
             return self.GetPossibleActions_SpecialTurns(gameState, player, atRandom)
 
@@ -726,7 +718,7 @@ class AgentMCTS(AgentRandom):
                                     len(player.roads))
                     for roadEdge in possibleRoads]
 
-    def GetPossibleActions_RegularTurns(self, gameState, player):
+    def GetPossibleActions_RegularTurns(self, gameState, player, preSelect=False):
 
         if gameState.currState == 'PLAY':
 
@@ -752,15 +744,24 @@ class AgentMCTS(AgentRandom):
                 possibleCities = gameState.GetPossibleCities(player)
 
                 if possibleCities is not None and len(possibleCities) > 0:
-                    return [BuildCityAction(player.seatNumber, node, len(player.cities))
-                                        for node in possibleCities]
+
+                    if preSelect:
+                        return [BuildCityAction(player.seatNumber, node, len(player.cities))
+                                            for node in possibleCities]
+                    else:
+                        possibleActions += [BuildCityAction(player.seatNumber, node, len(player.cities))
+                                                for node in possibleCities]
 
             if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
                     player.CanAfford(BuildSettlementAction.cost) and \
                     possibleSettlements:
 
-                return [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
-                                    for node in possibleSettlements]
+                if preSelect:
+                    return [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
+                                        for node in possibleSettlements]
+                else:
+                    possibleActions +=  [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
+                                        for node in possibleSettlements]
 
             if player.HavePiece(g_pieces.index('ROADS')) and \
                     player.CanAfford(BuildRoadAction.cost) and \

@@ -8,6 +8,7 @@ import timeit
 import os.path
 import socket
 from AgentMCTS import AgentMCTS
+from AgentUCT  import AgentUCT
 import cPickle
 from CatanGame import *
 from AgentRandom import *
@@ -19,6 +20,11 @@ boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
                      "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
                      "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
                      "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
+
+# defaultPlayers = [AgentUCT("P1", 0, simulationCount=1000),
+#                   AgentRandom("P2", 1),
+#                   AgentRandom("P3", 2),
+#                   AgentRandom("P4", 3)]
 
 defaultPlayers = [AgentMCTS("P1", 0, simulationCount=1000),
                   AgentRandom("P2", 1),
@@ -77,7 +83,7 @@ def RunSingleGame(game):
         #if game.gameState.setupDone:
             return game
 
-def RunGame(inGame = None, players = None, saveImgLog = False, showLog = False, showFullLog = False, returnLog=False):
+def RunGame(inGame = None, players = None, saveImgLog = False, showLog = False, showFullLog = False, returnLog=False, saveCSV=False):
 
     if players is None:
         players = copy.deepcopy(defaultPlayers)
@@ -89,6 +95,9 @@ def RunGame(inGame = None, players = None, saveImgLog = False, showLog = False, 
 
     #test = RunSingleGame(inGame)
     game = RunSingleGame(inGame)
+
+    if saveCSV:
+        CSVGenerator.SaveGameStatsCSV(game.gameState)
 
     now   = datetime.datetime.today()
 
@@ -266,9 +275,9 @@ def RunSpeedTest(numberOfRepetitions):
                 today.strftime("%d/%m/%Y %H:%M"), round(min(speedResults), 4),
                 round(max(speedResults), 4), round(sum(speedResults)/numberOfRepetitions, 4)))
 
-def RunParallel(game, index, numberOfRepetitions, fileName):
+def RunParallel(game, index, numberOfRepetitions, fileName = None, saveCSV = False):
 
-    result = RunGame(game, game.gameState.players, showLog=False, returnLog=True)
+    result = RunGame(game, game.gameState.players, showLog=False, returnLog=True, saveCSV=saveCSV)
 
     print("\n TOTAL GAMES = {0}/{1} ".format(
         (index + 1),
@@ -344,6 +353,21 @@ def RunWithLogging(numberOfRepetitions, players = None, saveGameStateLogs = Fals
         (float(winCount[agentIndex]) / numberOfRepetitions) * 100.0
     ))
 
+def RunWithCSVSaving(numberOfRepetitions, players = None, multiprocess = False):
+    if players is None:
+        players = defaultPlayers
+
+    if multiprocess:
+        num_cores = multiprocessing.cpu_count()
+
+        Parallel(n_jobs=num_cores)(delayed(RunParallel)
+                (CreateGame(players), i, numberOfRepetitions, saveCSV=True)
+                 for i in range(0, numberOfRepetitions))
+    else:
+        games = [CreateGame(players) for i in range(numberOfRepetitions)]
+        for i in range(0, numberOfRepetitions):
+            RunGame(games[i], games[i].gameState.players, saveCSV=True)
+
 if __name__ == '__main__':
 
     # for i in range(0, 25):
@@ -357,7 +381,12 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    RunWithLogging(10, saveGameStateLogs=False, multiprocess=False)
+    #RunWithLogging(10, saveGameStateLogs=False, multiprocess=True)
+
+    # RUN AND SAVE STATES
+    #RunWithLogging(100, saveGameStateLogs=True, multiprocess=True)
+
+    RunWithCSVSaving(100, multiprocess=True)
 
     # SPEED TEST
     #RunSpeedTest(300)

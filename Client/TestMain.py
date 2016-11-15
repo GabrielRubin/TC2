@@ -1,6 +1,6 @@
 from TC2Main import *
 
-m_totalGames = 10
+m_totalGames = 50
 
 def RunMain(gameNamePrefix):
 

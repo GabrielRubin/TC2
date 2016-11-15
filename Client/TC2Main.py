@@ -7,6 +7,7 @@ import argparse
 from Client import *
 from AgentRandom import *
 from AgentMCTS import AgentMCTS
+from AgentUCT  import AgentUCT
 import CSVGenerator
 
 class TC2Main(object):
@@ -105,14 +106,14 @@ class TC2Main(object):
 
     def InitGame(self, canInitServer = True, gameNamePrefix = None, callProcess=True):
 
-        AgentTypes = { 'rand' : 'random', 'min' : 'minimax', 'exp' : 'expectimax', 'mcts' : 'monte carlo tree search'}
+        AgentTypes = { 'rand' : 'random', 'min' : 'minimax', 'exp' : 'expectimax', 'mcts' : 'monte carlo tree search', 'uct' : 'upper confidence bound for trees'}
 
         LogType    = { 'i' : 'info', 'd' : 'debug' }
 
         parser = argparse.ArgumentParser()
 
         parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                            default = 'mcts')
+                            default = 'uct')
 
         parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                             default='TC2_agent')
@@ -142,7 +143,12 @@ class TC2Main(object):
         if args.agentType == 'mcts':
             # 10.000 sims without multiThread - 2 min and 30 sec
             # 10.000 sims with    multiThread - 50 sec
-            self.player = AgentMCTS(args.nickname, 0, simulationCount=10000, multiThreading=False)
+            self.player = AgentMCTS(args.nickname, 0, simulationCount=1000, multiThreading=False)
+
+        if args.agentType == 'uct':
+            # 10.000 sims without multiThread - 2 min and 30 sec
+            # 10.000 sims with    multiThread - 50 sec
+            self.player = AgentUCT(args.nickname, 0, simulationCount=1000, multiThreading=False)
 
         # Change the current directory...
         mycwd = os.getcwd()
