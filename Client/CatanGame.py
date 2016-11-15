@@ -453,6 +453,8 @@ class GameState(object):
             roadCount[i] = self.players[i].CountRoads(self)
             self.players[i].updateVictoryPoints = True
 
+        #print(roadCount)
+
         maxRoads = max(roadCount)
 
         if maxRoads >= 5:

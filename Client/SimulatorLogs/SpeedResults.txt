@@ -355,3 +355,13 @@ Slint - 31/10/2016 00:30 >> Best Case: 0.0067s, Worst Case: 0.0221s, Average: 0.
 Slint - 05/11/2016 22:42 >> Best Case: 0.0066s, Worst Case: 0.0208s, Average: 0.0113s
 Slint - 05/11/2016 22:42 >> Best Case: 0.0067s, Worst Case: 0.021s, Average: 0.0117s
 Slint - 10/11/2016 21:27 >> Best Case: 0.006s, Worst Case: 0.0199s, Average: 0.0117s
+Slint - 14/11/2016 23:39 >> Best Case: 0.0077s, Worst Case: 0.0232s, Average: 0.0122s
+Slint - 14/11/2016 23:39 >> Best Case: 0.007s, Worst Case: 0.0238s, Average: 0.0118s
+Slint - 14/11/2016 23:39 >> Best Case: 0.008s, Worst Case: 0.0223s, Average: 0.0121s
+Slint - 15/11/2016 01:03 >> Best Case: 0.0074s, Worst Case: 0.0224s, Average: 0.0124s
+Slint - 15/11/2016 01:05 >> Best Case: 0.007s, Worst Case: 0.0198s, Average: 0.0117s
+Slint - 15/11/2016 01:10 >> Best Case: 0.0073s, Worst Case: 0.0289s, Average: 0.0139s
+Slint - 15/11/2016 01:11 >> Best Case: 0.0073s, Worst Case: 0.0301s, Average: 0.0137s
+Slint - 15/11/2016 01:11 >> Best Case: 0.0079s, Worst Case: 0.0341s, Average: 0.0142s
+Slint - 15/11/2016 01:11 >> Best Case: 0.0077s, Worst Case: 0.0333s, Average: 0.014s
+Slint - 15/11/2016 01:11 >> Best Case: 0.0072s, Worst Case: 0.031s, Average: 0.0141s

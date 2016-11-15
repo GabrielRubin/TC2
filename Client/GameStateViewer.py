@@ -348,6 +348,8 @@ if __name__ == '__main__':
 
     if savedGameState is not None:
 
+        savedGameState.longestRoadPlayer = -1
+
         savedGameState.UpdateLongestRoad()
 
         logging.critical("#########################################################")

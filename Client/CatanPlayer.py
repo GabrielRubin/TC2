@@ -363,23 +363,36 @@ class Player(object):
 
     def CountRoads(self, gameState):
 
+        def IsEdgeEmpy(edge):
+
+            if edge is None or \
+               gameState.boardEdges[edge].construction is None or \
+               gameState.boardEdges[edge].construction.owner != self.seatNumber:
+                return True
+
+            return False
+
         startingRoads = []
 
         for road in self.roads:
 
             isStartPos = False
 
-            for adjacentEdge in gameState.boardEdges[road].adjacentEdges:
+            front = gameState.boardEdges[road].adjacentEdges[:2]
+            back  = gameState.boardEdges[road].adjacentEdges[2:]
 
-                if adjacentEdge is None:
-                    continue
+            if IsEdgeEmpy(front[0]) and IsEdgeEmpy(front[1]):
+                if road not in startingRoads:
+                    startingRoads.append(road)
+                isStartPos = True
 
-                if gameState.boardEdges[adjacentEdge].construction is None or \
-                    gameState.boardEdges[adjacentEdge].construction.owner != self.seatNumber:
-                    if road not in startingRoads:
-                        startingRoads.append(road)
-                    isStartPos = True
-                    break
+            if isStartPos:
+                continue
+
+            if IsEdgeEmpy(back[0]) and IsEdgeEmpy(back[1]):
+                if road not in startingRoads:
+                    startingRoads.append(road)
+                isStartPos = True
 
             if isStartPos:
                 continue
@@ -395,43 +408,100 @@ class Player(object):
                         startingRoads.append(road)
                     break
 
-        def DepthSearch(playerNumber, currRoad, length, visited):
+        # def WidthSearch(playerNumber, startRoad):
+        #
+        #     visitedIndexes = []
+        #     visited        = []
+        #     toVisit        = [(startRoad, 1)]
+        #
+        #     while len(toVisit) > 0:
+        #
+        #         current = toVisit[0]
+        #         toVisit.remove(current)
+        #         visited.append(current)
+        #
+        #         for adjacentEdge in gameState.boardEdges[current[0]].adjacentEdges:
+        #
+        #             # Visited? Bail out!
+        #             if adjacentEdge in visitedIndexes:
+        #                 continue
+        #
+        #             visitedIndexes.append(adjacentEdge)
+        #
+        #             possiblePath = False
+        #             # Is None or don't belong to the player?
+        #             if gameState.boardEdges[adjacentEdge].construction is not None and \
+        #                 gameState.boardEdges[adjacentEdge].construction.owner == playerNumber:
+        #                 possiblePath = True
+        #
+        #             if possiblePath:
+        #                 # Is adjacent to another player's settlement/city?
+        #                 for node in gameState.boardEdges[adjacentEdge].adjacentNodes:
+        #                     if gameState.boardNodes[node] is not None and \
+        #                         gameState.boardNodes[node].construction is not None and \
+        #                         gameState.boardNodes[node].construction.owner != playerNumber:
+        #                         possiblePath = False
+        #
+        #             if possiblePath:
+        #                 toVisit.append((adjacentEdge, current[1]+1))
+        #
+        #     best   = 0
+        #     for visitedRoad in visited:
+        #         if visitedRoad[1] > best:
+        #             best = visitedRoad[1]
+        #
+        #     return best
 
-            # Already visited?
+        def DepthSearch(playerNumber, currRoad, visited, cantVisit):
+
             if currRoad in visited:
-                return length
-            # Is None or don't belong to the player?
-            if gameState.boardEdges[currRoad].construction is None or \
-                gameState.boardEdges[currRoad].construction.owner != playerNumber:
-                return length
-            # Is adjacent to another player's settlement/city?
-            for node in gameState.boardEdges[currRoad].adjacentNodes:
-                if gameState.boardNodes[node] is not None and \
-                   gameState.boardNodes[node].construction is not None and \
-                   gameState.boardNodes[node].construction.owner != playerNumber:
-                    return length
-
-            length += 1
+                return visited
 
             visited.append(currRoad)
 
-            possiblePaths = [DepthSearch(playerNumber, nextRoad, length, visited) if
-                             gameState.boardEdges[currRoad] is not None else -1 for
-                             nextRoad in gameState.boardEdges[currRoad].adjacentEdges]
+            possiblePaths = []
+            for adjacentEdge in gameState.boardEdges[currRoad].adjacentEdges:
+                if adjacentEdge in visited or adjacentEdge in cantVisit:
+                    continue
+                possiblePath = False
+                # Is None or don't belong to the player?
+                if gameState.boardEdges[adjacentEdge].construction is not None and \
+                    gameState.boardEdges[adjacentEdge].construction.owner == playerNumber:
+                    possiblePath = True
+
+                if possiblePath:
+                    # Is adjacent to another player's settlement/city?
+                    for node in gameState.boardEdges[adjacentEdge].adjacentNodes:
+                        if gameState.boardNodes[node] is not None and \
+                            gameState.boardNodes[node].construction is not None and \
+                            gameState.boardNodes[node].construction.owner != playerNumber:
+                            possiblePath = False
+
+                if possiblePath:
+                    nextPath = visited[:]
+                    nextCantVisit = []
+                    nextCantVisit += gameState.boardEdges[currRoad].adjacentEdges
+                    possiblePaths.append(DepthSearch(self.seatNumber, adjacentEdge, nextPath, nextCantVisit))
 
             if len(possiblePaths) <= 0:
-                return 0
+                return visited
 
-            return max(possiblePaths)
+            max  = 0
+            path = None
+            for p in possiblePaths:
+                if len(p) > max:
+                    path = p
+                    max  = len(p)
+            return path
 
         results = []
-
         for startingRoad in startingRoads:
-            for nextEdge in gameState.boardEdges[startingRoad].adjacentEdges:
-                results.append(DepthSearch(self.seatNumber, nextEdge, 1, [startingRoad]))
+            results.append(DepthSearch(self.seatNumber, startingRoad, [], []))
 
         if len(results) <= 0:
             return 0
+
+        results = [len(res) for res in results]
 
         self.roadCount = max(results)
 

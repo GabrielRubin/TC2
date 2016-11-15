@@ -87,7 +87,7 @@ class BuildRoadAction(BuildAction):
         super(BuildRoadAction, self).ApplyAction(gameState)
 
         if gameState.checkLongestRoad:
-            gameState.UpdateLongestRoad(self.playerNumber)
+            gameState.UpdateLongestRoad()
 
         if gameState.currState == "START1B":
 
