@@ -26,15 +26,15 @@ boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
 #                   AgentRandom("P3", 2),
 #                   AgentRandom("P4", 3)]
 
-defaultPlayers = [AgentMCTS("P1", 0, simulationCount=1000),
+# defaultPlayers = [AgentMCTS("P1", 0, simulationCount=1000, preSelect=False),
+#                   AgentRandom("P2", 1),
+#                   AgentRandom("P3", 2),
+#                   AgentRandom("P4", 3)]
+
+defaultPlayers = [AgentRandom("P1", 0),
                   AgentRandom("P2", 1),
                   AgentRandom("P3", 2),
                   AgentRandom("P4", 3)]
-
-# defaultPlayers = [AgentRandom("P1", 0),
-#                  AgentRandom("P2", 1),
-#                  AgentRandom("P3", 2),
-#                  AgentRandom("P4", 3)]
 
 def CreateGame(players):
 
@@ -279,18 +279,20 @@ def RunParallel(game, index, numberOfRepetitions, fileName = None, saveCSV = Fal
 
     result = RunGame(game, game.gameState.players, showLog=False, returnLog=True, saveCSV=saveCSV)
 
-    print("\n TOTAL GAMES = {0}/{1} ".format(
-        (index + 1),
-        numberOfRepetitions))
+    if fileName is not None:
 
-    if os.path.isfile(fileName):
+        print("\n TOTAL GAMES = {0}/{1} ".format(
+            (index + 1),
+            numberOfRepetitions))
 
-        with open(fileName, "a") as text_file:
-            text_file.write("\n"+result[1])
-    else:
+        if os.path.isfile(fileName):
 
-        with open(fileName, "w") as text_file:
-            text_file.write(result[1])
+            with open(fileName, "a") as text_file:
+                text_file.write("\n"+result[1])
+        else:
+
+            with open(fileName, "w") as text_file:
+                text_file.write(result[1])
 
     return result[0]
 
@@ -384,9 +386,9 @@ if __name__ == '__main__':
     #RunWithLogging(10, saveGameStateLogs=False, multiprocess=True)
 
     # RUN AND SAVE STATES
-    #RunWithLogging(100, saveGameStateLogs=True, multiprocess=True)
+    #RunWithLogging(100, saveGameStateLogs=True, multiprocess=False)
 
-    RunWithCSVSaving(100, multiprocess=True)
+    RunWithCSVSaving(1000, multiprocess=False)
 
     # SPEED TEST
     #RunSpeedTest(300)

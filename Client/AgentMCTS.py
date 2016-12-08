@@ -38,12 +38,19 @@ class AgentMCTS(AgentRandom):
             self.NValue          = nValue  # number of visits
             self.parent          = parent  # parent
             self.children        = children  # children
+            # All-Moves-As-First variables
+            self.AMAFQValue      = [0, 0, 0, 0]
+            self.AMAFNValue      = 0
+
+            # keep possible actions list
             if state.currPlayerChoice == -1:
                 self.possibleActions = actionsFunction(state,
                                                        state.players[state.currPlayer])
             else:
                 self.possibleActions = actionsFunction(state,
                                                        state.players[state.currPlayerChoice])
+
+            # keep some gameState stuff before pickling
             self.currentPlayer   = state.currPlayer
             self.isTerminal      = state.IsTerminal()
 
@@ -64,6 +71,13 @@ class AgentMCTS(AgentRandom):
             self.NValue += 1
             if self.NValue == AgentMCTS.saveNodeValue:
                 self.gameState = cPickle.loads(self.gameState)
+
+        def __eq__(self, other):
+            if other is None:
+                if self is None:
+                    return True
+                return False
+            return self.__dict__ == other.__dict__
 
     explorationConstant = 1.0
 
@@ -142,28 +156,41 @@ class AgentMCTS(AgentRandom):
 
         if self.multiTreading:
 
-            numCores     = mp.cpu_count()
-            if self.maxSimulations is not None:
-                coreSimCount = int(math.floor(self.maxSimulations / numCores))
+            stateTest = cPickle.loads(cPickle.dumps(state, -1))
+            possibleActions = self.GetPossibleActions(stateTest, self)
+
+            if possibleActions is None:
+                return None
+
+            if len(possibleActions) <= 0:
+                return None
+
+            if len(possibleActions) > 1:
+                numCores     = mp.cpu_count()
+                if self.maxSimulations is not None:
+                    coreSimCount = int(math.floor(self.maxSimulations / numCores))
+                else:
+                    coreSimCount = None
+                coreTime = int(math.floor(self.choiceTime / numCores))
+                ct = timedelta(seconds=coreTime)
+
+                manager = mp.Manager()
+                actions = manager.list(range(numCores))
+                processes = [mp.Process(target=self.MonteCarloTreeSearch, args=(state, ct, coreSimCount, True, i, actions))
+                             for i in range(numCores)]  # I am running as many processes as CPU my machine has (is this wise?).
+                for proc in processes:
+                    proc.start()
+                for proc in processes:
+                    proc.join()
+                # for result in dict:
+                #     actions.append(result)
+
+                chosenAction   = max(actions, key=lambda a : a[2])
+                action         = chosenAction[0]
+                self.movesToDo = chosenAction[1]
+
             else:
-                coreSimCount = None
-            coreTime = int(math.floor(self.choiceTime / numCores))
-            ct = timedelta(seconds=coreTime)
-
-            manager = mp.Manager()
-            actions = manager.list(range(numCores))
-            processes = [mp.Process(target=self.MonteCarloTreeSearch, args=(state, ct, coreSimCount, True, i, actions))
-                         for i in range(numCores)]  # I am running as many processes as CPU my machine has (is this wise?).
-            for proc in processes:
-                proc.start()
-            for proc in processes:
-                proc.join()
-            # for result in dict:
-            #     actions.append(result)
-
-            chosenAction   = max(actions, key=lambda a : a[2])
-            action         = chosenAction[0]
-            self.movesToDo = chosenAction[1]
+                return possibleActions[0]
 
         else:
             action  = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
@@ -281,8 +308,8 @@ class AgentMCTS(AgentRandom):
             if gameState.currState != 'WAITING_FOR_CHOICE':
                 bestChild = self.BestChild(best, 0)
                 while bestChild is not None and \
-                                bestChild.actingPlayer == self.seatNumber and \
-                        not bestChild.isTerminal:
+                      bestChild.actingPlayer == self.seatNumber and \
+                      not bestChild.isTerminal:
                     movesToDo.append(bestChild.action)
                     bestChild = self.BestChild(bestChild, 0)
 
@@ -334,7 +361,7 @@ class AgentMCTS(AgentRandom):
         tgtPlayer = node.currentPlayer if player is None else player
 
         # Returns the Child Node with the max 'Q-Value'
-        return max(node.children, key=lambda child: child.QValue[tgtPlayer])
+        return max(node.children, key=lambda child: child.QValue[tgtPlayer]/child.NValue)
 
     def SimulationPolicy(self, gameState):
 

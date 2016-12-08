@@ -24,6 +24,13 @@ class Action(object):
     def ApplyAction(self, gameState):
         pass
 
+    def __eq__(self, other):
+        if other is None:
+            if self is None:
+                return True
+            return False
+        return self.__dict__ == other.__dict__
+
 class BuildAction(Action):
 
     def __init__(self, playerNumber, position, index, pieceId, cost):
