@@ -11,6 +11,12 @@ from AgentUCT  import AgentUCT
 from AgentRAVE import AgentRAVE
 import CSVGenerator
 
+def check_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
 class TC2Main(object):
 
     def __init__(self):
@@ -22,6 +28,7 @@ class TC2Main(object):
         self.clientProcess = None
         self.player        = None
         self.ourClient     = None
+        self.simCount      = 1000
 
     def ComposeGameStatsMessage(self, gameState):
 
@@ -114,22 +121,25 @@ class TC2Main(object):
         parser = argparse.ArgumentParser()
 
         parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                            default = 'mcts')
+                            default = 'uct')
 
         parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                             default='TC2_agent')
 
-        parser.add_argument("-ns", "--noServer", help="don't start the JSettlers server",
-                            action="store_true", default=False)
+        parser.add_argument("-ns", "--startServer", help="start the JSettlers server (default:True)",
+                            action="store_true", default=True)
 
-        parser.add_argument("-nr", "--noRobots", help="don't start the JSettlers robots",
-                            action="store_true", default=False)
+        parser.add_argument("-nr", "--robots", help="start the JSettlers robots (default:True)",
+                            action="store_true", default=True)
 
-        parser.add_argument("-nc", "--noClient", help="don't start the JSettlers client",
-                            action="store_true", default=False)
+        parser.add_argument("-nc", "--client", help="start the JSettlers client (default:True)",
+                            action="store_true", default=True)
 
-        parser.add_argument("-ng", "--noGame", help="agent don't start a new game; waits for the game to start",
-                            action="store_true", default=False)
+        parser.add_argument("-ng", "--game", help="start a new game if True, waits for the game to start otherwise (default:True)",
+                            action="store_true", default=True)
+
+        parser.add_argument('-sim', "--simulationCount", type=check_positive,
+                            help="number of simulations done by MCTS methods (default = 1000)", default=1000)
 
         parser.add_argument("-l", "--logging", help="log stuff. There are two levels of logging: {0}".format(LogType),
                             default='d')
@@ -138,19 +148,21 @@ class TC2Main(object):
 
         args = parser.parse_args()
 
+        self.simCount = args.simulationCount
+
         if args.agentType == 'rand':
             self.player = AgentRandom(args.nickname, 0)
 
         if args.agentType == 'mcts':
             # 10.000 sims without multiThread - 2 min and 30 sec
             # 10.000 sims with    multiThread - 50 sec
-            self.player = AgentMCTS(args.nickname, 0, simulationCount=1000, multiThreading=False)
+            self.player = AgentMCTS(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'uct':
-            self.player = AgentUCT(args.nickname, 0, simulationCount=1000, multiThreading=False)
+            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'rave':
-            self.player = AgentRAVE(args.nickname, 0, simulationCount=1000, multiThreading=False, preSelect=False)
+            self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False, preSelect=False)
 
         # Change the current directory...
         mycwd = os.getcwd()
@@ -162,12 +174,12 @@ class TC2Main(object):
         os.chdir('JSettlers-1.0.6')
 
         # Double negation in the switches here are a bit confusing TBH...
-        if not args.noServer and canInitServer:
+        if args.startServer and canInitServer:
 
             self.serverProcess = subprocess.Popen("java -jar JSettlersServer.jar 8880 10 dbUser dbPass",
                                              shell=False, stdout=subprocess.PIPE)
 
-        if not args.noRobots and callProcess:
+        if args.robots and callProcess:
             self.robot1Process = subprocess.Popen(
                 "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd",
                 shell=True, stdout=subprocess.PIPE)
@@ -180,7 +192,7 @@ class TC2Main(object):
                 "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd",
                 shell=True, stdout=subprocess.PIPE)
 
-        if not args.noClient and callProcess:
+        if args.client and callProcess:
 
             self.clientProcess = subprocess.Popen("java -jar JSettlers.jar localhost 8880")
 
@@ -198,15 +210,19 @@ class TC2Main(object):
         if gameNamePrefix is not None:
             gameName += str(gameNamePrefix)
 
-        if args.noGame:
+        if not args.game:
             self.ourClient = Client(gameName, self.player, False, True)
         else:
             self.ourClient = Client(gameName, self.player, True, True)
 
     if __name__ == '__main__':
 
-        InitGame()
+        from TC2Main import TC2Main
+
+        main = TC2Main()
+
+        main.InitGame()
         # Give some time so the server can start and the robots get in....
         time.sleep(2)
 
-        RunClient()
+        main.RunClient()
