@@ -22,16 +22,12 @@ Running this script automatically starts the JSettlers server under the localhos
 
 ### GamePlay
 
-PyCatron is currently under development and can only play Settlers of Catan randomly, but it will soon have more gameplay capabilities.
+PyCatron is under development and can play Settlers of Catan with 3 different agents implementations:
 
-Our agent is currently capable of doing these actions at random:
+- A Simple Agent: Capable of making simple decisions and play almost-randomly
+- A MCTS Agent: A Monte Carlo Tree Search agent
+- A UCT Agent: Similar to the MCTS agent, but using the Upper Confidence Bounds for Trees algorithm
 
-- Build roads, settlements and cities
-- Trade with the bank
-
-and these actions when prompted to:
-
-- Choose a player to steal from
-- Place the robber
+We plan to make our implementation of Catan faster and create other agents in the future.
 
 To see PyCatron agent playing a game, you just need to type a nickname on the JSettlers Client window and join the game called "TestGame" that is automatically created by our agent.
