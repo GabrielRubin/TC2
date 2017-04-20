@@ -148,8 +148,8 @@ class BuildSettlementAction(BuildAction):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
 
-        if gameState.boardNodes[self.position].portType is not None:
-            gameState.players[self.playerNumber].UpdateTradeRates(gameState)
+        #if gameState.boardNodes[self.position].portType is not None:
+        #    gameState.players[self.playerNumber].UpdateTradeRates(gameState)
 
         if gameState.checkLongestRoad:
 
