@@ -373,12 +373,13 @@ class AgentMCTS(AgentRandom):
 
         chosenAction.ApplyAction(nextGameState)
 
-        #estimatedQValues = AgentMCTS.GetEstimatedQValues(nextGameState, chosenAction, nextGameState.players[node.currentPlayer])
+        estimatedQValues = AgentMCTS.GetEstimatedQValues(nextGameState, chosenAction, nextGameState.players[node.currentPlayer])
 
         childNode = MCTSNode(player=node.currentPlayer,
                              state=nextGameState,
                              action=chosenAction,
-                             qValue=listm(0 for i in range(len(node.QValue))),
+                             #qValue=listm(0 for i in range(len(node.QValue))),
+                             qValue=estimatedQValues,
                              nValue=0,
                              parent=node,
                              children=[],
@@ -425,15 +426,15 @@ class AgentMCTS(AgentRandom):
         vp = listm(0 for i in range(len(gameState.players)))
 
         # 60 % WINS!!!!
-        for player in gameState.players:
+        #for player in gameState.players:
             #resourcesVal = AgentMCTS.GetResourceUsabilityValue(player)
-            vp[player.seatNumber] += (player.GetVictoryPoints(forceUpdate=True) / 10.0) # + (0.5 * resourcesVal)
+            #vp[player.seatNumber] += (player.GetVictoryPoints(forceUpdate=True) / 10.0) # + (0.5 * resourcesVal)
 
         #vp[gameState.winner] += 1
-        #urgencyFactor = 100.0/gameState.currTurn
+        urgencyFactor = 100.0/gameState.currTurn
         #print("UFactor = {0}".format(urgencyFactor))
 
-        #vp[gameState.winner] += urgencyFactor * 2.0
+        vp[gameState.winner] += 1 + (urgencyFactor * 2.0)
 
         # if gameState.largestArmyPlayer == gameState.winner:
         #     vp[gameState.winner] += 1.0
@@ -593,10 +594,10 @@ class AgentMCTS(AgentRandom):
         if not gameState.setupDone:
             return self.GetPossibleActions_SetupTurns(gameState, player)
         elif gameState.currState == "PLAY":
-            if fromRootNode or atRandom:
+            #if fromRootNode or atRandom:
                 return super(AgentMCTS, self).GetPossibleActions_PreDiceRoll(player)
-            else:
-                return self.GetPossibleActions_PreDiceRoll(player)
+            #else:
+            #    return self.GetPossibleActions_PreDiceRoll(player)
         elif gameState.currState == "PLAY1":
             if atRandom:
                 return [self.GetRandomAction_RegularTurns(gameState, player)]
