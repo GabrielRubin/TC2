@@ -14,10 +14,10 @@ class AgentUCT(AgentMCTS):
         if len(node.children) <= 0:
             return None
 
-        #if node.action is not None and len(node.children) > 0:
-        #    if node.children[0].action.type == 'RollDices' and node.parent is not None:
-        #        diceResult = 2 + int(random.random() * 6) + int(random.random() * 6)
-        #        return max(node.children, key=lambda child : child.action.result == diceResult)
+        if node.action is not None and len(node.children) > 0:
+            if node.children[0].action.type == 'RollDices' and node.parent is not None:
+                diceResult = 2 + int(random.random() * 6) + int(random.random() * 6)
+                return max(node.children, key=lambda child : child.action.result == diceResult)
 
         def UCB1(childNode):
 

@@ -594,10 +594,10 @@ class AgentMCTS(AgentRandom):
         if not gameState.setupDone:
             return self.GetPossibleActions_SetupTurns(gameState, player)
         elif gameState.currState == "PLAY":
-            #if fromRootNode or atRandom:
+            if fromRootNode or atRandom:
                 return super(AgentMCTS, self).GetPossibleActions_PreDiceRoll(player)
-            #else:
-            #    return self.GetPossibleActions_PreDiceRoll(player)
+            else:
+                return self.GetPossibleActions_PreDiceRoll(player)
         elif gameState.currState == "PLAY1":
             if atRandom:
                 return [self.GetRandomAction_RegularTurns(gameState, player)]
