@@ -102,7 +102,7 @@ class AgentMCTS(AgentRandom):
     }
 
     explorationConstant = 0.5
-    saveNodeValue       = 25
+    saveNodeValue       = 20
 
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False, preSelect = True):
 
@@ -375,14 +375,12 @@ class AgentMCTS(AgentRandom):
 
         estimatedQValues = AgentMCTS.GetEstimatedQValues(nextGameState, chosenAction, nextGameState.players[node.currentPlayer])
 
-        estimatedNValue  = estimatedQValues[nextGameState.players[node.currentPlayer].player.seatNumber]
-
         childNode = MCTSNode(player=node.currentPlayer,
                              state=nextGameState,
                              action=chosenAction,
-                             #qValue=listm(0 for i in range(len(node.QValue))),
-                             qValue=estimatedQValues,
-                             nValue=estimatedNValue,
+                             qValue=listm(0 for i in range(len(node.QValue))),
+                             #qValue=estimatedQValues,
+                             nValue=0,
                              parent=node,
                              children=[],
                              actionsFunction=self.GetPossibleActions)
@@ -433,11 +431,11 @@ class AgentMCTS(AgentRandom):
         #    vp[player.seatNumber] += (player.GetVictoryPoints(forceUpdate=True) / 10.0) # + (0.5 * resourcesVal)
 
         #vp[gameState.winner] += 1
-        urgencyFactor = 100.0/gameState.currTurn
+        #urgencyFactor = 100.0/gameState.currTurn
         #print("UFactor = {0}".format(urgencyFactor))
 
-        vp[gameState.winner] += 1 + (urgencyFactor * 2.0)
-        #vp[gameState.winner] += urgencyFactor * 2.0
+        #vp[gameState.winner] += 1 + (urgencyFactor * 2.0)
+        vp[gameState.winner] += 1 #urgencyFactor * 10.0
 
         # if gameState.largestArmyPlayer == gameState.winner:
         #     vp[gameState.winner] += 1.0
@@ -550,7 +548,7 @@ class AgentMCTS(AgentRandom):
 
         estimatedQValues = listm(0 for i in range(len(gameState.players)))
 
-        estimatedQValues[player.seatNumber] = AgentMCTS.GetActionEstimatedValue(gameState, action, player)
+        estimatedQValues[player.seatNumber] = (AgentMCTS.GetActionEstimatedValue(gameState, action, player) / 20.0)
 
         return estimatedQValues
 
@@ -597,10 +595,10 @@ class AgentMCTS(AgentRandom):
         if not gameState.setupDone:
             return self.GetPossibleActions_SetupTurns(gameState, player)
         elif gameState.currState == "PLAY":
-            #if fromRootNode or atRandom:
+            if fromRootNode or atRandom:
                 return super(AgentMCTS, self).GetPossibleActions_PreDiceRoll(player)
-            #else:
-            #    return self.GetPossibleActions_PreDiceRoll(player)
+            else:
+                return self.GetPossibleActions_PreDiceRoll(player)
         elif gameState.currState == "PLAY1":
             if atRandom:
                 return [self.GetRandomAction_RegularTurns(gameState, player)]
@@ -892,10 +890,6 @@ class AgentMCTS(AgentRandom):
             possibleTrade = self.GetPossibleBankTrades(gameState, player)
             if possibleTrade is not None and possibleTrade:
                 possibleActions += possibleTrade
-
-            for action in possibleActions:
-                if action.type == 'EndTurn':
-                    return possibleActions
 
             possibleActions += [EndTurnAction(playerNumber=player.seatNumber)]
 
