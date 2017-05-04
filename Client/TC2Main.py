@@ -159,7 +159,7 @@ class TC2Main(object):
             self.player = AgentMCTS(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'uct':
-            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
+            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)
 
         if args.agentType == 'rave':
             self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False, preSelect=False)

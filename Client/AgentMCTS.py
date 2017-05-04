@@ -24,15 +24,6 @@ class MCTSNode:
         self.AMAFQValue      = [0, 0, 0, 0]
         self.AMAFNValue      = 0
 
-        # VIRTUAL WINS
-        #if self.action is not None:
-        #    if self.action.type == 'BuildSettlement':
-        #        self.QValue[state.currPlayer] = 20
-        #        self.NValue = 20
-        #    elif self.action.type == 'BuildCity':
-        #        self.QValue[state.currPlayer] = 10
-        #        self.NValue = 10
-
         isRootNode = False
         if parent is None:
             isRootNode = True
@@ -71,10 +62,6 @@ class MCTSNode:
             self.gameState = cPickle.loads(self.gameState)
 
     def UpdateQValue(self, addValue):
-        #if self.action is not None:
-        #    if self.action.type == 'RollDices':
-        #        self.QValue += addValue * AgentMCTS.DiceProbability[self.action.result][0]
-        #else:
         self.QValue += addValue
 
     def __eq__(self, other):
@@ -101,10 +88,10 @@ class AgentMCTS(AgentRandom):
         12: listm([0.03, 0.03, 0.03, 0.03, 0.03, 0.03])
     }
 
-    explorationConstant = 0.5
+    explorationConstant = 0.25
     saveNodeValue       = 20
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False, preSelect = True):
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False, numberOfThreads = 0, preSelect = True):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
@@ -114,6 +101,7 @@ class AgentMCTS(AgentRandom):
         self.maxSimulations      = simulationCount
         self.movesToDo           = [] #move buffer
         self.multiTreading       = multiThreading
+        self.numberOfThreads     = numberOfThreads
         self.preSelect           = preSelect
 
         # TREE BUFFER IS CURRENTLY A BAD IDEA MAINLY BECAUSE OF THE WAY WE STORE PLAYERS AND GAMESTATES, IT WOULD TAKE TOO MUCH SPACE
@@ -179,73 +167,96 @@ class AgentMCTS(AgentRandom):
 
         AgentMCTS.PrepareGameStateForSimulation(state)
 
-        #if self.multiTreading:
-        #
-        #    stateTest = cPickle.loads(cPickle.dumps(state, -1))
-        #    possibleActions = self.GetPossibleActions(stateTest, self)
-        #
-        #    if possibleActions is None:
-        #        return None
-        #
-        #    if len(possibleActions) <= 0:
-        #        return None
-        #
-        #    if len(possibleActions) > 1:
-        #        numCores     = mp.cpu_count()
-        #        if self.maxSimulations is not None:
-        #            coreSimCount = int(math.floor(self.maxSimulations / numCores))
-        #        else:
-        #            coreSimCount = None
-        #        coreTime = int(math.floor(self.choiceTime / numCores))
-        #        ct = timedelta(seconds=coreTime)
-        #
-        #        manager = mp.Manager()
-        #        actions = manager.list(range(numCores))
-        #        processes = [mp.Process(target=self.MonteCarloTreeSearch, args=(state, ct, coreSimCount, True, i, actions))
-        #                     for i in range(numCores)]  # I am running as many processes as CPU my machine has (is this wise?).
-        #        for proc in processes:
-        #            proc.start()
-        #        for proc in processes:
-        #            proc.join()
-        #        # for result in dict:
-        #        #     actions.append(result)
-        #
-        #        chosenAction   = max(actions, key=lambda a : a[2])
-        #        action         = chosenAction[0]
-        #        self.movesToDo = chosenAction[1]
-        #
-        #    else:
-        #        return possibleActions[0]
+        if self.multiTreading:
 
-        #else:
+            numCores = self.numberOfThreads if self.numberOfThreads > 0 else mp.cpu_count()
 
-        action = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
+            if self.maxSimulations is not None:
+                coreSimCount = int(math.floor(self.maxSimulations / numCores))
+            else:
+                coreSimCount = None
 
-        # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
-        # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
-        if (isinstance(action, UseDevelopmentCardAction) and \
-            action.index == g_developmentCards.index('MONOPOLY')) or \
-            (isinstance(action, UseDevelopmentCardAction) and \
-            action.index == g_developmentCards.index('YEAR_OF_PLENTY')) or \
-            isinstance(action, ChoosePlayerToStealFromAction) or \
-            isinstance(action, PlaceRobberAction) or \
-            isinstance(action, DiscardResourcesAction):
-            print("empty buffer! -> MONOPOLY OR CHOOSEPLAYER")
+            coreTime = int(math.floor(self.choiceTime / numCores))
+            ct = timedelta(seconds=coreTime)
+
+            manager     = mp.Manager()
+            resultNodes = manager.list(range(numCores))
+
+            rootNode = MCTSNode(player=self.seatNumber,
+                                state=state,
+                                action=None,
+                                qValue=listm(0 for i in range(len(state.players))),
+                                nValue=0,
+                                parent=None,
+                                children=[],
+                                actionsFunction=self.GetPossibleActions)
+
+            if rootNode.possibleActions is None:
+                print("MCTS ERROR! POSSIBLE ACTIONS FROM ROOT NODE ARE NONE!!!!")
+                return None
+
+            elif len(rootNode.possibleActions) == 1:
+                return rootNode.possibleActions[0]
+
+            elif len(rootNode.possibleActions) <= 0:
+                print("MCTS ERROR! NO POSSIBLE ACTIONS FROM ROOT NODE!")
+                return None
+
+            processes = [mp.Process(target=self.MonteCarloTreeSearch, args=(state, ct, coreSimCount, True, i, resultNodes,
+                                                                            cPickle.loads(cPickle.dumps(rootNode, -1))))
+                         for i in range(numCores)]  # I am running as many processes as CPU my machine has (is this wise?).
+            for proc in processes:
+                proc.start()
+            for proc in processes:
+                proc.join()
+
+            while len(rootNode.possibleActions) > 0:
+                self.Expand(rootNode)
+
+            for node in resultNodes:
+                rootNode.NValue += node.NValue
+                for childNode in node.children:
+                    for rootChild in rootNode.children:
+                        if childNode.action == rootChild.action:
+                            rootChild.QValue += childNode.QValue
+                            rootChild.NValue += childNode.NValue
+
             self.movesToDo = []
+
+            bestNode = self.BestChild(rootNode, 0)
+
+            return bestNode.action
+
+        else:
+
+            action = self.MonteCarloTreeSearch(state, timedelta(seconds=self.choiceTime), self.maxSimulations)
+
+            # SPECIAL CASE -> MONOPOLY ACTION - we don't know what resources will come from the server
+            # SPECIAL CASE -> CHOOSEPLAYER ACTION - we don't know what resources will come from the server
+            if (isinstance(action, UseDevelopmentCardAction) and \
+                action.index == g_developmentCards.index('MONOPOLY')) or \
+                (isinstance(action, UseDevelopmentCardAction) and \
+                action.index == g_developmentCards.index('YEAR_OF_PLENTY')) or \
+                isinstance(action, ChoosePlayerToStealFromAction) or \
+                isinstance(action, PlaceRobberAction) or \
+                isinstance(action, DiscardResourcesAction):
+                print("empty buffer! -> MONOPOLY OR CHOOSEPLAYER")
+                self.movesToDo = []
 
         return action
 
     def MonteCarloTreeSearch(self, gameState, maxDuration, simulationCount,
-                             parallel = False, processIndex = None, processList = None):
+                             parallel = False, processIndex = None, processList = None, rootNode = None):
 
-        rootNode = MCTSNode(player=self.seatNumber,
-                            state=gameState,
-                            action=None,
-                            qValue=listm(0 for i in range(len(gameState.players))),
-                            nValue=0,
-                            parent=None,
-                            children=[],
-                            actionsFunction=self.GetPossibleActions )
+        if rootNode is None:
+            rootNode = MCTSNode(player=self.seatNumber,
+                                state=gameState,
+                                action=None,
+                                qValue=listm(0 for i in range(len(gameState.players))),
+                                nValue=0,
+                                parent=None,
+                                children=[],
+                                actionsFunction=self.GetPossibleActions )
 
         # print("GAME STATE      : {0}".format(gameState.currState))
         # print("POSSIBLE ACTIONS: {0}".format(rootNode.possibleActions))
@@ -349,8 +360,10 @@ class AgentMCTS(AgentRandom):
 
                     print("Created Move Buffer = {0}".format(self.movesToDo))
 
-            processList[processIndex] = (
-            best.action, movesToDo, (float(best.QValue[self.seatNumber]) / float(best.NValue)))
+            processList[processIndex] = rootNode
+
+            #processList[processIndex] = (
+            #best.action, movesToDo, (float(best.QValue[self.seatNumber]) / float(best.NValue)))
 
     def TreePolicy(self, node):
 
@@ -372,8 +385,6 @@ class AgentMCTS(AgentRandom):
         nextGameState = node.GetStateCopy()
 
         chosenAction.ApplyAction(nextGameState)
-
-        estimatedQValues = AgentMCTS.GetEstimatedQValues(nextGameState, chosenAction, nextGameState.players[node.currentPlayer])
 
         childNode = MCTSNode(player=node.currentPlayer,
                              state=nextGameState,
@@ -425,149 +436,9 @@ class AgentMCTS(AgentRandom):
 
         vp = listm(0 for i in range(len(gameState.players)))
 
-        # 60 % WINS!!!!
-        #for player in gameState.players:
-        #    resourcesVal = AgentMCTS.GetResourceUsabilityValue(player)
-        #    vp[player.seatNumber] += (player.GetVictoryPoints(forceUpdate=True) / 10.0) # + (0.5 * resourcesVal)
-
-        #vp[gameState.winner] += 1
-        #urgencyFactor = 100.0/gameState.currTurn
-        #print("UFactor = {0}".format(urgencyFactor))
-
-        #vp[gameState.winner] += 1 + (urgencyFactor * 2.0)
-        vp[gameState.winner] += 1 #urgencyFactor * 10.0
-
-        # if gameState.largestArmyPlayer == gameState.winner:
-        #     vp[gameState.winner] += 1.0
-        # if gameState.longestRoadPlayer == gameState.winner:
-        #     vp[gameState.winner] += 1.0
-
-        # for player in gameState.players:
-        #     vp[player.seatNumber] = self.GetGameStateReward(gameState, player)
+        vp[gameState.winner] += 1
 
         return vp
-
-    @staticmethod
-    def GetResourceUsabilityValue(player):
-
-        totalProbabilities = [0, 0, 0, 0, 0, 0]
-        for number, production in player.diceProduction.iteritems():
-            totalProbabilities += production * AgentMCTS.DiceProbability[number]
-
-        cityProb       = sum(BuildCityAction.cost * totalProbabilities)
-        settlementProb = sum(BuildSettlementAction.cost * totalProbabilities)
-        roadProb       = sum(BuildRoadAction.cost * totalProbabilities)
-        cardProb       = sum(BuyDevelopmentCardAction.cost * totalProbabilities)
-
-        return cityProb * 0.3 + settlementProb * 0.3 + roadProb * 0.2 + cardProb * 0.2
-
-    @staticmethod
-    def GetActionEstimatedValue(gameState, action, player):
-
-        if action.type == 'BuildRoad':
-            if player.possibleSettlements <= 0:
-                return 5
-            return 5/(len(player.roads) + 1)
-
-        if action.type == 'BuildSettlement':
-            bonus = 0
-            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
-                if gameState.boardHexes[hexIndex].production is not None:
-                    bonus += 2
-                if gameState.boardNodes[action.position].portType == '3for1':
-                    bonus += 2
-                elif gameState.boardNodes[action.position].portType is not None:
-                    bonus += 1
-            return 4 + bonus
-
-        if action.type == 'BuildCity':
-            bonus = 0
-            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
-                if gameState.boardHexes[hexIndex].production is not None:
-                    bonus += 4
-            return 8 + bonus
-
-        if action.type == 'BuyDevelopmentCard':
-            if player.biggestArmy:
-                return 1
-            return 2
-
-        if action.type == 'BankTradeOffer':
-            if not player.CanAfford(BuildCityAction.cost) and \
-               not player.CanAfford(BuildSettlementAction.cost) and \
-               not player.CanAfford(BuildRoadAction.cost) and \
-               not player.CanAfford(BuyDevelopmentCardAction.cost):
-                return 10
-            return 1
-
-        return 0
-
-    @staticmethod
-    def GetActionExaggeratedValue(gameState, action, player):
-
-        if action.type == 'BuildRoad':
-            if player.possibleSettlements <= 0:
-                return 100
-            return 100/(len(player.roads) + 1)
-
-        if action.type == 'BuildSettlement':
-            bonus = 0
-            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
-                if gameState.boardHexes[hexIndex].production is not None:
-                    bonus += 50
-                if gameState.boardNodes[action.position].portType == '3for1':
-                    bonus += 25
-                elif gameState.boardNodes[action.position].portType is not None:
-                    bonus += 10
-            return 200 + bonus
-
-        if action.type == 'BuildCity':
-            bonus = 0
-            for hexIndex in gameState.boardNodes[action.position].adjacentHexes:
-                if gameState.boardHexes[hexIndex].production is not None:
-                    bonus += 100
-            return 400 + bonus
-
-        if action.type == 'BuyDevelopmentCard':
-            if player.biggestArmy:
-                return 1
-            return 10
-
-        if action.type == 'BankTradeOffer':
-            if not player.CanAfford(BuildCityAction.cost) and \
-               not player.CanAfford(BuildSettlementAction.cost) and \
-               not player.CanAfford(BuildRoadAction.cost) and \
-               not player.CanAfford(BuyDevelopmentCardAction.cost):
-                return 25
-            return 1
-
-        return 0
-
-    @staticmethod
-    def GetEstimatedQValues(gameState, action, player):
-
-        estimatedQValues = listm(0 for i in range(len(gameState.players)))
-
-        estimatedQValues[player.seatNumber] = (AgentMCTS.GetActionEstimatedValue(gameState, action, player) / 20.0)
-
-        return estimatedQValues
-
-    # def GetGameStateReward(self, gameState, player):
-    #
-    #     playerPoints   = player.GetVictoryPoints()
-    #
-    #     playerPoints  *= 3 if gameState.winner == player.seatNumber else 1
-    #
-    #     longestRoadPts = 3 if gameState.longestRoadPlayer == player.seatNumber else 0
-    #
-    #     largestArmyPts = 3 if gameState.largestArmyPlayer == player.seatNumber else 0
-    #
-    #     numSettlements = len(player.settlements)
-    #
-    #     numCities      = len(player.cities)
-    #
-    #     return  playerPoints + (numSettlements * 2) + (numCities * 3) + \
-    #             largestArmyPts + longestRoadPts
 
     @staticmethod
     def PrepareGameStateForSimulation(gameState):

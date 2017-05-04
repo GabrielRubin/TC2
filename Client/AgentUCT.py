@@ -4,9 +4,9 @@ import random
 
 class AgentUCT(AgentMCTS):
 
-    def __init__(self, name, seatNumber, choiceTime=10.0, simulationCount=None, multiThreading=False, preSelect=True):
+    def __init__(self, name, seatNumber, choiceTime=10.0, simulationCount=None, multiThreading=False, numberOfThreads = 0, preSelect=True):
 
-        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, multiThreading, preSelect)
+        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, multiThreading, numberOfThreads, preSelect)
         self.agentName = "UCT : {0} sec, {1} sims".format(choiceTime, simulationCount)
 
     def BestChild(self, node, explorationValue, player=None):
