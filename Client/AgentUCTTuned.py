@@ -21,12 +21,10 @@ class AgentUCTTuned(AgentMCTS):
 
         def Vj(childNode, tgtPlayer):
 
-            playersQValues = [Qval[tgtPlayer] for Qval in childNode.QValueHist]
+            sumPart       = float(childNode.QValue[tgtPlayer]) / 2.0
+            mediumRewards = math.pow(float(childNode.QValue[tgtPlayer]) / float(childNode.NValue), 2.0)
 
-            sumPart       = (math.pow(sum(playersQValues), 2)) / 2
-            mediumRewards = math.pow(float(childNode.QValue[tgtPlayer]) / float(childNode.NValue), 2)
-
-            return sumPart - mediumRewards + math.sqrt((2 * math.log(totalNValue))/childNode.NValue)
+            return sumPart - mediumRewards + math.sqrt((2.0 * math.log(totalNValue))/float(childNode.NValue))
 
         def UCB1Tuned(childNode):
 
@@ -34,7 +32,7 @@ class AgentUCTTuned(AgentMCTS):
 
             evaluationPart  = float(childNode.QValue[tgtPlayer]) / float(childNode.NValue)
             explorationPart = math.sqrt( ((math.log(node.NValue)) / float(childNode.NValue)) *
-                                         min(1/4, Vj(childNode, tgtPlayer)) )
+                                         min( 1.0/4.0, Vj(childNode, tgtPlayer)) )
             return evaluationPart + explorationPart
 
         return max(node.children, key=lambda child : UCB1Tuned(child))

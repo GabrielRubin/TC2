@@ -23,7 +23,6 @@ class MCTSNode:
         # All-Moves-As-First variables
         self.AMAFQValue      = [0, 0, 0, 0]
         self.AMAFNValue      = 0
-        self.QValueHist      = []
 
         isRootNode = False
         if parent is None:
@@ -63,7 +62,6 @@ class MCTSNode:
             self.gameState = cPickle.loads(self.gameState)
 
     def UpdateQValue(self, addValue):
-        self.QValueHist.append(addValue)
         self.QValue += addValue
 
     def __eq__(self, other):
