@@ -9,6 +9,8 @@ from AgentRandom import *
 from AgentMCTS import AgentMCTS
 from AgentUCT  import AgentUCT
 from AgentRAVE import AgentRAVE
+from AgentUCTParanoid import AgentUCTParanoid
+from AgentUCTTuned import AgentUCTTuned
 import CSVGenerator
 
 def check_positive(value):
@@ -121,7 +123,7 @@ class TC2Main(object):
         parser = argparse.ArgumentParser()
 
         parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                            default = 'uct')
+                            default = 'uctTuned')
 
         parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                             default='TC2_agent')
@@ -163,6 +165,12 @@ class TC2Main(object):
 
         if args.agentType == 'rave':
             self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False, preSelect=False)
+
+        if args.agentType == 'paranoid':
+            self.player = AgentUCTParanoid(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)
+
+        if args.agentType == 'uctTuned':
+            self.player = AgentUCTTuned(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)
 
         # Change the current directory...
         mycwd = os.getcwd()

@@ -10,7 +10,7 @@ class AgentRAVE(AgentUCT):
         self.Vvalue              = 30
         self.explorationConstant = 1
 
-    def BestChild(self, node, explorationValue, player=None):
+    def BestChild(self, node, explorationValue, totalNValue, player=None):
 
         if len(node.children) <= 0:
             return None

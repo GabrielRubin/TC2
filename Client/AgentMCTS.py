@@ -23,6 +23,7 @@ class MCTSNode:
         # All-Moves-As-First variables
         self.AMAFQValue      = [0, 0, 0, 0]
         self.AMAFNValue      = 0
+        self.QValueHist      = []
 
         isRootNode = False
         if parent is None:
@@ -62,6 +63,7 @@ class MCTSNode:
             self.gameState = cPickle.loads(self.gameState)
 
     def UpdateQValue(self, addValue):
+        self.QValueHist.append(addValue)
         self.QValue += addValue
 
     def __eq__(self, other):
@@ -223,7 +225,7 @@ class AgentMCTS(AgentRandom):
 
             self.movesToDo = []
 
-            bestNode = self.BestChild(rootNode, 0)
+            bestNode = self.BestChild(rootNode, 0, rootNode.NValue)
 
             return bestNode.action
 
@@ -317,7 +319,7 @@ class AgentMCTS(AgentRandom):
 
         while Condition():
 
-            nextNode = self.TreePolicy(rootNode)
+            nextNode = self.TreePolicy(rootNode, rootNode.NValue)
             reward   = self.SimulationPolicy(nextNode.GetStateCopy())
             self.BackUp(nextNode, reward)
             self.simulationCounter += 1
@@ -328,7 +330,7 @@ class AgentMCTS(AgentRandom):
         print("POSSIBLE MOVE COUNT = {0}".format(len(rootNode.children)))
         print("POSSIBLE MOVES = {0}".format([child.action for child in rootNode.children]))
 
-        best = self.BestChild(rootNode, 0)
+        best = self.BestChild(rootNode, 0, rootNode.NValue)
 
         print("CHOSEN ACTION = \n{0}".format(best.action))
 
@@ -337,42 +339,42 @@ class AgentMCTS(AgentRandom):
         if not parallel:
             if gameState.currState != 'WAITING_FOR_CHOICE':
 
-                bestChild = self.BestChild(best, 0)
+                bestChild = self.BestChild(best, 0, rootNode.NValue)
                 while bestChild is not None and \
                     bestChild.actingPlayer == self.seatNumber and \
                         not bestChild.isTerminal:
                     self.movesToDo.append(bestChild.action)
-                    bestChild = self.BestChild(bestChild, 0)
+                    bestChild = self.BestChild(bestChild, 0, rootNode.NValue)
 
                     print("Created Move Buffer = {0}".format(self.movesToDo))
 
             return best.action
 
         else:
-            movesToDo = []
-            if gameState.currState != 'WAITING_FOR_CHOICE':
-                bestChild = self.BestChild(best, 0)
-                while bestChild is not None and \
-                                bestChild.actingPlayer == self.seatNumber and \
-                        not bestChild.isTerminal:
-                    movesToDo.append(bestChild.action)
-                    bestChild = self.BestChild(bestChild, 0)
-
-                    print("Created Move Buffer = {0}".format(self.movesToDo))
+            #movesToDo = []
+            #if gameState.currState != 'WAITING_FOR_CHOICE':
+            #    bestChild = self.BestChild(best, 0, rootNode.NValue)
+            #    while bestChild is not None and \
+            #                    bestChild.actingPlayer == self.seatNumber and \
+            #            not bestChild.isTerminal:
+            #        movesToDo.append(bestChild.action)
+            #        bestChild = self.BestChild(bestChild, 0, rootNode.NValue)
+            #
+            #        print("Created Move Buffer = {0}".format(self.movesToDo))
 
             processList[processIndex] = rootNode
 
             #processList[processIndex] = (
             #best.action, movesToDo, (float(best.QValue[self.seatNumber]) / float(best.NValue)))
 
-    def TreePolicy(self, node):
+    def TreePolicy(self, node, totalNValue):
 
         while node.isTerminal is False and node.possibleActions is not None:
             # There are still actions to try in this node...
             if len(node.possibleActions) > 0:
                 return self.Expand(node)
 
-            node = self.BestChild(node, AgentMCTS.explorationConstant)
+            node = self.BestChild(node, AgentMCTS.explorationConstant, totalNValue)
 
         return node
 
@@ -400,7 +402,7 @@ class AgentMCTS(AgentRandom):
 
         return childNode
 
-    def BestChild(self, node, explorationValue, player=None):
+    def BestChild(self, node, explorationValue, totalNValue, player=None):
 
         if len(node.children) <= 0:
             return None
