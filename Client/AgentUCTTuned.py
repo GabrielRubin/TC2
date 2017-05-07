@@ -19,14 +19,14 @@ class AgentUCTTuned(AgentMCTS):
                 diceResult = 2 + int(random.random() * 6) + int(random.random() * 6)
                 return max(node.children, key=lambda child : child.action.result == diceResult)
 
-        def Vj(childNode, visitCount, tgtPlayer):
+        def Vj(childNode, tgtPlayer):
 
             playersQValues = [Qval[tgtPlayer] for Qval in childNode.QValueHist]
 
-            sumPart       = (math.pow(sum(playersQValues), 2))/visitCount
+            sumPart       = (math.pow(sum(playersQValues), 2)) / 2
             mediumRewards = math.pow(float(childNode.QValue[tgtPlayer]) / float(childNode.NValue), 2)
 
-            return sumPart - mediumRewards + math.sqrt((2 * math.log(totalNValue))/visitCount)
+            return sumPart - mediumRewards + math.sqrt((2 * math.log(totalNValue))/childNode.NValue)
 
         def UCB1Tuned(childNode):
 
@@ -34,7 +34,7 @@ class AgentUCTTuned(AgentMCTS):
 
             evaluationPart  = float(childNode.QValue[tgtPlayer]) / float(childNode.NValue)
             explorationPart = math.sqrt( ((math.log(node.NValue)) / float(childNode.NValue)) *
-                                         min(1/4, Vj(childNode, childNode.NValue, tgtPlayer)) )
+                                         min(1/4, Vj(childNode, tgtPlayer)) )
             return evaluationPart + explorationPart
 
         return max(node.children, key=lambda child : UCB1Tuned(child))
