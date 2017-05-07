@@ -23,6 +23,7 @@ class MCTSNode:
         # All-Moves-As-First variables
         self.AMAFQValue      = [0, 0, 0, 0]
         self.AMAFNValue      = 0
+        self.QValueHist      = []
 
         isRootNode = False
         if parent is None:
@@ -62,6 +63,7 @@ class MCTSNode:
             self.gameState = cPickle.loads(self.gameState)
 
     def UpdateQValue(self, addValue):
+        self.QValueHist.append(addValue)
         self.QValue += addValue
 
     def __eq__(self, other):
@@ -218,8 +220,9 @@ class AgentMCTS(AgentRandom):
                 for childNode in node.children:
                     for rootChild in rootNode.children:
                         if childNode.action == rootChild.action:
-                            rootChild.QValue += childNode.QValue
-                            rootChild.NValue += childNode.NValue
+                            rootChild.QValueHist += childNode.QValueHist
+                            rootChild.QValue     += childNode.QValue
+                            rootChild.NValue     += childNode.NValue
 
             self.movesToDo = []
 

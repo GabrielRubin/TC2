@@ -21,7 +21,9 @@ class AgentUCTTuned(AgentMCTS):
 
         def Vj(childNode, tgtPlayer):
 
-            sumPart       = float(childNode.QValue[tgtPlayer]) / 2.0
+            playersQValues = [math.pow(Qval[tgtPlayer], 2.0) for Qval in childNode.QValueHist]
+
+            sumPart       = sum(playersQValues) / float(childNode.NValue)
             mediumRewards = math.pow(float(childNode.QValue[tgtPlayer]) / float(childNode.NValue), 2.0)
 
             return sumPart - mediumRewards + math.sqrt((2.0 * math.log(totalNValue))/float(childNode.NValue))
@@ -31,7 +33,7 @@ class AgentUCTTuned(AgentMCTS):
             tgtPlayer = node.currentPlayer if player is None else player
 
             evaluationPart  = float(childNode.QValue[tgtPlayer]) / float(childNode.NValue)
-            explorationPart = math.sqrt( ((math.log(node.NValue)) / float(childNode.NValue)) *
+            explorationPart = math.sqrt( (math.log(node.NValue) / float(childNode.NValue)) *
                                          min( 1.0/4.0, Vj(childNode, tgtPlayer)) )
             return evaluationPart + explorationPart
 
