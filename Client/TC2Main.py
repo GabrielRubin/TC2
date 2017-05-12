@@ -123,7 +123,7 @@ class TC2Main(object):
         parser = argparse.ArgumentParser()
 
         parser.add_argument("-at", "--agentType", help="choose one of these types of agent: {0}".format(AgentTypes),
-                            default = 'uctTuned')
+                            default = 'uct')
 
         parser.add_argument("-n", "--nickname", help="the nickname the agent will use during gameplay",
                             default='TC2_agent')
@@ -161,10 +161,11 @@ class TC2Main(object):
             self.player = AgentMCTS(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'uct':
-            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)
+            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, multiThreading=True,
+                                   numberOfThreads=10, preSelectMode='citiesAndSettlements', simPreSelectMode=None)
 
         if args.agentType == 'rave':
-            self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False, preSelect=False)
+            self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'paranoid':
             self.player = AgentUCTParanoid(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)

@@ -71,6 +71,7 @@ class GameState(object):
         self.currState        = None
         self.currPlayer       = -1
         self.currPlayerChoice = -1
+        self.currTradeOffer   = None
         self.currTurn         = 0
         self.players          = [ None, None, None, None ]
         self.robberPos        = 0

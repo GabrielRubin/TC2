@@ -543,22 +543,90 @@ class ChoosePlayerToStealFromAction(Action):
         else:
             gameState.currState = "PLAY"
 
-class TradeOfferAction(Action):
+class MakeTradeOfferAction(Action):
 
-    type = 'TradeOffer'
+    type = 'MakeTradeOffer'
 
-    def __init__(self, offerType, playerNumber, targetPlayerNumber,
-                 offerResources, wantedResources):
+    def __init__(self, fromPlayerNumber, toPlayers, giveResources, getResources):
 
-        self.offerType          = offerType
-        self.playerNumber       = playerNumber
-        self.targetPlayerNumber = targetPlayerNumber
-        self.offerResources     = offerResources
-        self.wantedResources    = wantedResources
+        self.fromPlayerNumber = fromPlayerNumber
 
-    # TODO -> GetMessage
+        self.toPlayers                   = toPlayers
+        self.toPlayers[fromPlayerNumber] = False #Asser the player cannot offer to himself!
 
-    # TODO -> ApplyAction
+        self.toPlayerNumbers = []
+        for i in range(0, len(self.toPlayers)):
+            if self.toPlayers[i]:
+                self.toPlayerNumbers.append(i)
+
+        self.giveResources     = giveResources
+        self.getResources      = getResources
+        self.previousGameState = None
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return MakeOfferMessage(gameName, self.fromPlayerNumber, self.toPlayers, self.giveResources, self.getResources)
+
+    def ApplyAction(self, gameState):
+
+        self.previousGameState = gameState.currState
+        gameState.currState    = 'WAITING_FOR_TRADE'
+        gameState.currPlayer   = self.toPlayerNumbers[int(random.random() * len(self.toPlayerNumbers))]
+        self.toPlayerNumbers.remove(gameState.currPlayer)
+        gameState.currTradeOffer = self
+
+
+class RejectTradeOfferAction(Action):
+
+    type = 'RejectTradeOffer'
+
+    def __init__(self, playerNumber):
+
+        self.playerNumber = playerNumber
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return RejectOfferMessage(gameName, self.playerNumber)
+
+    def ApplyAction(self, gameState):
+
+        if len(gameState.currTradeOffer.toPlayerNumbers) <= 0:
+            gameState.currState      = gameState.currTradeOffer.previousGameState
+            gameState.currPlayer     = gameState.currTradeOffer.fromPlayerNumber
+            gameState.currTradeOffer = None
+        else:
+            currPlayerIndex = int(random.random() * len(gameState.currTradeOffer.toPlayerNumbers))
+            gameState.currPlayer = gameState.currTradeOffer.toPlayerNumbers[currPlayerIndex]
+            gameState.currTradeOffer.toPlayerNumbers.remove(gameState.currPlayer)
+
+class AcceptTradeOfferAction(Action):
+
+    type = 'AcceptTradeOffer'
+
+    def __init__(self, playerNumber, offerPlayerNumber):
+
+        self.playerNumber      = playerNumber
+        self.offerPlayerNumber = offerPlayerNumber
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return AcceptOfferMessage(gameName, self.playerNumber, self.offerPlayerNumber)
+
+    def ApplyAction(self, gameState):
+
+        gameState.currState  = gameState.currTradeOffer.previousGameState
+        gameState.currPlayer = gameState.currTradeOffer.fromPlayerNumber
+
+        give = gameState.currTradeOffer.giveResources + [0]
+        get  = gameState.currTradeOffer.getResources  + [0]
+
+        gameState.players[self.offerPlayerNumber].resources -= listm(give)
+        gameState.players[self.playerNumber].resources      -= listm(get )
+
+        gameState.players[self.offerPlayerNumber].resources += listm(give)
+        gameState.players[self.playerNumber].resources      += listm(get )
+
+        gameState.currTradeOffer = None
 
 class BankTradeOfferAction(Action):
 
@@ -583,7 +651,7 @@ class BankTradeOfferAction(Action):
         get  = self.getResources  + [0]
 
         gameState.players[self.playerNumber].resources -= listm(give)
-        gameState.players[self.playerNumber].resources += listm(get)
+        gameState.players[self.playerNumber].resources += listm(get )
 
 class ChangeGameStateAction(Action):
 

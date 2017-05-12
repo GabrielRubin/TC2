@@ -93,7 +93,9 @@ class AgentMCTS(AgentRandom):
     explorationConstant = 0.25
     saveNodeValue       = 20
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, multiThreading = False, numberOfThreads = 0, preSelect = True):
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None,
+                 multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
+                 simPreSelectMode = None, trading = False):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
@@ -104,7 +106,9 @@ class AgentMCTS(AgentRandom):
         self.movesToDo           = [] #move buffer
         self.multiTreading       = multiThreading
         self.numberOfThreads     = numberOfThreads
-        self.preSelect           = preSelect
+        self.preSelectMode       = preSelectMode
+        self.simPreSelectMode    = simPreSelectMode
+        self.trading             = trading
 
         # TREE BUFFER IS CURRENTLY A BAD IDEA MAINLY BECAUSE OF THE WAY WE STORE PLAYERS AND GAMESTATES, IT WOULD TAKE TOO MUCH SPACE
         # ALSO, WE WOULD HAVE TO CHANGE TOO MUCH STUFF
@@ -225,6 +229,10 @@ class AgentMCTS(AgentRandom):
                             rootChild.NValue     += childNode.NValue
 
             self.movesToDo = []
+
+            for childNode in rootNode.children:
+                if childNode.NValue == 0:
+                    rootNode.children.remove(childNode)
 
             bestNode = self.BestChild(rootNode, 0, rootNode.NValue)
 
@@ -475,9 +483,9 @@ class AgentMCTS(AgentRandom):
                 return self.GetPossibleActions_PreDiceRoll(player)
         elif gameState.currState == "PLAY1":
             if atRandom:
-                return [self.GetRandomAction_RegularTurns(gameState, player)]
+                return [self.GetRandomAction_RegularTurns(gameState, player, self.simPreSelectMode)]
             else:
-                return self.GetPossibleActions_RegularTurns(gameState, player, self.preSelect)
+                return self.GetPossibleActions_RegularTurns(gameState, player, self.preSelectMode)
         else:
             return self.GetPossibleActions_SpecialTurns(gameState, player, atRandom)
 
@@ -670,7 +678,7 @@ class AgentMCTS(AgentRandom):
                                     len(player.roads))
                     for roadEdge in possibleRoads]
 
-    def GetPossibleActions_RegularTurns(self, gameState, player, preSelect=False):
+    def GetPossibleActions_RegularTurns(self, gameState, player, preSelectMode):
 
         if gameState.currState == 'PLAY':
 
@@ -697,7 +705,7 @@ class AgentMCTS(AgentRandom):
 
                 if possibleCities is not None and len(possibleCities) > 0:
 
-                    if preSelect:
+                    if preSelectMode == 'citiesOverSettlements':
                         return [BuildCityAction(player.seatNumber, node, len(player.cities))
                                             for node in possibleCities]
                     else:
@@ -708,12 +716,15 @@ class AgentMCTS(AgentRandom):
                     player.CanAfford(BuildSettlementAction.cost) and \
                     possibleSettlements:
 
-                if preSelect:
+                if preSelectMode == 'citiesOverSettlements':
                     return [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
                                         for node in possibleSettlements]
                 else:
                     possibleActions +=  [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
                                         for node in possibleSettlements]
+
+            if preSelectMode == 'citiesAndSettlements' and len(possibleActions) > 0:
+                return possibleActions
 
             if player.HavePiece(g_pieces.index('ROADS')) and \
                     player.CanAfford(BuildRoadAction.cost) and \
@@ -726,8 +737,7 @@ class AgentMCTS(AgentRandom):
 
                 possibleActions += [BuyDevelopmentCardAction(player.seatNumber)]
 
-            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0 and \
-                    not self.biggestArmy:
+            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
 
                 possibleCardsToUse = []
 
