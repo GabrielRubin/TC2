@@ -201,6 +201,14 @@ g_stateIdToName = {
     , '1138': 'WAITING_FOR_TRADE'     # Custom state to wait for other players to react to the trade offer
 }
 
+def str_to_bool(s):
+    if s.lower() == 'true':
+        return True
+    elif s.lower() == 'false':
+        return False
+    else:
+        raise ValueError("Cannot covert {} to a bool".format(s))
+
 def g_MessageNumberToGameNumber(messageNumber):
 
     return g_messageNumberToGameNumber[messageNumber]
@@ -721,10 +729,10 @@ class MakeOfferMessage(Message):
         data = text.split(",")
         game = data[0]
         fr   = data[1]
-        to   = data[2:6]   # 4 players game
-        give = data[6:11]
-        get  = data[11:]
-        return MakeOfferMessage(game, fr, to, give, get)
+        to   = map(str_to_bool, data[2:6])   # 4 players game
+        give = map(int,         data[6:11])
+        get  = map(int,         data[11:])
+        return MakeOfferMessage(game, int(fr), to, give, get)
 
 class RejectOfferMessage(Message):
     id = 1037

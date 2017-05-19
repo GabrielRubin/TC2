@@ -25,21 +25,24 @@ class MCTSNode:
         self.AMAFNValue      = 0
         self.QValueHist      = []
 
+        # VIRTUAL WINS
+        #if self.action is not None:
+        #    if self.action.type == 'BuildSettlement':
+        #        self.QValue[self.actingPlayer] = 20
+        #        self.NValue = 20
+        #    elif self.action.type == 'BuildCity':
+        #        self.QValue[self.actingPlayer] = 10
+        #        self.NValue = 10
+
         isRootNode = False
         if parent is None:
             isRootNode = True
 
         # keep possible actions list
-        if state.currPlayerChoice == -1:
-            self.possibleActions = actionsFunction(state,
-                                                   state.players[state.currPlayer],
-                                                   False,
-                                                   isRootNode)
-        else:
-            self.possibleActions = actionsFunction(state,
-                                                   state.players[state.currPlayerChoice],
-                                                   False,
-                                                   isRootNode)
+        self.possibleActions = actionsFunction(state,
+                                               state.players[state.currPlayer],
+                                               False,
+                                               isRootNode)
 
         # keep some gameState stuff before pickling
         self.currentPlayer   = state.currPlayer
@@ -90,10 +93,9 @@ class AgentMCTS(AgentRandom):
         12: listm([0.03, 0.03, 0.03, 0.03, 0.03, 0.03])
     }
 
-    explorationConstant = 0.25
-    saveNodeValue       = 20
+    saveNodeValue = 20
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None,
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
                  simPreSelectMode = None, trading = False):
 
@@ -109,6 +111,7 @@ class AgentMCTS(AgentRandom):
         self.preSelectMode       = preSelectMode
         self.simPreSelectMode    = simPreSelectMode
         self.trading             = trading
+        self.explorationValue    = explorationValue
 
         # TREE BUFFER IS CURRENTLY A BAD IDEA MAINLY BECAUSE OF THE WAY WE STORE PLAYERS AND GAMESTATES, IT WOULD TAKE TOO MUCH SPACE
         # ALSO, WE WOULD HAVE TO CHANGE TOO MUCH STUFF
@@ -126,7 +129,8 @@ class AgentMCTS(AgentRandom):
         #If the server is waiting for discards, respond, if needed...
         if game.gameState.currState == "WAITING_FOR_DISCARDS":
             copyState = cPickle.loads(cPickle.dumps(game.gameState, -1))
-            copyState.currPlayerChoice = self.seatNumber
+            copyState.playerBeforeDiscards = copyState.currPlayer
+            copyState.currPlayer = self.seatNumber
 
         # If we already done our setup phase, ignore repeated message (strange bug from server)...
         if (game.gameState.currState == "START1A" and self.firstSettlementBuild) or \
@@ -139,6 +143,7 @@ class AgentMCTS(AgentRandom):
         if game.gameState.currState == "PLAY":
             #print("empty buffer! -> PLAY")
             self.movesToDo = []
+            self.tradeLock = False
 
         # IF I HAVE MOVES IN MY "BUFFER", RETURN THOSE...
         if len(self.movesToDo) > 0:
@@ -383,7 +388,7 @@ class AgentMCTS(AgentRandom):
             if len(node.possibleActions) > 0:
                 return self.Expand(node)
 
-            node = self.BestChild(node, AgentMCTS.explorationConstant, totalNValue)
+            node = self.BestChild(node, self.explorationValue, totalNValue)
 
         return node
 
@@ -485,7 +490,7 @@ class AgentMCTS(AgentRandom):
             if atRandom:
                 return [self.GetRandomAction_RegularTurns(gameState, player, self.simPreSelectMode)]
             else:
-                return self.GetPossibleActions_RegularTurns(gameState, player, self.preSelectMode)
+                return self.GetPossibleActions_RegularTurns(gameState, player, self.preSelectMode, fromRootNode)
         else:
             return self.GetPossibleActions_SpecialTurns(gameState, player, atRandom)
 
@@ -678,7 +683,11 @@ class AgentMCTS(AgentRandom):
                                     len(player.roads))
                     for roadEdge in possibleRoads]
 
-    def GetPossibleActions_RegularTurns(self, gameState, player, preSelectMode):
+        elif gameState.currState == "WAITING_FOR_TRADE":
+
+            return super(AgentMCTS, self).GetPossiblePlayerTradeReactions(gameState, player)
+
+    def GetPossibleActions_RegularTurns(self, gameState, player, preSelectMode, fromRootNode):
 
         if gameState.currState == 'PLAY':
 
@@ -774,6 +783,9 @@ class AgentMCTS(AgentRandom):
             possibleTrade = self.GetPossibleBankTrades(gameState, player)
             if possibleTrade is not None and possibleTrade:
                 possibleActions += possibleTrade
+
+            if self.trading and fromRootNode and not self.tradeLock:
+                possibleActions += self.GetPossiblePlayerTrades(gameState, player)
 
             possibleActions += [EndTurnAction(playerNumber=player.seatNumber)]
 

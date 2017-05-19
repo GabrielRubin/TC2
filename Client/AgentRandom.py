@@ -13,6 +13,7 @@ class AgentRandom(Player):
         self.agentName     = "RANDOM"
         self.preSelectMode = None
         self.playerTrading = False
+        self.tradeLock     = False
 
     def GetPossibleActions(self, gameState, player = None):
 
@@ -166,12 +167,12 @@ class AgentRandom(Player):
                 if possibleTrade is not None and possibleTrade:
                     return possibleTrade[0]
 
-                if self.playerTrading:
-                    possiblePlayerTrades = self.GetPossiblePlayerTrades(gameState=gameState, player=player)
-                    if len(possiblePlayerTrades) > 0:
-                        playerTrade = possiblePlayerTrades[int(random.random() * len(possiblePlayerTrades))]
-                        possibleTradeOrEndTurn = [playerTrade, EndTurnAction(playerNumber=player.seatNumber)]
-                        return possibleTradeOrEndTurn[int(random.random() * len(possibleTradeOrEndTurn))]
+                #if self.playerTrading:
+                #    possiblePlayerTrades = self.GetPossiblePlayerTrades(gameState=gameState, player=player)
+                #    if len(possiblePlayerTrades) > 0:
+                #        playerTrade = possiblePlayerTrades[int(random.random() * len(possiblePlayerTrades))]
+                #        possibleTradeOrEndTurn = [playerTrade, EndTurnAction(playerNumber=player.seatNumber)]
+                #        return possibleTradeOrEndTurn[int(random.random() * len(possibleTradeOrEndTurn))]
 
                 return EndTurnAction(playerNumber=player.seatNumber)
 
@@ -318,10 +319,18 @@ class AgentRandom(Player):
 
     def GetPossiblePlayerTradeReactions(self, gameState, player):
 
-        acceptTrade = AcceptTradeOfferAction(playerNumber=player.seatNumber,
-                                             offerPlayerNumber=gameState.currTradeOffer.fromPlayerNumber)
+        canTrade = True
+        for i in range(0, len(gameState.currTradeOffer.getResources)):
+            if player.resources[i] < gameState.currTradeOffer.getResources[i]:
+                canTrade = False
+                break
 
         rejectTrade = RejectTradeOfferAction(playerNumber=player.seatNumber)
+
+        if canTrade:
+            acceptTrade = AcceptTradeOfferAction(playerNumber=player.seatNumber,
+                                                 offerPlayerNumber=gameState.currTradeOffer.fromPlayerNumber)
+            return [acceptTrade, rejectTrade]
 
         return [rejectTrade]
 

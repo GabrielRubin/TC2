@@ -237,7 +237,9 @@ class RollDicesAction(Action):
 
                 gameState.currState = "WAITING_FOR_DISCARDS"
 
-                gameState.currPlayerChoice = 0
+                gameState.playerBeforeDiscards = gameState.currPlayer
+
+                gameState.currPlayer = 0
 
             else:
 
@@ -496,11 +498,13 @@ class DiscardResourcesAction(Action):
 
         gameState.players[self.playerNumber].resources -= self.resources
 
-        gameState.currPlayerChoice += 1
+        gameState.currPlayer += 1
 
-        if gameState.currPlayerChoice >= len(gameState.players):
+        if gameState.currPlayer >= len(gameState.players):
 
-            gameState.currPlayerChoice = -1
+            gameState.currPlayer = gameState.playerBeforeDiscards
+
+            gameState.playerBeforeDiscards = -1
 
             gameState.currState = "PLACING_ROBBER"
 
@@ -552,7 +556,7 @@ class MakeTradeOfferAction(Action):
         self.fromPlayerNumber = fromPlayerNumber
 
         self.toPlayers                   = toPlayers
-        self.toPlayers[fromPlayerNumber] = False #Asser the player cannot offer to himself!
+        self.toPlayers[fromPlayerNumber] = False #Assert the player cannot offer to himself!
 
         self.toPlayerNumbers = []
         for i in range(0, len(self.toPlayers)):
@@ -567,11 +571,14 @@ class MakeTradeOfferAction(Action):
 
         return MakeOfferMessage(gameName, self.fromPlayerNumber, self.toPlayers, self.giveResources, self.getResources)
 
-    def ApplyAction(self, gameState):
+    def ApplyAction(self, gameState, specificPlayer=None):
 
         self.previousGameState = gameState.currState
         gameState.currState    = 'WAITING_FOR_TRADE'
-        gameState.currPlayer   = self.toPlayerNumbers[int(random.random() * len(self.toPlayerNumbers))]
+        if specificPlayer is None:
+            gameState.currPlayer = self.toPlayerNumbers[int(random.random() * len(self.toPlayerNumbers))]
+        else:
+            gameState.currPlayer = self.toPlayerNumbers[specificPlayer]
         self.toPlayerNumbers.remove(gameState.currPlayer)
         gameState.currTradeOffer = self
 

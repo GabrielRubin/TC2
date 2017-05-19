@@ -4,11 +4,11 @@ import random
 
 class AgentUCTTuned(AgentMCTS):
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None,
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
                  simPreSelectMode = None, trading = False):
 
-        super(AgentUCTTuned, self).__init__(name, seatNumber, choiceTime, simulationCount,
+        super(AgentUCTTuned, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
                                             multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading)
         self.agentName = "UCT Tuned: {0} sec, {1} sims".format(choiceTime, simulationCount)
 

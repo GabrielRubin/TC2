@@ -382,3 +382,7 @@ Slint - 12/05/2017 02:09 >> Best Case: 0.0067s, Worst Case: 0.0359s, Average: 0.
 Slint - 12/05/2017 02:11 >> Best Case: 0.0069s, Worst Case: 0.0325s, Average: 0.0125s
 Slint - 12/05/2017 02:11 >> Best Case: 0.0071s, Worst Case: 0.0289s, Average: 0.0133s
 Slint - 12/05/2017 02:11 >> Best Case: 0.0078s, Worst Case: 0.0282s, Average: 0.013s
+Slint - 17/05/2017 23:14 >> Best Case: 0.0072s, Worst Case: 0.0392s, Average: 0.016s
+Slint - 17/05/2017 23:15 >> Best Case: 0.0071s, Worst Case: 0.0309s, Average: 0.0154s
+Slint - 17/05/2017 23:16 >> Best Case: 0.0135s, Worst Case: 509.8449s, Average: 1.7308s
+Slint - 17/05/2017 23:25 >> Best Case: 0.0073s, Worst Case: 0.0413s, Average: 0.0155s

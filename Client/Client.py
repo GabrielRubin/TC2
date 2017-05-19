@@ -47,6 +47,9 @@ class Client:
 
         self.expectedResourceCount = [0, 0, 0, 0]
 
+        self.waitTradeResult  = False
+        self.tradeResultCount = -1
+
         self.messagetbl = {}
         for g in globals():
             cg = globals()[g]
@@ -315,6 +318,10 @@ class Client:
                 if sum(self.player.resources) <= 7:
                     return
 
+            if self.game.gameState.currState == "WAITING_FOR_TRADE":
+                self.game.gameState.currPlayer     = self.game.gameState.currTradeOffer.fromPlayerNumber
+                self.game.gameState.currTradeOffer = None
+
             self.game.gameState.currState = instance.stateName
 
             if self.debugSimulator:
@@ -517,8 +524,35 @@ class Client:
 
             # TODO -> Make proper trade offer...
             # TRADE?
-            if instance.to[int(self.player.seatNumber)] == "true":
-                self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
+            #if instance.to[self.player.seatNumber]:
+            #    self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
+            if instance.fr != self.player.seatNumber and instance.to[self.player.seatNumber]:
+
+                if self.player.trading:
+                    makeOfferAction = MakeTradeOfferAction(instance.fr, instance.to, instance.give, instance.get)
+                    makeOfferAction.ApplyAction(self.game.gameState, self.player.seatNumber)
+                    self.RespondToServer()
+                else:
+                    self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
+
+        elif name == "RejectOfferMessage":
+
+            if self.waitTradeResult:
+                self.tradeResultCount -= 1
+                print("trade result count = {0}".format(self.tradeResultCount))
+                if self.tradeResultCount <= 0:
+                    self.tradeResultCount = 1
+                    self.waitTradeResult = False
+                    self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
+                    self.RespondToServer()
+
+        elif name == "AcceptOfferMessage":
+
+            if self.waitTradeResult:
+                self.tradeResultCount = 1
+                self.waitTradeResult = False
+                self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
+                self.RespondToServer()
 
         # elif name == "ChoosePlayerRequestMessage":
         #
@@ -561,6 +595,12 @@ class Client:
             if agentAction.type == 'EndTurn':
                 # @REVIEW@
                 self.player.UpdateMayPlayDevCards(None, True)
+
+            if agentAction.type == 'MakeTradeOffer':
+
+                self.waitTradeResult  = True
+                self.tradeResultCount = sum(response.to)
+                self.player.tradeLock = True
 
             if self.debugSimulator:
 

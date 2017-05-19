@@ -3,11 +3,11 @@ import math
 
 class AgentRAVE(AgentUCT):
 
-    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None,
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
                  simPreSelectMode = None, trading = False):
 
-        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount,
+        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
                                        multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading)
         self.agentName = "RAVE : {0} sec, {1} sims".format(choiceTime, simulationCount)
         self.Vvalue              = 10
