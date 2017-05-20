@@ -386,8 +386,8 @@ class AgentRandom(Player):
                             getResources    = [0, 0, 0, 0, 0]
                             getResources[j] = 1
                             tradeAction = MakeTradeOfferAction(fromPlayerNumber=player.seatNumber,
-                                                               toPlayers=[(i != player.seatNumber)
-                                                                          for i in range(0, len(gameState.players))],
+                                                               toPlayers=[(p != player.seatNumber)
+                                                                          for p in range(0, len(gameState.players))],
                                                                giveResources=giveResources, getResources=getResources)
                             possibleTrades.append(tradeAction)
 

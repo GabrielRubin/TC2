@@ -529,9 +529,11 @@ class Client:
             if instance.fr != self.player.seatNumber and instance.to[self.player.seatNumber]:
 
                 if self.player.trading:
+                    previousPlayer  = self.game.gameState.currPlayer
                     makeOfferAction = MakeTradeOfferAction(instance.fr, instance.to, instance.give, instance.get)
                     makeOfferAction.ApplyAction(self.game.gameState, self.player.seatNumber)
                     self.RespondToServer()
+                    self.game.gameState.currPlayer = previousPlayer
                 else:
                     self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
@@ -557,6 +559,16 @@ class Client:
                     self.RespondToServer()
 
         elif name == "AcceptOfferMessage":
+
+            if self.game.gameState.currPlayer == self.player.seatNumber and \
+                instance.accepting == self.player.seatNumber:
+                self.tradeResultCount = -1
+                self.waitTradeResult = False
+                self.game.gameState.currState = "PLAY1"
+                self.game.gameState.currTradeOffer = None
+                self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
+                self.RespondToServer()
+                return
 
             if self.waitTradeResult and instance.offering == self.player.seatNumber:
                 self.tradeResultCount = -1
