@@ -198,7 +198,16 @@ g_stateIdToName = {
     , '52'  : 'WAITING_FOR_DISCOVERY' # Waiting for player to choose 2 resources
     , '53'  : 'WAITING_FOR_MONOPOLY'  # Waiting for player to choose a resource
     , '1000': 'OVER'                  # The game is over
+    , '1138': 'WAITING_FOR_TRADE'     # Custom state to wait for other players to react to the trade offer
 }
+
+def str_to_bool(s):
+    if s.lower() == 'true':
+        return True
+    elif s.lower() == 'false':
+        return False
+    else:
+        raise ValueError("Cannot covert {} to a bool".format(s))
 
 def g_MessageNumberToGameNumber(messageNumber):
 
@@ -699,7 +708,6 @@ class DiscardMessage(Message):
         g, c, o, s, wh, wo, u = map(int, text.split(","))
         return DiscardMessage(g, c, o, s, wh, wo, u)
 
-# TODO: FIX!
 class MakeOfferMessage(Message):
     id = 1041
 
@@ -721,10 +729,10 @@ class MakeOfferMessage(Message):
         data = text.split(",")
         game = data[0]
         fr   = data[1]
-        to   = data[2:6]   # 4 players game
-        give = data[6:11]
-        get  = data[11:]
-        return MakeOfferMessage(game, fr, to, give, get)
+        to   = map(str_to_bool, data[2:6])   # 4 players game
+        give = map(int,         data[6:11])
+        get  = map(int,         data[11:])
+        return MakeOfferMessage(game, int(fr), to, give, get)
 
 class RejectOfferMessage(Message):
     id = 1037
@@ -740,6 +748,54 @@ class RejectOfferMessage(Message):
     def parse(text):
         g, pn = text.split(",")
         return RejectOfferMessage(g, int(pn))
+
+class ClearOfferMessage(Message):
+    id = 1038
+
+    def __init__(self, game, playerNumber):
+        self.game = game
+        self.playerNumber = playerNumber
+
+    def to_cmd(self):
+        return "{0}|{1},{2}".format(self.id, self.game, self.playerNumber)
+
+    @staticmethod
+    def parse(text):
+        game, playerNumber = text.split(",")
+        return ClearOfferMessage(game, int(playerNumber))
+
+class AcceptOfferMessage(Message):
+    id = 1039
+
+    def __init__(self, game, acc_player, off_player):
+        self.game = game
+        self.accepting = acc_player
+        self.offering = off_player
+
+    def to_cmd(self):
+        return "{0}|{1},{2},{3}".format(self.id, self.game
+                                        , self.accepting, self.offering)
+
+    @staticmethod
+    def parse(text):
+        game, accept, offer = text.split(",")
+        return AcceptOfferMessage(game, int(accept), int(offer))
+
+
+class ClearTradeMsgMessage(Message):
+    id = 1042
+
+    def __init__(self, game, playerNumber):
+        self.game = game
+        self.playerNumber = playerNumber
+
+    def to_cmd(self):
+        return "{0}|{1}".format(self.id, self.playerNumber)
+
+    @staticmethod
+    def parse(text):
+        game, player = text.split(",")
+        return ClearTradeMsgMessage(game, int(player))
 
 class ChoosePlayerRequestMessage(Message):
     id = 1036

@@ -388,10 +388,10 @@ if __name__ == '__main__':
     # RUN AND SAVE STATES
     #RunWithLogging(100, saveGameStateLogs=True, multiprocess=False)
 
-    RunWithCSVSaving(1000, multiprocess=False)
+    #RunWithCSVSaving(1000, multiprocess=False)
 
     # SPEED TEST
-    #RunSpeedTest(300)
+    RunSpeedTest(300)
 
     # SIMULATOR PROFILER
     #RunProfiler()

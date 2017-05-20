@@ -9,6 +9,8 @@ from AgentRandom import *
 from AgentMCTS import AgentMCTS
 from AgentUCT  import AgentUCT
 from AgentRAVE import AgentRAVE
+from AgentUCTParanoid import AgentUCTParanoid
+from AgentUCTTuned import AgentUCTTuned
 import CSVGenerator
 
 def check_positive(value):
@@ -159,10 +161,17 @@ class TC2Main(object):
             self.player = AgentMCTS(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'uct':
-            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
+            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, explorationValue=0.25, multiThreading=True, numberOfThreads=10,
+                                   preSelectMode='citiesOverSettlements', simPreSelectMode='citiesOverSettlements', trading=False, virtualWins=False)
 
         if args.agentType == 'rave':
-            self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False, preSelect=False)
+            self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
+
+        if args.agentType == 'paranoid':
+            self.player = AgentUCTParanoid(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)
+
+        if args.agentType == 'uctTuned':
+            self.player = AgentUCTTuned(args.nickname, 0, simulationCount=self.simCount, multiThreading=True, numberOfThreads=10)
 
         # Change the current directory...
         mycwd = os.getcwd()

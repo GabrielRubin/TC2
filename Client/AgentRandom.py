@@ -10,7 +10,10 @@ class AgentRandom(Player):
 
         super(AgentRandom, self).__init__(name, seatNumber)
 
-        self.agentName = "RANDOM"
+        self.agentName     = "RANDOM"
+        self.preSelectMode = None
+        self.playerTrading = False
+        self.tradeLock     = False
 
     def GetPossibleActions(self, gameState, player = None):
 
@@ -22,7 +25,7 @@ class AgentRandom(Player):
         elif gameState.currState == "PLAY":
             return self.GetPossibleActions_PreDiceRoll(player)
         elif gameState.currState == "PLAY1":
-            return self.GetRandomAction_RegularTurns(gameState, player)
+            return self.GetRandomAction_RegularTurns(gameState, player, self.preSelectMode)
         else:
             return self.GetPossibleActions_SpecialTurns(gameState, player)
 
@@ -98,7 +101,9 @@ class AgentRandom(Player):
     actions = ('buildRoad', 'buildSettlement', 'buildCity',
                'buyDevCard', 'useDevCard', 'bankTrade', 'endTurn')
 
-    def GetRandomAction_RegularTurns(self, gameState, player):
+    preSelectMode = ('citiesAndSettlements', 'citiesOverSettlements')
+
+    def GetRandomAction_RegularTurns(self, gameState, player, preSelectMode):
 
         if gameState.currState == 'PLAY':
 
@@ -127,30 +132,34 @@ class AgentRandom(Player):
 
                 if possibleCities is not None and len(possibleCities) > 0:
 
-                    choice = possibleCities[int(random.random() * len(possibleCities))]
+                    if preSelectMode is not None and preSelectMode == 'citiesOverSettlements':
+                        choice = possibleCities[int(random.random() * len(possibleCities))]
+                        return BuildCityAction(player.seatNumber, choice, len(player.cities))
 
-                    return BuildCityAction(player.seatNumber, choice, len(player.cities))
+                    possibleActions.append('buildCity')
 
             if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
                 player.CanAfford(BuildSettlementAction.cost) and \
                 possibleSettlements:
 
-                choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
+                if preSelectMode is not None and preSelectMode == 'citiesOverSettlements':
+                    choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
+                    return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
 
-                return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
+                possibleActions.append('buildSettlement')
 
-            if player.HavePiece(g_pieces.index('ROADS')) and \
-                player.CanAfford(BuildRoadAction.cost)and \
-                possibleRoads:
+            if preSelectMode is None or not possibleActions:
 
-                possibleActions.append(AgentRandom.actions[0])
+                if player.HavePiece(g_pieces.index('ROADS')) and \
+                    player.CanAfford(BuildRoadAction.cost)and \
+                    possibleRoads:
+                    possibleActions.append('buildRoad')
 
-            if gameState.CanBuyADevCard(player) and not player.biggestArmy:
-                possibleActions.append(AgentRandom.actions[3])
+                if gameState.CanBuyADevCard(player) and not player.biggestArmy:
+                    possibleActions.append('buyDevCard')
 
-            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0 and\
-                    not self.biggestArmy:
-                possibleActions.append(AgentRandom.actions[4])
+                if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
+                    possibleActions.append('useDevCard')
 
             if not possibleActions:
 
@@ -158,7 +167,15 @@ class AgentRandom(Player):
                 if possibleTrade is not None and possibleTrade:
                     return possibleTrade[0]
 
+                #if self.playerTrading:
+                #    possiblePlayerTrades = self.GetPossiblePlayerTrades(gameState=gameState, player=player)
+                #    if len(possiblePlayerTrades) > 0:
+                #        playerTrade = possiblePlayerTrades[int(random.random() * len(possiblePlayerTrades))]
+                #        possibleTradeOrEndTurn = [playerTrade, EndTurnAction(playerNumber=player.seatNumber)]
+                #        return possibleTradeOrEndTurn[int(random.random() * len(possibleTradeOrEndTurn))]
+
                 return EndTurnAction(playerNumber=player.seatNumber)
+
 
             chosenAction = random.choice(possibleActions)
 
@@ -167,6 +184,18 @@ class AgentRandom(Player):
                 choice = possibleRoads[int(random.random() * len(possibleRoads))]
 
                 return BuildRoadAction(player.seatNumber, choice, len(player.roads))
+
+            elif chosenAction == 'buildSettlement':
+
+                choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
+
+                return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
+
+            elif chosenAction == 'buildCity':
+
+                choice = possibleCities[int(random.random() * len(possibleCities))]
+
+                return BuildCityAction(player.seatNumber, choice, len(player.cities))
 
             elif chosenAction == 'buyDevCard':
 
@@ -195,6 +224,7 @@ class AgentRandom(Player):
                     return possibleCardsToUse[int(random.random() * len(possibleCardsToUse))]
                 else:
                     return EndTurnAction(playerNumber=player.seatNumber)
+
 
     def GetPossibleActions_SpecialTurns(self, gameState, player):
 
@@ -232,6 +262,11 @@ class AgentRandom(Player):
             return [BuildRoadAction(player.seatNumber, roadEdge,
                                     len(player.roads))
                     for roadEdge in possibleRoads]
+
+        elif gameState.currState == "WAITING_FOR_TRADE":
+
+            return self.GetPossiblePlayerTradeReactions(gameState, player)
+
 
     def DoMove(self, game):
 
@@ -282,6 +317,24 @@ class AgentRandom(Player):
                                                           selectedResources.count(4),
                                                           selectedResources.count(5)])
 
+    def GetPossiblePlayerTradeReactions(self, gameState, player):
+
+        canTrade = True
+
+        for i in range(0, len(gameState.currTradeOffer.getResources)):
+            if player.resources[i] < gameState.currTradeOffer.getResources[i]:
+                canTrade = False
+                break
+
+        rejectTrade = RejectTradeOfferAction(playerNumber=player.seatNumber)
+
+        if canTrade:
+            acceptTrade = AcceptTradeOfferAction(playerNumber=player.seatNumber,
+                                                 offerPlayerNumber=gameState.currTradeOffer.fromPlayerNumber)
+            return [acceptTrade, rejectTrade]
+
+        return [rejectTrade]
+
     def ChooseRobberPosition(self, gameState, player):
 
         possiblePositions = gameState.possibleRobberPos[:]
@@ -315,6 +368,30 @@ class AgentRandom(Player):
             return [ BankTradeOfferAction(player.seatNumber, result[0], result[1]) ]
 
         return None
+
+    def GetPossiblePlayerTrades(self, gameState, player):
+
+        if player is None:
+            player = self
+
+        possibleTrades = []
+
+        if sum(player.resources) > 0:
+            for i in range(0, len(player.resources)-1):
+                if player.resources[i] > 0:
+                    giveResources    = [0, 0, 0, 0, 0]
+                    giveResources[i] = 1
+                    for j in range(0, len(player.resources)-1):
+                        if j != i:
+                            getResources    = [0, 0, 0, 0, 0]
+                            getResources[j] = 1
+                            tradeAction = MakeTradeOfferAction(fromPlayerNumber=player.seatNumber,
+                                                               toPlayers=[(i != player.seatNumber)
+                                                                          for i in range(0, len(gameState.players))],
+                                                               giveResources=giveResources, getResources=getResources)
+                            possibleTrades.append(tradeAction)
+
+        return possibleTrades
 
     def GetMonopolyResource(self, game, player):
 

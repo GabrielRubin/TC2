@@ -3,14 +3,17 @@ import math
 
 class AgentRAVE(AgentUCT):
 
-    def __init__(self, name, seatNumber, choiceTime=10.0, simulationCount=None, multiThreading=False, preSelect=True):
+    def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
+                 multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
+                 simPreSelectMode = None, trading = False, virtualWins = False):
 
-        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, multiThreading, preSelect)
-        self.agentName = "UCT : {0} sec, {1} sims".format(choiceTime, simulationCount)
-        self.Vvalue              = 30
-        self.explorationConstant = 1
+        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
+                                       multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins)
+        self.agentName = "RAVE : {0} sec, {1} sims".format(choiceTime, simulationCount)
+        self.Vvalue              = 10
+        self.explorationConstant = 0.25
 
-    def BestChild(self, node, explorationValue, player=None):
+    def BestChild(self, node, explorationValue, totalNValue, player=None):
 
         if len(node.children) <= 0:
             return None

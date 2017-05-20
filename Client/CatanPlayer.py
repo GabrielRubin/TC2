@@ -314,6 +314,9 @@ class Player(object):
 
             self.numberOfPieces[1] -= 1
 
+            if gameState.boardNodes[position].portType is not None:
+                self.UpdateTradeRates(gameState)
+
         elif pieceType == 'CITY':
 
             newConstruction = Construction(g_constructionTypes[2],
@@ -408,50 +411,6 @@ class Player(object):
                         startingRoads.append(road)
                     break
 
-        # def WidthSearch(playerNumber, startRoad):
-        #
-        #     visitedIndexes = []
-        #     visited        = []
-        #     toVisit        = [(startRoad, 1)]
-        #
-        #     while len(toVisit) > 0:
-        #
-        #         current = toVisit[0]
-        #         toVisit.remove(current)
-        #         visited.append(current)
-        #
-        #         for adjacentEdge in gameState.boardEdges[current[0]].adjacentEdges:
-        #
-        #             # Visited? Bail out!
-        #             if adjacentEdge in visitedIndexes:
-        #                 continue
-        #
-        #             visitedIndexes.append(adjacentEdge)
-        #
-        #             possiblePath = False
-        #             # Is None or don't belong to the player?
-        #             if gameState.boardEdges[adjacentEdge].construction is not None and \
-        #                 gameState.boardEdges[adjacentEdge].construction.owner == playerNumber:
-        #                 possiblePath = True
-        #
-        #             if possiblePath:
-        #                 # Is adjacent to another player's settlement/city?
-        #                 for node in gameState.boardEdges[adjacentEdge].adjacentNodes:
-        #                     if gameState.boardNodes[node] is not None and \
-        #                         gameState.boardNodes[node].construction is not None and \
-        #                         gameState.boardNodes[node].construction.owner != playerNumber:
-        #                         possiblePath = False
-        #
-        #             if possiblePath:
-        #                 toVisit.append((adjacentEdge, current[1]+1))
-        #
-        #     best   = 0
-        #     for visitedRoad in visited:
-        #         if visitedRoad[1] > best:
-        #             best = visitedRoad[1]
-        #
-        #     return best
-
         def DepthSearch(playerNumber, currRoad, visited, cantVisit):
 
             if currRoad in visited:
@@ -486,12 +445,12 @@ class Player(object):
             if len(possiblePaths) <= 0:
                 return visited
 
-            max  = 0
-            path = None
+            maxPath  = 0
+            path     = None
             for p in possiblePaths:
-                if len(p) > max:
-                    path = p
-                    max  = len(p)
+                if len(p) > maxPath:
+                    path     = p
+                    maxPath  = len(p)
             return path
 
         results = []

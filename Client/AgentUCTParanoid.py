@@ -2,15 +2,15 @@ from AgentMCTS import AgentMCTS
 import math
 import random
 
-class AgentUCT(AgentMCTS):
+class AgentUCTParanoid(AgentMCTS):
 
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
                  simPreSelectMode = None, trading = False, virtualWins = False):
 
-        super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
-                                       multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins)
-        self.agentName = "UCT : {0} sec, {1} sims".format(choiceTime, simulationCount)
+        super(AgentUCTParanoid, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
+                                               multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins)
+        self.agentName = "UCT Paranoid: {0} sec, {1} sims".format(choiceTime, simulationCount)
 
     def BestChild(self, node, explorationValue, totalNValue, player=None):
 
@@ -30,4 +30,13 @@ class AgentUCT(AgentMCTS):
             explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
             return evaluationPart + explorationPart
 
-        return max(node.children, key=lambda child : UCB1(child))
+        def UCTParanoid(childNode):
+
+            evaluationPart  = 1.0 - float(childNode.QValue[self.seatNumber]) / float(childNode.NValue)
+            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
+            return evaluationPart + explorationPart
+
+        if node.currentPlayer == self.seatNumber:
+            return max(node.children, key=lambda child : UCB1(child))
+        else:
+            return max(node.children, key=lambda child: UCTParanoid(child))

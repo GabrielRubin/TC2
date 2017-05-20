@@ -68,13 +68,14 @@ class GameState(object):
         self.constructableEdges = cPickle.loads(cPickle.dumps(g_constructableEdges, -1))
         self.possibleRobberPos  = cPickle.loads(cPickle.dumps(g_possibleRobberPos,  -1))
 
-        self.currState        = None
-        self.currPlayer       = -1
-        self.currPlayerChoice = -1
-        self.currTurn         = 0
-        self.players          = [ None, None, None, None ]
-        self.robberPos        = 0
-        self.dicesAreRolled   = False
+        self.currState            = None
+        self.currPlayer           = -1
+        self.playerBeforeDiscards = -1
+        self.currTradeOffer       = None
+        self.currTurn             = 0
+        self.players              = [ None, None, None, None ]
+        self.robberPos            = 0
+        self.dicesAreRolled       = False
 
         self.developmentCardsDeck = [14, 2, 2, 2, 5]
 
@@ -82,9 +83,9 @@ class GameState(object):
         self.largestArmyPlayer  = -1
 
         self.startingPlayer = -1
-        self.setupDone = False
-        self.winner = -1
-        self.isGameOver = False
+        self.setupDone      = False
+        self.winner         = -1
+        self.isGameOver     = False
         self.isLogGenerated = False
 
         self.checkLongestRoad = False
@@ -254,10 +255,12 @@ class GameState(object):
 
         elif constructionType == 'SETTLEMENT':
 
-            def haveConnection(edgeIndex, seatNumber):
+            def haveConnection(nodeIndex, edgeIndex, seatNumber):
                 for adjEdge in self.boardEdges[edgeIndex].adjacentEdges:
-                    if self.boardEdges[adjEdge].construction is not None \
-                            and self.boardEdges[adjEdge].construction.owner == seatNumber:
+                    tgtEdge = self.boardEdges[adjEdge]
+                    if tgtEdge.construction is not None \
+                            and tgtEdge.construction.owner == seatNumber \
+                            and nodeIndex not in tgtEdge.adjacentNodes:
                         return True
                 return False
 
@@ -266,7 +269,7 @@ class GameState(object):
                     for player in self.players:
                         if player.seatNumber == playerNumber:
                             continue
-                        self.constructableEdges[edge][player.seatNumber] = haveConnection(edge, player.seatNumber)
+                        self.constructableEdges[edge][player.seatNumber] = haveConnection(position, edge, player.seatNumber)
 
             self.updatePlayerEdges[0] = True
             self.updatePlayerEdges[1] = True

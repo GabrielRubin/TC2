@@ -148,8 +148,8 @@ class BuildSettlementAction(BuildAction):
 
         super(BuildSettlementAction, self).ApplyAction(gameState)
 
-        if gameState.boardNodes[self.position].portType is not None:
-            gameState.players[self.playerNumber].UpdateTradeRates(gameState)
+        #if gameState.boardNodes[self.position].portType is not None:
+        #    gameState.players[self.playerNumber].UpdateTradeRates(gameState)
 
         if gameState.checkLongestRoad:
 
@@ -237,7 +237,9 @@ class RollDicesAction(Action):
 
                 gameState.currState = "WAITING_FOR_DISCARDS"
 
-                gameState.currPlayerChoice = 0
+                gameState.playerBeforeDiscards = gameState.currPlayer
+
+                gameState.currPlayer = 0
 
             else:
 
@@ -496,11 +498,13 @@ class DiscardResourcesAction(Action):
 
         gameState.players[self.playerNumber].resources -= self.resources
 
-        gameState.currPlayerChoice += 1
+        gameState.currPlayer += 1
 
-        if gameState.currPlayerChoice >= len(gameState.players):
+        if gameState.currPlayer >= len(gameState.players):
 
-            gameState.currPlayerChoice = -1
+            gameState.currPlayer = gameState.playerBeforeDiscards
+
+            gameState.playerBeforeDiscards = -1
 
             gameState.currState = "PLACING_ROBBER"
 
@@ -543,22 +547,96 @@ class ChoosePlayerToStealFromAction(Action):
         else:
             gameState.currState = "PLAY"
 
-class TradeOfferAction(Action):
+class MakeTradeOfferAction(Action):
 
-    type = 'TradeOffer'
+    type = 'MakeTradeOffer'
 
-    def __init__(self, offerType, playerNumber, targetPlayerNumber,
-                 offerResources, wantedResources):
+    def __init__(self, fromPlayerNumber, toPlayers, giveResources, getResources):
 
-        self.offerType          = offerType
-        self.playerNumber       = playerNumber
-        self.targetPlayerNumber = targetPlayerNumber
-        self.offerResources     = offerResources
-        self.wantedResources    = wantedResources
+        self.fromPlayerNumber = fromPlayerNumber
 
-    # TODO -> GetMessage
+        self.toPlayers                   = toPlayers
+        self.toPlayers[fromPlayerNumber] = False #Assert the player cannot offer to himself!
 
-    # TODO -> ApplyAction
+        self.toPlayerNumbers = []
+        for i in range(0, len(self.toPlayers)):
+            if self.toPlayers[i]:
+                self.toPlayerNumbers.append(i)
+
+        self.giveResources     = giveResources
+        self.getResources      = getResources
+        self.previousGameState = None
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return MakeOfferMessage(gameName, self.fromPlayerNumber, self.toPlayers, self.giveResources, self.getResources)
+
+    def ApplyAction(self, gameState, specificPlayer=None):
+
+        if gameState.currState != 'WAITING_FOR_TRADE':
+            self.previousGameState = gameState.currState
+            gameState.currState    = 'WAITING_FOR_TRADE'
+        else:
+            self.previousGameState = gameState.currTradeOffer.previousGameState
+        if specificPlayer is None:
+            gameState.currPlayer = self.toPlayerNumbers[int(random.random() * len(self.toPlayerNumbers))]
+        else:
+            gameState.currPlayer = self.toPlayerNumbers[specificPlayer]
+        self.toPlayerNumbers.remove(gameState.currPlayer)
+        gameState.currTradeOffer = self
+
+
+class RejectTradeOfferAction(Action):
+
+    type = 'RejectTradeOffer'
+
+    def __init__(self, playerNumber):
+
+        self.playerNumber = playerNumber
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return RejectOfferMessage(gameName, self.playerNumber)
+
+    def ApplyAction(self, gameState):
+
+        if len(gameState.currTradeOffer.toPlayerNumbers) <= 0:
+            gameState.currState      = gameState.currTradeOffer.previousGameState
+            gameState.currPlayer     = gameState.currTradeOffer.fromPlayerNumber
+            gameState.currTradeOffer = None
+        else:
+            currPlayerIndex = int(random.random() * len(gameState.currTradeOffer.toPlayerNumbers))
+            gameState.currPlayer = gameState.currTradeOffer.toPlayerNumbers[currPlayerIndex]
+            gameState.currTradeOffer.toPlayerNumbers.remove(gameState.currPlayer)
+
+class AcceptTradeOfferAction(Action):
+
+    type = 'AcceptTradeOffer'
+
+    def __init__(self, playerNumber, offerPlayerNumber):
+
+        self.playerNumber      = playerNumber
+        self.offerPlayerNumber = offerPlayerNumber
+
+    def GetMessage(self, gameName, currGameStateName = None):
+
+        return AcceptOfferMessage(gameName, self.playerNumber, self.offerPlayerNumber)
+
+    def ApplyAction(self, gameState):
+
+        gameState.currState  = gameState.currTradeOffer.previousGameState
+        gameState.currPlayer = gameState.currTradeOffer.fromPlayerNumber
+
+        give = gameState.currTradeOffer.giveResources + [0]
+        get  = gameState.currTradeOffer.getResources  + [0]
+
+        gameState.players[self.offerPlayerNumber].resources -= listm(give)
+        gameState.players[self.playerNumber].resources      -= listm(get )
+
+        gameState.players[self.offerPlayerNumber].resources += listm(give)
+        gameState.players[self.playerNumber].resources      += listm(get )
+
+        gameState.currTradeOffer = None
 
 class BankTradeOfferAction(Action):
 
@@ -583,7 +661,7 @@ class BankTradeOfferAction(Action):
         get  = self.getResources  + [0]
 
         gameState.players[self.playerNumber].resources -= listm(give)
-        gameState.players[self.playerNumber].resources += listm(get)
+        gameState.players[self.playerNumber].resources += listm(get )
 
 class ChangeGameStateAction(Action):
 
