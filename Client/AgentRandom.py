@@ -320,6 +320,7 @@ class AgentRandom(Player):
     def GetPossiblePlayerTradeReactions(self, gameState, player):
 
         canTrade = True
+
         for i in range(0, len(gameState.currTradeOffer.getResources)):
             if player.resources[i] < gameState.currTradeOffer.getResources[i]:
                 canTrade = False
@@ -378,18 +379,17 @@ class AgentRandom(Player):
         if sum(player.resources) > 0:
             for i in range(0, len(player.resources)-1):
                 if player.resources[i] > 0:
-                    giveResources = [0, 0, 0, 0, 0]
+                    giveResources    = [0, 0, 0, 0, 0]
                     giveResources[i] = 1
                     for j in range(0, len(player.resources)-1):
-                        if j == i:
-                            continue
-                        getResources = [0, 0, 0, 0, 0]
-                        getResources[j] = 1
-                        tradeAction = MakeTradeOfferAction(fromPlayerNumber=player.seatNumber,
-                                                           toPlayers=[(i != player.seatNumber)
-                                                                      for i in range(0, len(gameState.players))],
-                                                           giveResources=giveResources, getResources=getResources)
-                        possibleTrades.append(tradeAction)
+                        if j != i:
+                            getResources    = [0, 0, 0, 0, 0]
+                            getResources[j] = 1
+                            tradeAction = MakeTradeOfferAction(fromPlayerNumber=player.seatNumber,
+                                                               toPlayers=[(i != player.seatNumber)
+                                                                          for i in range(0, len(gameState.players))],
+                                                               giveResources=giveResources, getResources=getResources)
+                            possibleTrades.append(tradeAction)
 
         return possibleTrades
 

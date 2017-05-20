@@ -5,10 +5,10 @@ class AgentRAVE(AgentUCT):
 
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
-                 simPreSelectMode = None, trading = False):
+                 simPreSelectMode = None, trading = False, virtualWins = False):
 
         super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
-                                       multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading)
+                                       multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins)
         self.agentName = "RAVE : {0} sec, {1} sims".format(choiceTime, simulationCount)
         self.Vvalue              = 10
         self.explorationConstant = 0.25

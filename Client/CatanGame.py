@@ -260,7 +260,7 @@ class GameState(object):
                     tgtEdge = self.boardEdges[adjEdge]
                     if tgtEdge.construction is not None \
                             and tgtEdge.construction.owner == seatNumber \
-                            and self.boardNodes[nodeIndex] not in tgtEdge.adjacentNodes:
+                            and nodeIndex not in tgtEdge.adjacentNodes:
                         return True
                 return False
 

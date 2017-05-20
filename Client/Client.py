@@ -537,19 +537,29 @@ class Client:
 
         elif name == "RejectOfferMessage":
 
+            if self.game.gameState.currPlayer == self.player.seatNumber and \
+                instance.playerNumber == self.player.seatNumber:
+                self.tradeResultCount = -1
+                self.waitTradeResult = False
+                self.game.gameState.currState = "PLAY1"
+                self.game.gameState.currTradeOffer = None
+                self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
+                self.RespondToServer()
+                return
+
             if self.waitTradeResult:
                 self.tradeResultCount -= 1
                 print("trade result count = {0}".format(self.tradeResultCount))
                 if self.tradeResultCount <= 0:
-                    self.tradeResultCount = 1
+                    self.tradeResultCount = -1
                     self.waitTradeResult = False
                     self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
                     self.RespondToServer()
 
         elif name == "AcceptOfferMessage":
 
-            if self.waitTradeResult:
-                self.tradeResultCount = 1
+            if self.waitTradeResult and instance.offering == self.player.seatNumber:
+                self.tradeResultCount = -1
                 self.waitTradeResult = False
                 self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
                 self.RespondToServer()

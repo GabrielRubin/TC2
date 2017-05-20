@@ -162,7 +162,7 @@ class TC2Main(object):
 
         if args.agentType == 'uct':
             self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, explorationValue=0.25, multiThreading=True, numberOfThreads=10,
-                                   preSelectMode='citiesOverSettlements', simPreSelectMode='citiesOverSettlements', trading=False)
+                                   preSelectMode='citiesOverSettlements', simPreSelectMode='citiesOverSettlements', trading=False, virtualWins=False)
 
         if args.agentType == 'rave':
             self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)

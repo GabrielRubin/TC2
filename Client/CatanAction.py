@@ -573,8 +573,11 @@ class MakeTradeOfferAction(Action):
 
     def ApplyAction(self, gameState, specificPlayer=None):
 
-        self.previousGameState = gameState.currState
-        gameState.currState    = 'WAITING_FOR_TRADE'
+        if gameState.currState != 'WAITING_FOR_TRADE':
+            self.previousGameState = gameState.currState
+            gameState.currState    = 'WAITING_FOR_TRADE'
+        else:
+            self.previousGameState = gameState.currTradeOffer.previousGameState
         if specificPlayer is None:
             gameState.currPlayer = self.toPlayerNumbers[int(random.random() * len(self.toPlayerNumbers))]
         else:

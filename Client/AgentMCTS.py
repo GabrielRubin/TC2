@@ -11,7 +11,7 @@ import cPickle
 #  currState, from parent, reward  , n. of visits, parent node, children
 class MCTSNode:
 
-    def __init__(self, player, state, action, qValue, nValue, parent, children, actionsFunction):
+    def __init__(self, player, state, action, qValue, nValue, parent, children, actionsFunction, virtualWins=False):
 
         self.actingPlayer    = player
         self.gameState       = cPickle.dumps(state, -1) # current gameState
@@ -24,15 +24,18 @@ class MCTSNode:
         self.AMAFQValue      = [0, 0, 0, 0]
         self.AMAFNValue      = 0
         self.QValueHist      = []
+        self.saveNodeValue   = 20
 
         # VIRTUAL WINS
-        #if self.action is not None:
-        #    if self.action.type == 'BuildSettlement':
-        #        self.QValue[self.actingPlayer] = 20
-        #        self.NValue = 20
-        #    elif self.action.type == 'BuildCity':
-        #        self.QValue[self.actingPlayer] = 10
-        #        self.NValue = 10
+        if virtualWins:
+            self.saveNodeValue = 25
+            if self.action is not None:
+                if self.action.type == 'BuildSettlement':
+                    self.QValue[self.actingPlayer] = 20
+                    self.NValue = 20
+                elif self.action.type == 'BuildCity':
+                    self.QValue[self.actingPlayer] = 10
+                    self.NValue = 10
 
         isRootNode = False
         if parent is None:
@@ -49,20 +52,20 @@ class MCTSNode:
         self.isTerminal      = state.IsTerminal()
 
     def GetState(self):
-        if self.NValue < AgentMCTS.saveNodeValue:
+        if self.NValue < self.saveNodeValue:
             return cPickle.loads(self.gameState)
         else:
             return self.gameState
 
     def GetStateCopy(self):
-        if self.NValue < AgentMCTS.saveNodeValue:
+        if self.NValue < self.saveNodeValue:
             return cPickle.loads(self.gameState)
         else:
             return cPickle.loads(cPickle.dumps(self.gameState, -1))
 
     def UpdateNValue(self):
         self.NValue += 1
-        if self.NValue == AgentMCTS.saveNodeValue:
+        if self.NValue == self.saveNodeValue:
             self.gameState = cPickle.loads(self.gameState)
 
     def UpdateQValue(self, addValue):
@@ -93,11 +96,9 @@ class AgentMCTS(AgentRandom):
         12: listm([0.03, 0.03, 0.03, 0.03, 0.03, 0.03])
     }
 
-    saveNodeValue = 20
-
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
-                 simPreSelectMode = None, trading = False):
+                 simPreSelectMode = None, trading = False, virtualWins = False):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
@@ -112,6 +113,7 @@ class AgentMCTS(AgentRandom):
         self.simPreSelectMode    = simPreSelectMode
         self.trading             = trading
         self.explorationValue    = explorationValue
+        self.virtualWins         = virtualWins
 
         # TREE BUFFER IS CURRENTLY A BAD IDEA MAINLY BECAUSE OF THE WAY WE STORE PLAYERS AND GAMESTATES, IT WOULD TAKE TOO MUCH SPACE
         # ALSO, WE WOULD HAVE TO CHANGE TOO MUCH STUFF
@@ -200,7 +202,8 @@ class AgentMCTS(AgentRandom):
                                 nValue=0,
                                 parent=None,
                                 children=[],
-                                actionsFunction=self.GetPossibleActions)
+                                actionsFunction=self.GetPossibleActions,
+                                virtualWins=self.virtualWins)
 
             if rootNode.possibleActions is None:
                 print("MCTS ERROR! POSSIBLE ACTIONS FROM ROOT NODE ARE NONE!!!!")
@@ -272,7 +275,8 @@ class AgentMCTS(AgentRandom):
                                 nValue=0,
                                 parent=None,
                                 children=[],
-                                actionsFunction=self.GetPossibleActions )
+                                actionsFunction=self.GetPossibleActions,
+                                virtualWins=self.virtualWins)
 
         # print("GAME STATE      : {0}".format(gameState.currState))
         # print("POSSIBLE ACTIONS: {0}".format(rootNode.possibleActions))
@@ -410,7 +414,8 @@ class AgentMCTS(AgentRandom):
                              nValue=0,
                              parent=node,
                              children=[],
-                             actionsFunction=self.GetPossibleActions)
+                             actionsFunction=self.GetPossibleActions,
+                             virtualWins=self.virtualWins)
 
         node.children.append(childNode)
 
@@ -433,6 +438,12 @@ class AgentMCTS(AgentRandom):
             possibleActions = self.GetPossibleActions(gameState,
                                                       gameState.players[gameState.currPlayer],
                                                       atRandom=True)
+            #if possibleActions is None:
+            #    print("ERROR!")
+            #    possibleActions = self.GetPossibleActions(gameState,
+            #                                              gameState.players[gameState.currPlayer],
+            #                                              atRandom=True)
+
             if len(possibleActions) > 1:
                 action = random.choice(possibleActions)
             else:
