@@ -12,7 +12,6 @@ class AgentRandom(Player):
 
         self.agentName     = "RANDOM"
         self.preSelectMode = None
-        self.playerTrading = False
         self.tradeLock     = False
 
     def GetPossibleActions(self, gameState, player = None):
@@ -166,13 +165,6 @@ class AgentRandom(Player):
                 possibleTrade = player.GetPossibleBankTrades(gameState, player)
                 if possibleTrade is not None and possibleTrade:
                     return possibleTrade[0]
-
-                #if self.playerTrading:
-                #    possiblePlayerTrades = self.GetPossiblePlayerTrades(gameState=gameState, player=player)
-                #    if len(possiblePlayerTrades) > 0:
-                #        playerTrade = possiblePlayerTrades[int(random.random() * len(possiblePlayerTrades))]
-                #        possibleTradeOrEndTurn = [playerTrade, EndTurnAction(playerNumber=player.seatNumber)]
-                #        return possibleTradeOrEndTurn[int(random.random() * len(possibleTradeOrEndTurn))]
 
                 return EndTurnAction(playerNumber=player.seatNumber)
 

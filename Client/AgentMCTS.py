@@ -96,9 +96,11 @@ class AgentMCTS(AgentRandom):
         12: listm([0.03, 0.03, 0.03, 0.03, 0.03, 0.03])
     }
 
+    TradingTypes = ['Simple', 'Optimistic', None]
+
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
-                 simPreSelectMode = None, trading = False, virtualWins = False):
+                 simPreSelectMode = None, trading = None, virtualWins = False):
 
         super(AgentMCTS, self).__init__(name, seatNumber)
 
@@ -239,7 +241,7 @@ class AgentMCTS(AgentRandom):
             self.movesToDo = []
 
             for childNode in rootNode.children:
-                if childNode.NValue == 0:
+                if childNode.NValue <= 0:
                     rootNode.children.remove(childNode)
 
             bestNode = self.BestChild(rootNode, 0, rootNode.NValue)
@@ -795,9 +797,64 @@ class AgentMCTS(AgentRandom):
             if possibleTrade is not None and possibleTrade:
                 possibleActions += possibleTrade
 
-            if self.trading and fromRootNode and not self.tradeLock:
-                possibleActions += self.GetPossiblePlayerTrades(gameState, player)
+            if self.trading is not None:
+                if self.trading == 'Simple' and fromRootNode and not self.tradeLock:
+                    possibleActions += self.GetPossiblePlayerTrades(gameState, player)
+                elif self.trading == 'Optimistic' and fromRootNode and not self.tradeLock:
+                    possibleActions += self.GetOptimisticMoves(gameState, player)
 
             possibleActions += [EndTurnAction(playerNumber=player.seatNumber)]
 
             return possibleActions
+
+    def GetOptimisticMoves(self, gameState, player):
+
+        if player is None:
+            player = self
+
+        possibleOptimisticMoves = []
+
+        if player.settlements and \
+            player.HavePiece(g_pieces.index('CITIES')) and \
+            not player.CanAfford(BuildCityAction.cost):
+            possibleCities = gameState.GetPossibleCities(player)
+            if possibleCities:
+                resourceDiff = player.resources - BuildCityAction.cost
+                if sum(resourceDiff) >= 0:
+                    buildCityActions = [BuildCityAction(player.seatNumber, node, len(player.cities))
+                                        for node in possibleCities]
+                    for cityAction in buildCityActions:
+                        cityAction.tradeOptimistic = True
+                    possibleOptimisticMoves += buildCityActions
+
+        #if self.preSelectMode == 'citiesOverSettlements' and len(possibleOptimisticMoves) > 0:
+        #    return possibleOptimisticMoves
+
+        if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
+            not player.CanAfford(BuildSettlementAction.cost):
+            possibleSettlements = gameState.GetPossibleSettlements(player)
+            if possibleSettlements:
+                resourceDiff = player.resources - BuildSettlementAction.cost
+                if sum(resourceDiff) >= 0:
+                    buildSettlementActions = [BuildSettlementAction(player.seatNumber, node, len(player.settlements))
+                                              for node in possibleSettlements]
+                    for settlementAction in buildSettlementActions:
+                        settlementAction.tradeOptimistic = True
+                    possibleOptimisticMoves += buildSettlementActions
+
+        #if self.preSelectMode is not None and len(possibleOptimisticMoves) > 0:
+        #    return possibleOptimisticMoves
+
+        if player.HavePiece(g_pieces.index('ROADS')) and \
+            not player.CanAfford(BuildRoadAction.cost):
+            possibleRoads = gameState.GetPossibleRoads(player)
+            if possibleRoads:
+                resourceDiff = player.resources - BuildRoadAction.cost
+                if sum(resourceDiff) >= 0:
+                    buildRoadActions = [BuildRoadAction(player.seatNumber, edge, len(player.roads))
+                                        for edge in possibleRoads]
+                    for roadAction in buildRoadActions:
+                        roadAction.tradeOptimistic = True
+                    possibleOptimisticMoves += buildRoadActions
+
+        return possibleOptimisticMoves

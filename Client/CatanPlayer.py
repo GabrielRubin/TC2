@@ -177,6 +177,63 @@ class Player(object):
     def CanAfford(self, price):
         return cf(self.resources, price)
 
+    def DiscountAtRandom(self, discountCount):
+
+        discountIndexes = []
+        while discountCount > 0:
+            for i in range(0, len(self.resources)):
+                if self.resources[i] > 0:
+                    discountIndexes.append(i)
+            if len(discountIndexes) <= 0:
+                discountCount = 0
+            else:
+                index = discountIndexes[int(random.random() * len(discountIndexes))]
+                self.resources[index] -= 1
+                discountCount -= 1
+
+    def GetRemainingTrades(self, price):
+
+        trades        = []
+        giveIndexes   = []
+        getIndexes    = []
+        giveResources = []
+        getResources  = []
+        diff = self.resources - price
+        if sum(diff) < 0:
+            print("ERROR!")
+
+        for i in range(0, len(diff)):
+            if diff[i] > 0:
+                giveIndexes.append(i)
+            elif diff[i] < 0:
+                getIndexes.append(i)
+        while len(getIndexes) > 0:
+            give = [0, 0, 0, 0, 0]
+            get  = [0, 0, 0, 0, 0]
+            giveIndex = int(random.random() * len(giveIndexes))
+            index1 = giveIndexes[giveIndex]
+            give[index1]  = 1
+            diff[index1] -= 1
+            if diff[index1] <= 0:
+                giveIndexes.remove(index1)
+            getIndex = int(random.random() * len(getIndexes))
+            index2 = getIndexes[getIndex]
+            get[index2]   = 1
+            diff[index2] += 1
+            if diff[index2] >= 0:
+                getIndexes.remove(index2)
+
+            giveResources.append(give)
+            getResources.append(get)
+
+        toPlayers = [True, True, True, True]
+        toPlayers[self.seatNumber] = False
+
+        for j in range(0, len(getResources)):
+            trades.append(MakeTradeOfferAction(self.seatNumber, toPlayers, giveResources[j], getResources[j]))
+
+        return trades
+
     def HavePiece(self, pieceIndex):
         if self.numberOfPieces[pieceIndex] > 0:
             return True
