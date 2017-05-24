@@ -16,6 +16,8 @@ putPieceStates = ["START1A", "START1B", "START2A", "START2B",
 class Action(object):
 
     def __init__(self):
+
+        self.tradeOptimistic = False
         pass
 
     def GetMessage(self, gameName, currGameStateName = None):
@@ -35,6 +37,7 @@ class BuildAction(Action):
 
     def __init__(self, playerNumber, position, index, pieceId, cost):
 
+        super(BuildAction, self).__init__()
         self.playerNumber = playerNumber
         self.position     = position
         self.index        = index
@@ -60,6 +63,14 @@ class BuildAction(Action):
         if gameState.currState not in freeBuildStates:
 
             gameState.players[self.playerNumber].resources -= self.cost
+
+            if self.tradeOptimistic:
+                discountCount = 0
+                for i in range(0, len(gameState.players[self.playerNumber].resources)):
+                    if gameState.players[self.playerNumber].resources[i] < 0:
+                        discountCount += gameState.players[self.playerNumber].resources[i] * -1
+                        gameState.players[self.playerNumber].resources[i] = 0
+                gameState.players[self.playerNumber].DiscountAtRandom(discountCount)
 
     def __str__(self):
 
@@ -263,6 +274,7 @@ class BuyDevelopmentCardAction(Action):
 
     def __init__(self, playerNumber):
 
+        super(BuyDevelopmentCardAction, self).__init__()
         self.playerNumber = playerNumber
 
     def GetMessage(self, gameName, currGameStateName = None):
@@ -274,6 +286,14 @@ class BuyDevelopmentCardAction(Action):
         #logging.debug("APPLYING ACTION! \n TYPE = {0}".format(BuyDevelopmentCardAction.type))
 
         gameState.players[self.playerNumber].resources -= BuyDevelopmentCardAction.cost
+
+        if self.tradeOptimistic:
+            discountCount = 0
+            for i in range(0, len(gameState.players[self.playerNumber].resources)):
+                if gameState.players[self.playerNumber].resources[i] < 0:
+                    discountCount += gameState.players[self.playerNumber].resources[i] * -1
+                    gameState.players[self.playerNumber].resources[i] = 0
+            self.players[self.playerNumber].DiscountAtRandom(discountCount)
 
         gameState.DrawDevCard(self.playerNumber)
 

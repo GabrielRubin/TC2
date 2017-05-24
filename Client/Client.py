@@ -50,6 +50,8 @@ class Client:
         self.waitTradeResult  = False
         self.tradeResultCount = -1
 
+        self.tradeBuffer = []
+
         self.messagetbl = {}
         for g in globals():
             cg = globals()[g]
@@ -528,10 +530,16 @@ class Client:
             #    self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
             if instance.fr != self.player.seatNumber and instance.to[self.player.seatNumber]:
 
-                if self.player.trading:
-                    makeOfferAction = MakeTradeOfferAction(instance.fr, instance.to, instance.give, instance.get)
-                    makeOfferAction.ApplyAction(self.game.gameState, self.player.seatNumber)
-                    self.RespondToServer()
+                if self.player.trading is not None:
+
+                    if self.player.trading == 'Optimistic' and self.game.gameState.currPlayer == self.player.seatNumber:
+                        self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
+                    else:
+                        previousPlayer  = self.game.gameState.currPlayer
+                        makeOfferAction = MakeTradeOfferAction(instance.fr, instance.to, instance.give, instance.get)
+                        makeOfferAction.ApplyAction(self.game.gameState, self.player.seatNumber)
+                        self.RespondToServer()
+                        self.game.gameState.currPlayer = previousPlayer
                 else:
                     self.SendMessage(RejectOfferMessage(self.gameName, self.player.seatNumber))
 
@@ -557,6 +565,16 @@ class Client:
                     self.RespondToServer()
 
         elif name == "AcceptOfferMessage":
+
+            if self.game.gameState.currPlayer == self.player.seatNumber and \
+                instance.accepting == self.player.seatNumber:
+                self.tradeResultCount = -1
+                self.waitTradeResult = False
+                self.game.gameState.currState = "PLAY1"
+                self.game.gameState.currTradeOffer = None
+                self.SendMessage(ClearOfferMessage(self.gameName, self.player.seatNumber))
+                self.RespondToServer()
+                return
 
             if self.waitTradeResult and instance.offering == self.player.seatNumber:
                 self.tradeResultCount = -1
@@ -585,12 +603,33 @@ class Client:
         #                      'UseKnightsCard','UseMonopolyCard','UseYearOfPlentyCard',
         #                      'UseFreeRoadsCard', 'EndTurn']
 
+        if len(self.tradeBuffer) > 0:
+            nextTrade = self.tradeBuffer.pop()
+            self.waitTradeResult = True
+            self.tradeResultCount = sum(nextTrade.toPlayers)
+            self.SendMessage(nextTrade.GetMessage(self.gameName, currGameStateName=self.game.gameState.currState))
+            return
+
         agentAction = self.player.DoMove(self.game)
 
         if agentAction is not None:
 
             response = agentAction.GetMessage(self.gameName,
                                               currGameStateName=self.game.gameState.currState)
+
+            if agentAction.type == 'BuildRoad' or \
+               agentAction.type == 'BuildSettlement' or \
+               agentAction.type == 'BuildCity' or \
+               agentAction.type == 'BuyDevelopmentCard':
+
+                if agentAction.tradeOptimistic:
+                    self.tradeBuffer = self.player.GetRemainingTrades(agentAction.cost)
+                    nextTrade = self.tradeBuffer.pop()
+                    self.waitTradeResult = True
+                    self.tradeResultCount = sum(nextTrade.toPlayers)
+                    self.player.tradeLock = True
+                    self.SendMessage(nextTrade.GetMessage(self.gameName, currGameStateName=self.game.gameState.currState))
+                    return
 
             if agentAction.type == 'BuildRoad' or \
                agentAction.type == 'BuildSettlement' or \

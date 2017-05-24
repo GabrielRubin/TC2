@@ -6,7 +6,7 @@ class AgentUCTParanoid(AgentMCTS):
 
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
-                 simPreSelectMode = None, trading = False, virtualWins = False):
+                 simPreSelectMode = None, trading = None, virtualWins = False):
 
         super(AgentUCTParanoid, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
                                                multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins)
