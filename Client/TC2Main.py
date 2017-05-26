@@ -21,7 +21,7 @@ def check_positive(value):
 
 class TC2Main(object):
 
-    def __init__(self):
+    def __init__(self, serverType = ""):
 
         self.serverProcess = None
         self.robot1Process = None
@@ -31,6 +31,7 @@ class TC2Main(object):
         self.player        = None
         self.ourClient     = None
         self.simCount      = 1000
+        self.serverType    = serverType
 
     def ComposeGameStatsMessage(self, gameState):
 
@@ -141,7 +142,7 @@ class TC2Main(object):
                             action="store_true", default=True)
 
         parser.add_argument('-sim', "--simulationCount", type=check_positive,
-                            help="number of simulations done by MCTS methods (default = 1000)", default=1000)
+                            help="number of simulations done by MCTS methods (default = 1000)", default=10000)
 
         parser.add_argument("-l", "--logging", help="log stuff. There are two levels of logging: {0}".format(LogType),
                             default='d')
@@ -185,20 +186,20 @@ class TC2Main(object):
         # Double negation in the switches here are a bit confusing TBH...
         if args.startServer and canInitServer:
 
-            self.serverProcess = subprocess.Popen("java -jar JSettlersServer.jar 8880 10 dbUser dbPass",
+            self.serverProcess = subprocess.Popen("java -jar JSettlersServer{0}.jar 8880 10 dbUser dbPass".format(self.serverType),
                                              shell=False, stdout=subprocess.PIPE)
 
         if args.robots and callProcess:
             self.robot1Process = subprocess.Popen(
-                "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd",
+                "java -cp JSettlersServer{0}.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd".format(self.serverType),
                 shell=True, stdout=subprocess.PIPE)
 
             self.robot2Process = subprocess.Popen(
-                "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd",
+                "java -cp JSettlersServer{0}.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd".format(self.serverType),
                 shell=True, stdout=subprocess.PIPE)
 
             self.robot3Process = subprocess.Popen(
-                "java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd",
+                "java -cp JSettlersServer{0}.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd".format(self.serverType),
                 shell=True, stdout=subprocess.PIPE)
 
         if args.client and callProcess:
