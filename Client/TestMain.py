@@ -40,6 +40,9 @@ if __name__ == '__main__':
 
     clientProcess = subprocess.Popen("java -jar JSettlers.jar localhost 8880")
 
+    os.chdir("..")
+    os.chdir('Client')
+
     for i in range(0, m_totalGames):
         RunMain((i+1), serverType=serverType)
 

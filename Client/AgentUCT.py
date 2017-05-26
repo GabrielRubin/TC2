@@ -6,10 +6,10 @@ class AgentUCT(AgentMCTS):
 
     def __init__(self, name, seatNumber, choiceTime = 10.0, simulationCount = None, explorationValue = 0.25,
                  multiThreading = False, numberOfThreads = 0, preSelectMode = 'citiesOverSettlements',
-                 simPreSelectMode = None, trading = None, virtualWins = False):
+                 simPreSelectMode = None, trading = None, virtualWins = False, useModel = False):
 
         super(AgentUCT, self).__init__(name, seatNumber, choiceTime, simulationCount, explorationValue,
-                                       multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins)
+                                       multiThreading, numberOfThreads, preSelectMode, simPreSelectMode, trading, virtualWins, useModel)
         self.agentName = "UCT : {0} sec, {1} sims".format(choiceTime, simulationCount)
 
     def BestChild(self, node, explorationValue, totalNValue, player=None):
@@ -30,8 +30,8 @@ class AgentUCT(AgentMCTS):
             #    print("DIV BY ZERO! ERROR!")
             #    raise ArithmeticError
 
-            evaluationPart  = float(childNode.QValue[tgtPlayer]) / float(childNode.NValue)
-            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / float(childNode.NValue) )
+            evaluationPart  = float(childNode.QValue[tgtPlayer]) / max(float(childNode.NValue), 1)
+            explorationPart = explorationValue * math.sqrt( (2 * math.log(node.NValue)) / max(float(childNode.NValue), 1) )
             return evaluationPart + explorationPart
 
         return max(node.children, key=lambda child : UCB1(child))

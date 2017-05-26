@@ -3,6 +3,8 @@ import math
 import sys
 from CatanUtils import CanAfford as cf
 from CatanUtils import listm
+import cPickle
+from GameDataExplorer import GetGameStateDataFrame
 
 class PlayerStats(object):
 
@@ -23,6 +25,8 @@ class PlayerStats(object):
         self.numberOfTurnsWithRoad = 0
 
 class Player(object):
+
+    Model = None
 
     def __init__(self, name, seatNumber):
 
@@ -72,11 +76,13 @@ class Player(object):
         self.updateVictoryPoints   = False
 
         self.roadCount = 0
-
         self.agentName = "RANDOM"
 
-        self.logStats  = False
-        self.logData   = None
+    @staticmethod
+    def LoadModel():
+
+        with open('Models/Test07.mod', 'rb') as handle:
+            Player.Model = cPickle.load(handle)
 
     def UpdateTradeRates(self, gameState):
 
@@ -529,15 +535,212 @@ class Player(object):
             # SET THE NEW RESOURCES AS UNKNOWN - (WE CANT KNOW WHAT RESOURCES THE ROBOT HAVE DISCARDED)
             self.resources = [0, 0, 0, 0, 0, int(math.ceil(sum(self.resources) / 2.0))]
 
-    # def UpdateLogStats(self, action):
-    #
-    #     if not self.logStats:
-    #         return
-    #
-    #     if self.logData is None:
-    #         self.logData = PlayerStats()
-    #
-    #     self.logData.numberOfTurns += 1
+    @staticmethod
+    def GetModelSelectedActions(gameState, player, model=None):
+
+        #shiftedGame = cPickle.loads(cPickle.dumps(gameState, -1))
+        #shiftedGame.ShiftPlayerToFirstSeat(player)
+
+        if model is None:
+            model = Player.Model
+
+        possibleActions = []
+
+        if not gameState.setupDone:
+            possibleActions = Player.GetAllPossibleActions_Setup(gameState, player)
+        elif gameState.currState == "PLAY":
+            possibleActions = Player.GetAllPossibleActions_PreDiceRoll(player)
+        elif gameState.currState == "PLAY1":
+            possibleActions = Player.GetAllPossibleActions_RegularTurns(gameState, player)
+        else:
+            possibleActions = Player.GetAllPossibleActions_SpecialTurns(gameState, player)
+
+        return player.FilterActionsWithModel(gameState, model, possibleActions, justBest=False)
+
+    @staticmethod
+    def GetAllPossibleActions_Setup(gameState, player):
+
+        if   gameState.currState == 'START1A':
+
+            if player.firstSettlementBuild:
+                return None
+
+            return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements)) for setNode in
+                    gameState.GetPossibleSettlements(player, True)]
+
+        elif gameState.currState == 'START1B':
+
+            if player.firstRoadBuild:
+                return None
+
+            possibleRoads = gameState.GetPossibleRoads(player, True)
+
+            return [BuildRoadAction(player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
+
+        elif gameState.currState == 'START2A':
+
+            if player.secondSettlementBuild:
+                return None
+
+            return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements)) for setNode in
+                    gameState.GetPossibleSettlements(player, True)]
+
+        elif gameState.currState == 'START2B':
+
+            if player.secondRoadBuild:
+                return None
+
+            possibleRoads = gameState.GetPossibleRoads(player, True)
+
+            return [BuildRoadAction(player.seatNumber, roadEdge, len(player.roads)) for roadEdge in possibleRoads]
+
+    @staticmethod
+    def GetAllPossibleActions_PreDiceRoll(player):
+
+        if not player.rolledTheDices and \
+                not player.playedDevCard and \
+                player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
+                player.developmentCards[KNIGHT_CARD_INDEX] > 0:
+            return [UseKnightsCardAction(player.seatNumber, None, None)]
+
+        if not player.rolledTheDices:
+            return [RollDicesAction(player.seatNumber)]
+
+    @staticmethod
+    def GetAllPossibleActions_RegularTurns(gameState, player):
+
+        possibleActions     = []
+
+        if player.settlements and\
+            player.HavePiece(g_pieces.index('CITIES')) and\
+            player.CanAfford(BuildCityAction.cost):
+
+            possibleActions += [BuildCityAction(player.seatNumber, pos, len(player.cities)) for pos in
+                                gameState.GetPossibleCities(player)]
+
+        if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
+            player.CanAfford(BuildSettlementAction.cost):
+
+            possibleActions += [BuildSettlementAction(player.seatNumber, pos, len(player.settlements)) for pos in
+                                gameState.GetPossibleSettlements(player)]
+
+        if player.HavePiece(g_pieces.index('ROADS')) and \
+            player.CanAfford(BuildRoadAction.cost):
+
+            possibleActions += [BuildRoadAction(player.seatNumber, pos, len(player.roads)) for pos in
+                                gameState.GetPossibleRoads(player)]
+
+        if gameState.CanBuyADevCard(player) and not player.biggestArmy:
+            possibleActions.append(BuyDevelopmentCardAction(player.seatNumber))
+
+        if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
+
+            possibleCardsToUse = []
+            if not player.playedDevCard:
+
+                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
+                        player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                    possibleCardsToUse += player.GetMonopolyResource(gameState, player)
+
+                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
+                        player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                    possibleCardsToUse += player.GetYearOfPlentyResource(gameState, player)
+
+                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
+                        player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
+                        player.numberOfPieces[0] > 0:
+                    possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
+
+            if possibleCardsToUse:
+                possibleActions += possibleCardsToUse
+
+        possibleTrade = player.GetPossibleBankTrades(gameState, player)
+        if possibleTrade is not None and possibleTrade:
+            possibleActions.append(possibleTrade[int(random.random() * len(possibleTrade))])
+
+        possibleActions.append(EndTurnAction(playerNumber=player.seatNumber))
+
+        return possibleActions
+
+    @staticmethod
+    def GetAllPossibleActions_SpecialTurns(gameState, player):
+
+        if gameState.currState == 'PLACING_ROBBER':
+
+            # Rolled out 7  * or *  Used a knight card
+            return player.ChooseRobberPosition(gameState, player)
+
+        elif gameState.currState == 'WAITING_FOR_DISCARDS':
+
+            return [player.ChooseCardsToDiscard(player)]
+
+        elif gameState.currState == 'WAITING_FOR_CHOICE':
+
+            return [player.ChoosePlayerToStealFrom(gameState, player)]
+
+        elif gameState.currState == "PLACING_FREE_ROAD1":
+
+            possibleRoads = gameState.GetPossibleRoads(player)
+
+            if possibleRoads is None or not possibleRoads or player.numberOfPieces[0] <= 0:
+                return [ ChangeGameStateAction("PLAY1") ]
+
+            return [BuildRoadAction(player.seatNumber, roadEdge,
+                                    len(player.roads))
+                    for roadEdge in possibleRoads]
+
+        elif gameState.currState == "PLACING_FREE_ROAD2":
+
+            possibleRoads = gameState.GetPossibleRoads(player)
+
+            if possibleRoads is None or not possibleRoads or player.numberOfPieces[0] <= 0:
+                return [ ChangeGameStateAction("PLAY1") ]
+
+            return [BuildRoadAction(player.seatNumber, roadEdge,
+                                    len(player.roads))
+                    for roadEdge in possibleRoads]
+
+        elif gameState.currState == "WAITING_FOR_TRADE":
+
+            return RejectTradeOfferAction(playerNumber=player.seatNumber)
+
+    def FilterActionsWithModel(self, gameState, model, actions, justBest = False):
+
+        if len(actions) > 1:
+
+            actionValues = []
+
+            for action in actions:
+                gameStateCopy = cPickle.loads(cPickle.dumps(gameState, -1))
+                action.ApplyAction(gameStateCopy)
+                dataFrame = GetGameStateDataFrame(gameStateCopy, action, gameState.boardConfig)
+                score = model.predict(dataFrame)
+                actionValues.append((score, action))
+
+            actionValues = sorted(actionValues, key=lambda actval: actval[0])
+            result = []
+            best = -1
+            worstDelta = actionValues[0][0] - actionValues[-1][0]
+            for actionVal in actionValues:
+                if best == -1:
+                    best = actionVal[0]
+                    result.append(actionVal[1])
+                else:
+                    if justBest:
+                        if best - actionVal[0] == 0:
+                            result.append(actionVal[1])
+                        else:
+                            break
+                    else:
+                        if best - actionVal[0] <= worstDelta * 0.5:
+                            result.append(actionVal[1])
+                        else:
+                            break
+
+            return result
+
+        else:
+            return actions
 
     def GetPossibleActions(self, game, player=None, gameState=None, ignoreTurn=False):
         pass

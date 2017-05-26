@@ -1,18 +1,25 @@
+import os
 from CatanAction import *
 import cPickle
-import copy
+import datetime
+from GameData import GameData
 
 class Game:
 
     def __init__(self, gameState):
 
-        self.gameState = gameState
+        self.gameState   = gameState
+        self.gameData    = GameData()
+        self.recordData  = False
 
     def AddPlayer(self, player, index):
 
         self.gameState.players[index] = player
 
     def CreateBoard(self, message):
+
+        self.gameState.boardConfig = message.text
+
         # Hexes
         for i in xrange(0, len(message.hexes)):
 
@@ -45,14 +52,6 @@ class Game:
         # DEBUG FOR HARBORS:
         #for nodeIndex, node in self.gameState.boardNodes.items():
         #    logging.debug("Node id = {0}, Port Type = {1}".format(hex(nodeIndex), node.portType))
-
-    def GetNextGameState(self, action):
-
-        gameState = copy.deepcopy(self.gameState)
-
-        action.ApplyAction(gameState)
-
-        return gameState
 
 class GameState(object):
 
@@ -87,16 +86,57 @@ class GameState(object):
         self.winner         = -1
         self.isGameOver     = False
         self.isLogGenerated = False
-
         self.checkLongestRoad = False
 
-        # self.logStats = False
+        self.boardConfig = None
 
-    # def UpdateStats(self):
-    #
-    #     if self.logStats:
-    #         for player in self.players:
-    #             player.UpdateLogStats()
+    def ShiftPlayerToFirstSeat(self, player):
+
+        if player.seatNumber == 0:
+            return
+
+        tgtPlayerCurrSeatNumber = player.seatNumber
+        playerInFirstSeat = self.players[0]
+
+        self.players[tgtPlayerCurrSeatNumber] = playerInFirstSeat
+        self.players[0] = player
+
+        player.seatNumber = 0
+        playerInFirstSeat.seatNumber = tgtPlayerCurrSeatNumber
+
+        if self.currPlayer == tgtPlayerCurrSeatNumber:
+            self.currPlayer = 0
+        elif self.currPlayer == 0:
+            self.currPlayer = tgtPlayerCurrSeatNumber
+
+        if self.longestRoadPlayer == tgtPlayerCurrSeatNumber:
+            self.longestRoadPlayer = 0
+        elif self.longestRoadPlayer == 0:
+            self.longestRoadPlayer = tgtPlayerCurrSeatNumber
+
+        if self.largestArmyPlayer == tgtPlayerCurrSeatNumber:
+            self.largestArmyPlayer = 0
+        elif self.largestArmyPlayer == 0:
+            self.largestArmyPlayer = tgtPlayerCurrSeatNumber
+
+        if self.winner == tgtPlayerCurrSeatNumber:
+            self.winner = 0
+        elif self.winner == 0:
+            self.winner = tgtPlayerCurrSeatNumber
+
+        for edge in self.boardEdges:
+            if edge.construction is not None:
+                if edge.construction.owner == tgtPlayerCurrSeatNumber:
+                    edge.construction.owner = 0
+                elif edge.construction.owner == 0:
+                    edge.construction.owner = tgtPlayerCurrSeatNumber
+
+        for node in self.boardNodes:
+            if node.construction is not None:
+                if node.construction.owner == tgtPlayerCurrSeatNumber:
+                    node.construction.owner = 0
+                elif node.construction.owner == 0:
+                    node.construction.owner = tgtPlayerCurrSeatNumber
 
     def FinishSetup(self):
 
@@ -190,9 +230,7 @@ class GameState(object):
     def CanBuildSettlement(self, player, node, setUpPhase = False):
 
         #step 1: check if someone already build a settlement or city in this node
-
         if node.construction is not None:
-
             return False
 
         #step 2: check if node respects piece connectivity, if not in setUpPhase
@@ -220,8 +258,6 @@ class GameState(object):
         return True
 
     def CanBuyADevCard(self, player):
-
-        #return gameState.devCards > 0 and player.CanAfford(BuyDevelopmentCardAction.cost)
 
         if sum(self.developmentCardsDeck) > 0 and player.CanAfford(BuyDevelopmentCardAction.cost):
             return True
@@ -455,8 +491,6 @@ class GameState(object):
         for i in xrange(0, len(self.players)):
             roadCount[i] = self.players[i].CountRoads(self)
             self.players[i].updateVictoryPoints = True
-
-        #print(roadCount)
 
         maxRoads = max(roadCount)
 

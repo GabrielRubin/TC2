@@ -6,13 +6,18 @@ from CatanUtils import GetRandomBankTrade
 
 class AgentRandom(Player):
 
-    def __init__(self, name, seatNumber):
+    def __init__(self, name, seatNumber, useModel = False):
 
         super(AgentRandom, self).__init__(name, seatNumber)
 
-        self.agentName     = "RANDOM"
-        self.preSelectMode = None
-        self.tradeLock     = False
+        self.agentName              = "RANDOM"
+        self.preSelectMode          = None
+        self.tradeLock              = False
+        self.filterSetupSettlements = False
+        self.filterEndTurnAction    = False
+        self.useModel               = useModel
+        if self.useModel:
+            Player.LoadModel()
 
     def GetPossibleActions(self, gameState, player = None):
 
@@ -20,34 +25,36 @@ class AgentRandom(Player):
             player = self
 
         if not gameState.setupDone:
-            return self.GetPossibleActions_SetupTurns(gameState, player)
+            return self.GetPossibleActions_SetupTurns(gameState, player, self.filterSetupSettlements)
         elif gameState.currState == "PLAY":
             return self.GetPossibleActions_PreDiceRoll(player)
         elif gameState.currState == "PLAY1":
-            return self.GetRandomAction_RegularTurns(gameState, player, self.preSelectMode)
+            return self.GetRandomAction_RegularTurns(gameState, player, self.preSelectMode, self.filterEndTurnAction)
         else:
             return self.GetPossibleActions_SpecialTurns(gameState, player)
 
-    def GetPossibleActions_SetupTurns(self, gameState, player):
+    def GetPossibleActions_SetupTurns(self, gameState, player, filterSetupSettlements):
 
         if   gameState.currState == 'START1A':
 
             if player.firstSettlementBuild:
                 return None
 
-            def IsNodeGood(node):
-                total = 0
-                for hexIndex in gameState.boardNodes[node].adjacentHexes:
-                    if gameState.boardHexes[hexIndex].production is not None:
-                        total += 1
-                return total > 1 or gameState.boardNodes[node].portType is not None
+            if filterSetupSettlements:
+                def IsNodeGood(node):
+                    total = 0
+                    for hexIndex in gameState.boardNodes[node].adjacentHexes:
+                        if gameState.boardHexes[hexIndex].production is not None:
+                            total += 1
+                    return total > 1 or gameState.boardNodes[node].portType is not None
 
-            bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
+                bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
 
-            possible = [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements))
+                return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements))
                         for setNode in bestSettlements]
-
-            return possible
+            else:
+                return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements)) for setNode in
+                        gameState.GetPossibleSettlements(player, True)]
 
         elif gameState.currState == 'START1B':
 
@@ -63,17 +70,21 @@ class AgentRandom(Player):
             if player.secondSettlementBuild:
                 return None
 
-            def IsNodeGood(node):
-                total = 0
-                for hexIndex in gameState.boardNodes[node].adjacentHexes:
-                    if gameState.boardHexes[hexIndex].production is not None:
-                        total += 1
-                return total > 1 or gameState.boardNodes[node].portType is not None
+            if filterSetupSettlements:
+                def IsNodeGood(node):
+                    total = 0
+                    for hexIndex in gameState.boardNodes[node].adjacentHexes:
+                        if gameState.boardHexes[hexIndex].production is not None:
+                            total += 1
+                    return total > 1 or gameState.boardNodes[node].portType is not None
 
-            bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
+                bestSettlements = filter(IsNodeGood, gameState.GetPossibleSettlements(player, True))
 
-            return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements))
-                    for setNode in bestSettlements]
+                return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements))
+                        for setNode in bestSettlements]
+            else:
+                return [BuildSettlementAction(player.seatNumber, setNode, len(player.settlements)) for setNode in
+                        gameState.GetPossibleSettlements(player, True)]
 
         elif gameState.currState == 'START2B':
 
@@ -102,120 +113,113 @@ class AgentRandom(Player):
 
     preSelectMode = ('citiesAndSettlements', 'citiesOverSettlements')
 
-    def GetRandomAction_RegularTurns(self, gameState, player, preSelectMode):
+    def GetRandomAction_RegularTurns(self, gameState, player, preSelectMode, filterEndTurnAction):
 
-        if gameState.currState == 'PLAY':
+        possibleActions     = []
 
-            if not player.rolledTheDices and \
-               not player.playedDevCard and \
-                    player.mayPlayDevCards[KNIGHT_CARD_INDEX] and \
-                            player.developmentCards[KNIGHT_CARD_INDEX] > 0:
+        if player.settlements and\
+            player.HavePiece(g_pieces.index('CITIES')) and\
+            player.CanAfford(BuildCityAction.cost):
 
-                return [UseKnightsCardAction( player.seatNumber, None, None )]
+            possibleCities = gameState.GetPossibleCities(player)
 
-            if not player.rolledTheDices:
-
-                return [RollDicesAction( player.seatNumber )]
-
-        elif gameState.currState == 'PLAY1':
-
-            possibleActions     = []
-            possibleSettlements = gameState.GetPossibleSettlements(player)
-            possibleRoads       = gameState.GetPossibleRoads(player)
-
-            if player.settlements and\
-                player.HavePiece(g_pieces.index('CITIES')) and\
-                player.CanAfford(BuildCityAction.cost):
-
-                possibleCities = gameState.GetPossibleCities(player)
-
-                if possibleCities is not None and len(possibleCities) > 0:
-
-                    if preSelectMode is not None and preSelectMode == 'citiesOverSettlements':
-                        choice = possibleCities[int(random.random() * len(possibleCities))]
-                        return BuildCityAction(player.seatNumber, choice, len(player.cities))
-
-                    possibleActions.append('buildCity')
-
-            if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
-                player.CanAfford(BuildSettlementAction.cost) and \
-                possibleSettlements:
+            if possibleCities is not None and len(possibleCities) > 0:
 
                 if preSelectMode is not None and preSelectMode == 'citiesOverSettlements':
-                    choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
-                    return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
+                    choice = possibleCities[int(random.random() * len(possibleCities))]
+                    return BuildCityAction(player.seatNumber, choice, len(player.cities))
 
-                possibleActions.append('buildSettlement')
+                possibleActions.append('buildCity')
 
-            if preSelectMode is None or not possibleActions:
+        possibleSettlements = gameState.GetPossibleSettlements(player)
 
-                if player.HavePiece(g_pieces.index('ROADS')) and \
-                    player.CanAfford(BuildRoadAction.cost)and \
-                    possibleRoads:
-                    possibleActions.append('buildRoad')
+        if player.HavePiece(g_pieces.index('SETTLEMENTS')) and \
+            player.CanAfford(BuildSettlementAction.cost) and \
+            possibleSettlements:
 
-                if gameState.CanBuyADevCard(player) and not player.biggestArmy:
-                    possibleActions.append('buyDevCard')
-
-                if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
-                    possibleActions.append('useDevCard')
-
-            if not possibleActions:
-
-                possibleTrade = player.GetPossibleBankTrades(gameState, player)
-                if possibleTrade is not None and possibleTrade:
-                    return possibleTrade[0]
-
-                return EndTurnAction(playerNumber=player.seatNumber)
-
-
-            chosenAction = random.choice(possibleActions)
-
-            if chosenAction == 'buildRoad':
-
-                choice = possibleRoads[int(random.random() * len(possibleRoads))]
-
-                return BuildRoadAction(player.seatNumber, choice, len(player.roads))
-
-            elif chosenAction == 'buildSettlement':
-
+            if preSelectMode is not None and preSelectMode == 'citiesOverSettlements':
                 choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
-
                 return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
 
-            elif chosenAction == 'buildCity':
+            possibleActions.append('buildSettlement')
 
-                choice = possibleCities[int(random.random() * len(possibleCities))]
+        if preSelectMode is None or not possibleActions:
 
-                return BuildCityAction(player.seatNumber, choice, len(player.cities))
+            possibleRoads = gameState.GetPossibleRoads(player)
 
-            elif chosenAction == 'buyDevCard':
+            if player.HavePiece(g_pieces.index('ROADS')) and \
+                player.CanAfford(BuildRoadAction.cost)and \
+                possibleRoads:
+                possibleActions.append('buildRoad')
 
-                return BuyDevelopmentCardAction(player.seatNumber)
+            if gameState.CanBuyADevCard(player) and not player.biggestArmy:
+                possibleActions.append('buyDevCard')
 
-            elif chosenAction == 'useDevCard':
+            if not player.playedDevCard and sum(player.developmentCards[:-1]) > 0:
+                possibleActions.append('useDevCard')
 
-                possibleCardsToUse = []
+        if not possibleActions:
 
-                if not player.playedDevCard:
+            possibleTrade = player.GetPossibleBankTrades(gameState, player)
+            if possibleTrade is not None and possibleTrade:
+                return possibleTrade[int(random.random() * len(possibleTrade))]
 
-                    if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
-                            player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
-                        possibleCardsToUse += player.GetMonopolyResource(gameState, player)
+            return EndTurnAction(playerNumber=player.seatNumber)
 
-                    if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
-                            player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
-                        possibleCardsToUse += player.GetYearOfPlentyResource(gameState, player)
 
-                    if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
-                            player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
-                                    player.numberOfPieces[0] > 0:
-                        possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
+        if not filterEndTurnAction:
+            possibleActions.append('endTurn')
 
-                if possibleCardsToUse:
-                    return possibleCardsToUse[int(random.random() * len(possibleCardsToUse))]
-                else:
-                    return EndTurnAction(playerNumber=player.seatNumber)
+        chosenAction = random.choice(possibleActions)
+
+        if chosenAction == 'buildRoad':
+
+            choice = possibleRoads[int(random.random() * len(possibleRoads))]
+
+            return BuildRoadAction(player.seatNumber, choice, len(player.roads))
+
+        elif chosenAction == 'buildSettlement':
+
+            choice = possibleSettlements[int(random.random() * len(possibleSettlements))]
+
+            return BuildSettlementAction(player.seatNumber, choice, len(player.settlements))
+
+        elif chosenAction == 'buildCity':
+
+            choice = possibleCities[int(random.random() * len(possibleCities))]
+
+            return BuildCityAction(player.seatNumber, choice, len(player.cities))
+
+        elif chosenAction == 'buyDevCard':
+
+            return BuyDevelopmentCardAction(player.seatNumber)
+
+        elif chosenAction == 'useDevCard':
+
+            possibleCardsToUse = []
+
+            if not player.playedDevCard:
+
+                if player.developmentCards[MONOPOLY_CARD_INDEX] > 0 and \
+                        player.mayPlayDevCards[MONOPOLY_CARD_INDEX]:
+                    possibleCardsToUse += player.GetMonopolyResource(gameState, player)
+
+                if player.developmentCards[YEAR_OF_PLENTY_CARD_INDEX] > 0 and \
+                        player.mayPlayDevCards[YEAR_OF_PLENTY_CARD_INDEX]:
+                    possibleCardsToUse += player.GetYearOfPlentyResource(gameState, player)
+
+                if player.developmentCards[ROAD_BUILDING_CARD_INDEX] > 0 and \
+                        player.mayPlayDevCards[ROAD_BUILDING_CARD_INDEX] and \
+                                player.numberOfPieces[0] > 0:
+                    possibleCardsToUse += [UseFreeRoadsCardAction(player.seatNumber, None, None)]
+
+            if possibleCardsToUse:
+                return possibleCardsToUse[int(random.random() * len(possibleCardsToUse))]
+            else:
+                return EndTurnAction(playerNumber=player.seatNumber)
+
+        elif chosenAction == 'endTurn':
+            return EndTurnAction(playerNumber=player.seatNumber)
 
 
     def GetPossibleActions_SpecialTurns(self, gameState, player):
@@ -266,7 +270,10 @@ class AgentRandom(Player):
             game.gameState.currState != "WAITING_FOR_DISCARDS":
             return None
 
-        possibleActions = self.GetPossibleActions(game.gameState)
+        if self.useModel:
+            possibleActions = Player.GetModelSelectedActions(game.gameState, self)
+        else:
+            possibleActions = self.GetPossibleActions(game.gameState)
 
         #logging.debug("possible actions = {0}".format(possibleActions))
 

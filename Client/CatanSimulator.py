@@ -1,25 +1,28 @@
-#from Client import *
 import GameStateViewer
-#import logging
-import datetime
+import copy
 import cProfile
 import pstats
 import timeit
+import time
 import os.path
 import socket
-from AgentMCTS import AgentMCTS
-from AgentUCT  import AgentUCT
-import cPickle
 from CatanGame import *
 from AgentRandom import *
 from joblib import Parallel, delayed
 import multiprocessing
 import CSVGenerator
 
-boardLayoutMessage = "1014|TestGame,9,6,10,6,6,1,3,3,67,8,3,5,4,1," \
-                     "6,6,2,0,2,3,4,85,8,4,5,1,5,6,6,2,4,5,97,18,6," \
-                     "100,6,-1,-1,-1,-1,-1,8,9,6,-1,-1,2,1,4,7,-1,-1," \
-                     "5,-1,8,3,5,-1,-1,7,6,2,1,-1,-1,3,0,4,-1,-1,-1,-1,-1,85"
+# -- ML STUFF --
+import sklearn
+#SGD = Stochastic Gradient Descent
+from sklearn.linear_model import SGDRegressor
+from GameDataExplorer import GetGameTrainingDataFrame
+
+#Suggested Board from Catan's Rules Book
+suggestedBoard    = "1014|TestGame,7,6,20,6,6,2,3,5,34,53,4,1,3,1," \
+                     "6,6,4,5,0,4,2,8,49,5,2,4,3,6,6,1,4,3,67,9,6," \
+                     "10,6,-1,-1,-1,-1,-1,7,0,6,-1,-1,9,4,2,7,-1,-1," \
+                     "6,8,-1,1,5,-1,-1,5,1,2,3,-1,-1,3,4,8,-1,-1,-1,-1,-1,85"
 
 # defaultPlayers = [AgentUCT("P1", 0, simulationCount=1000),
 #                   AgentRandom("P2", 1),
@@ -36,7 +39,81 @@ defaultPlayers = [AgentRandom("P1", 0),
                   AgentRandom("P3", 2),
                   AgentRandom("P4", 3)]
 
-def CreateGame(players):
+modelVersusRandomPlayers = [AgentRandom("P1", 0, useModel=True),
+                            AgentRandom("P4", 3),
+                            AgentRandom("P2", 1),
+                            AgentRandom("P3", 2)]
+
+def CreateNewBoard():
+    """
+    New board code based on the original JSettlers board generation code.
+    (JSettler's SOCBoard.java -> makeNewBoard() method)
+    """
+    desert = 0
+    brick  = 1
+    ore    = 2
+    wool   = 3
+    grain  = 4
+    lumber = 5
+
+    hexLayout = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] # all sea
+
+    numberLayout = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+
+    robberPos = 0
+
+    landHexes = [desert, brick, brick, brick, ore, ore, ore, wool, wool, wool, wool,
+                 grain, grain, grain, grain, lumber, lumber, lumber, lumber]
+
+    portHexes = [0, 0, 0, 0, brick, ore, wool, grain, lumber] # 0 = 3 to 1
+
+    numbers = [3, 0, 4, 1, 5, 7, 6, 9, 8, 2, 5, 7, 6, 2, 3, 4, 1, 8]
+
+    numPath = [29, 30, 31, 26, 20, 13, 7, 6, 5, 10, 16, 23, 24, 25, 19, 12, 11, 17, 18]
+
+    random.shuffle(landHexes)
+
+    cnt = 0
+    for n in range(0, len(landHexes)):
+
+        hexLayout[numPath[n]] = landHexes[n]
+        if landHexes[n] == 0:
+            robberPos = g_boardHexes[numPath[n]]
+            numberLayout[numPath[n]] = -1
+        else:
+            numberLayout[numPath[n]] = numbers[cnt]
+            cnt += 1
+
+    random.shuffle(portHexes)
+
+    def PlacePort(port, he, face):
+        if port == 0:
+            hexLayout[he] = face + 6
+        else:
+            hexLayout[he] = (face << 4) + port
+
+    PlacePort(portHexes[0], 0, 3)
+    PlacePort(portHexes[1], 2, 4)
+    PlacePort(portHexes[2], 8, 4)
+    PlacePort(portHexes[3], 9, 2)
+    PlacePort(portHexes[4], 21, 5)
+    PlacePort(portHexes[5], 22, 2)
+    PlacePort(portHexes[6], 32, 6)
+    PlacePort(portHexes[7], 33, 1)
+    PlacePort(portHexes[8], 35, 6)
+
+    resultString = "1014|TestGame,"
+    for h in hexLayout:
+        resultString += "{0},".format(h)
+    for n in numberLayout:
+        resultString += "{0},".format(n)
+    resultString += "{0}".format(robberPos)
+
+    return resultString
+
+def CreateGame(players, recordData = False, customBoard = None):
 
     game = Game(GameState())
 
@@ -52,15 +129,21 @@ def CreateGame(players):
 
     game.gameState.currState = "START1A"
 
-    game.CreateBoard(BoardLayoutMessage.parse(boardLayoutMessage))
+    if customBoard is None:
+        newBoard = CreateNewBoard()
+    else:
+        newBoard = customBoard
+
+    game.recordData           = recordData
+    game.gameData.boardConfig = newBoard
+
+    game.CreateBoard(BoardLayoutMessage.parse(newBoard))
 
     return game
 
 defaultGame = CreateGame(defaultPlayers)
 
 def RunSingleGame(game):
-
-    #game = copy.deepcopy(game)
 
     game = cPickle.loads(cPickle.dumps(game, -1))
 
@@ -75,12 +158,17 @@ def RunSingleGame(game):
 
         if isinstance(agentAction, list):
             for action in agentAction:
+                if game.recordData:
+                    #cPickle.load(cPickle.dump(game.gameState, cPickle.HIGHEST_PROTOCOL)
+                    game.gameData.AddRecord(action, game.gameState)
                 action.ApplyAction(game.gameState)
         else:
+            if game.recordData:
+                game.gameData.AddRecord(agentAction, game.gameState)
             agentAction.ApplyAction(game.gameState)
 
         if game.gameState.currState == "OVER":
-        #if game.gameState.setupDone:
+            game.gameData.AddRecord(agentAction, game.gameState)
             return game
 
 def RunGame(inGame = None, players = None, saveImgLog = False, showLog = False, showFullLog = False, returnLog=False, saveCSV=False):
@@ -96,10 +184,13 @@ def RunGame(inGame = None, players = None, saveImgLog = False, showLog = False, 
     #test = RunSingleGame(inGame)
     game = RunSingleGame(inGame)
 
+    if game.recordData:
+        game.gameData.SaveRecord("GameData", "CatanData")
+
     if saveCSV:
         CSVGenerator.SaveGameStatsCSV(game.gameState)
 
-    now   = datetime.datetime.today()
+    now = datetime.datetime.today()
 
     if saveImgLog:
 
@@ -370,12 +461,74 @@ def RunWithCSVSaving(numberOfRepetitions, players = None, multiprocess = False):
         for i in range(0, numberOfRepetitions):
             RunGame(games[i], games[i].gameState.players, saveCSV=True)
 
+#Online Training
+def RunModelTraining(numberOfTrainings, modelName, loadModel = None, customBoard = None):
+
+    model = None
+
+    if loadModel is not None:
+        with open('Models/{0}.mod'.format(loadModel), 'rb') as handle:
+            model = cPickle.load(handle)
+    else:
+        model = SGDRegressor()
+
+    start_time = time.time()
+
+    for i in range(0, numberOfTrainings):
+        gameResult = RunSingleGame(CreateGame(copy.deepcopy(defaultPlayers),
+                                              customBoard=customBoard,
+                                              recordData=True))
+
+        X, Y = GetGameTrainingDataFrame(gameResult.gameData)
+
+        model.partial_fit(X, Y)
+
+        elapsed_time = time.time() - start_time
+
+        logging.critical("PROGRESS = {1}%\n"        
+                         "TIME ELAPSED = {2}".format(i, float(i+1)/numberOfTrainings * 100,
+                                                     time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
+
+    logging.critical("TRAINING DONE!\n" \
+                     "SAVING AT 'Models/{0}.mod'".format(modelName))
+
+    with open("Models/{0}.mod".format(modelName), 'wb') as handle:
+        cPickle.dump(model, handle, protocol=cPickle.HIGHEST_PROTOCOL)
+
+#Model Testing
+def RunModelTesting(numberOfTests, loadModel, customBoard = None):
+
+    with open('Models/{0}.mod'.format(loadModel), 'rb') as handle:
+        model = cPickle.load(handle)
+
+    start_time = time.time()
+
+    for i in range(0, numberOfTests):
+        gameResult = RunSingleGame(CreateGame(copy.deepcopy(defaultPlayers),
+                                              customBoard=customBoard,
+                                              recordData=True))
+
+        X, Y = GetGameTrainingDataFrame(gameResult.gameData)
+
+        Y_pred = model.predict(X)
+        score  = sklearn.metrics.r2_score(Y, Y_pred)
+
+        elapsed_time = time.time() - start_time
+
+        logging.critical("SCORE = {0}\n"
+                         "PROGRESS = {1}%\n"
+                         "TIME ELAPSED = {2}".format(score, float(i + 1) / numberOfTests * 100,
+                                                     time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
+
 if __name__ == '__main__':
 
-    # for i in range(0, 25):
-    #     RunGame(saveImgLog=True)
+    RunModelTraining(numberOfTrainings=20000, modelName="Test07")
+    #RunModelTesting(numberOfTests=20, loadModel="Test06")
 
-    #RunGame(showLog=True)
+    #for i in range(0, 500):
+    #    RunGame(saveImgLog=False)
+
+    #RunGame(saveImgLog=False, showLog=True)
 
     # for i in range(0, 10):
     #     RunGame(defaultPlayers)
@@ -383,15 +536,12 @@ if __name__ == '__main__':
     #     print(" --- GAME : {0} --- ".format(datetime.datetime.utcnow()))
 
     # RUN WITH LOGGING
-    #RunWithLogging(10, saveGameStateLogs=False, multiprocess=True)
-
-    # RUN AND SAVE STATES
-    #RunWithLogging(100, saveGameStateLogs=True, multiprocess=False)
+    #RunWithLogging(300, saveGameStateLogs=False, multiprocess=True, players=defaultPlayers)
 
     #RunWithCSVSaving(1000, multiprocess=False)
 
     # SPEED TEST
-    RunSpeedTest(300)
+    #RunSpeedTest(50)
 
     # SIMULATOR PROFILER
     #RunProfiler()

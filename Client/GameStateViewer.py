@@ -197,7 +197,16 @@ terrainColor = {
     'FIELDS'   : (253, 255, 170),
     'FOREST'   : (36 , 145,  29),
     'SEA'      : (99 , 197, 249),
-    'DESERT'   : (247, 210, 101)
+    'DESERT'   : (247, 210, 101),
+}
+
+portColor = {
+    '3for1'        : (244, 75, 196),
+    'BrickHarbor'  : (255, 168,  63),
+    'OreHarbor'    : (203, 204, 185),
+    'WoolHarbor'   : (186, 242, 138),
+    'GrainHarbor'  : (253, 255, 170),
+    'LumberHarbor' : (36 , 145,  29)
 }
 
 playerColor = [
@@ -239,8 +248,20 @@ def GetGameStateImage(gameState):
         roadRightImg = Image.new('RGBA', roadRightArt.size)
         roadRightImg.paste(roadRightArt)
 
+        portPos = [0x17, 0x5b, 0x9d, 0x13, 0xdd, 0x31, 0xd9, 0x71, 0xb5]
+
         for boardHexIndex, boardHex in gameState.boardHexes.iteritems():
             coloredHex = tintImage(hexImg, terrainColor[boardHex.terrain])
+
+            if boardHexIndex in portPos:
+                print(boardHexIndex)
+                for adjacentNode in boardHex.adjacentNodes:
+                    node = gameState.boardNodes[adjacentNode]
+                    print(node.portType)
+                    if node.portType is not None:
+                        coloredHex = tintImage(hexImg, portColor[node.portType])
+                        break
+
             hexImgPos = (hexPositions[boardHexIndex][0] - hexImg.size[0] / 2,
                          hexPositions[boardHexIndex][1] - hexImg.size[1] / 2)
             mainImg.paste(coloredHex, hexImgPos, hexImg)

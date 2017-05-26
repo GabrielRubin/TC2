@@ -142,7 +142,7 @@ class TC2Main(object):
                             action="store_true", default=True)
 
         parser.add_argument('-sim', "--simulationCount", type=check_positive,
-                            help="number of simulations done by MCTS methods (default = 1000)", default=10000)
+                            help="number of simulations done by MCTS methods (default = 1000)", default=1000)
 
         parser.add_argument("-l", "--logging", help="log stuff. There are two levels of logging: {0}".format(LogType),
                             default='d')
@@ -162,8 +162,8 @@ class TC2Main(object):
             self.player = AgentMCTS(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)
 
         if args.agentType == 'uct':
-            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, explorationValue=0.25, multiThreading=True, numberOfThreads=10,
-                                   preSelectMode='citiesOverSettlements', simPreSelectMode='citiesOverSettlements', trading='Optimistic', virtualWins=False)
+            self.player = AgentUCT(args.nickname, 0, simulationCount=self.simCount, explorationValue=0.25, multiThreading=True,
+                                   preSelectMode=None, simPreSelectMode=None, trading=None, virtualWins=False, useModel=True)
 
         if args.agentType == 'rave':
             self.player = AgentRAVE(args.nickname, 0, simulationCount=self.simCount, multiThreading=False)

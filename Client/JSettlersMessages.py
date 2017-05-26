@@ -288,7 +288,8 @@ class JoinGameMessage(Message):
 class BoardLayoutMessage(Message):
     id = 1014
 
-    def __init__(self, gameName, hexes, numbers, robberPos):
+    def __init__(self, gameName, hexes, numbers, robberPos, text):
+        self.text = text
         self.gameName = gameName
         self.hexes = hexes
         self.numbers = numbers
@@ -307,7 +308,7 @@ class BoardLayoutMessage(Message):
         hexes = map(int, data[1:38])
         numbers = map(int, data[38:38 + 37])
         robberpos = int(data[-1])
-        return BoardLayoutMessage(gameName, hexes, numbers, robberpos)
+        return BoardLayoutMessage(gameName, hexes, numbers, robberpos, text)
 
 class NewGameMessage(Message):
     id = 1016
