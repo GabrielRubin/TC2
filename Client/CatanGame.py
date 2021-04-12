@@ -57,12 +57,16 @@ class GameState(object):
 
     def __init__(self):
 
+        # board
         self.boardHexes  = { hexIndex  : BoardHex(hexIndex)   for hexIndex  in g_boardHexes }
         self.boardNodes  = { nodeIndex : BoardNode(nodeIndex) for nodeIndex in g_boardNodes }
         self.boardEdges  = { edgeIndex : BoardEdge(edgeIndex) for edgeIndex in g_boardEdges }
 
+        # flag that informs if Nodes/Edges must be updated after a construction is done in the board -- only update players that need to so
         self.updatePlayerNodes  = [True, True, True, True]
         self.updatePlayerEdges  = [True, True, True, True]
+        
+        # keeps track of constructable Nodes/Edges and possible robber position, to save processing time
         self.constructableNodes = cPickle.loads(cPickle.dumps(g_constructableNodes, -1))
         self.constructableEdges = cPickle.loads(cPickle.dumps(g_constructableEdges, -1))
         self.possibleRobberPos  = cPickle.loads(cPickle.dumps(g_possibleRobberPos,  -1))
@@ -76,6 +80,7 @@ class GameState(object):
         self.robberPos            = 0
         self.dicesAreRolled       = False
 
+        # development cards by index
         self.developmentCardsDeck = [14, 2, 2, 2, 5]
 
         self.longestRoadPlayer  = -1
@@ -86,6 +91,8 @@ class GameState(object):
         self.winner         = -1
         self.isGameOver     = False
         self.isLogGenerated = False
+        
+        # flag to indicate that the longest road should be checked. Only True when a player with 4+ roads constructs a new road
         self.checkLongestRoad = False
 
         self.boardConfig = None
@@ -314,6 +321,8 @@ class GameState(object):
 
     def UpdatePossibleSettlements(self, playerNumber, constructionType, position, isSetup=False):
 
+        # updates the static list of possible settlements to save processing time in simulations
+        
         if constructionType == 'ROAD':
 
             def isNodeAvailable(nodeIndex):
