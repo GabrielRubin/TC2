@@ -46,6 +46,7 @@ class Player(object):
         self.playedDevCard    = False
         self.discardCardCount = 0
 
+        # keeps track of resources that are generated after a certain dice roll to save up processing time
         self.diceProduction = \
         {
             2  : listm([0, 0, 0, 0, 0, 0]),
@@ -60,11 +61,13 @@ class Player(object):
             12 : listm([0, 0, 0, 0, 0, 0])
         }
 
+        # keeps track of trade rates
         self.tradeRates = [4, 4, 4, 4, 4, 4]
 
         self.possibleRoads         = []
         self.possibleSettlements   = []
-
+        
+        # flags for the setup phase (pre-game)
         self.firstSettlementBuild  = False
         self.secondSettlementBuild = False
         self.firstRoadBuild        = False
